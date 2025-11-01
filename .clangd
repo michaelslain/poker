@@ -1,6 +1,7 @@
 CompileFlags:
   Add:
     - -I/opt/homebrew/opt/raylib/include
+    - -I/opt/homebrew/opt/ode/include
     - -I/Users/michaelslain/Documents/dev/poker/include
     - -std=c99
     - -x
