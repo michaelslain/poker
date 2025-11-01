@@ -63,6 +63,7 @@ poker/
 │   ├── card.h
 │   ├── chip.h
 │   ├── deck.h
+│   ├── poker_table.h
 │   ├── inventory.h
 │   ├── inventory_ui.h
 │   ├── render_utils.h
@@ -80,6 +81,7 @@ poker/
 │   ├── card.c
 │   ├── chip.c
 │   ├── deck.c
+│   ├── poker_table.c
 │   ├── inventory.c
 │   ├── inventory_ui.c
 │   ├── render_utils.c
@@ -187,6 +189,26 @@ poker/
 - `Deck_Cleanup()`: Cleans up and frees all 52 cards
 - **Usage Pattern**: Create deck → shuffle → draw cards → attach physics → add to DOM
 - Cards drawn from deck need `Card_AttachPhysics()` before adding to world
+
+**PokerTable** (`poker_table.h/c`):
+- Inherits from Interactable
+- Component hierarchy: PokerTable → Interactable → Object
+- Manages poker game state and players
+- Contains a `Deck` instance for dealing cards
+- Stores up to 8 players in `Player* players[MAX_PLAYERS]` array
+- Tracks `playerCount` for number of seated players
+- Has `size` (Vector3) and `color` for rendering
+- `PokerTable_Init()`: Initialize table with position, size, and color
+- `PokerTable_AddPlayer()`: Add player to table (returns false if full)
+- `PokerTable_RemovePlayer()`: Remove player from table
+- `PokerTable_HasPlayer()`: Check if player is seated
+- `PokerTable_InteractWithPlayer()`: Manual interaction with player reference
+- `PokerTable_Draw()`: Renders brown table with green felt top
+- `PokerTable_Cleanup()`: Cleans up deck and clears player references
+- `PokerTable_GetType()`: Returns "poker_table"
+- Default interaction callback shuffles deck and prints message
+- **Rendering**: Brown rectangular slab with darker green felt surface on top
+- **Note**: Player references are stored but not owned (not freed on cleanup)
 
 ### Physics System
 
@@ -338,6 +360,56 @@ typedef struct {
 - **E**: Interact with closest highlighted object (pickup items)
 - **[ ]**: Increase/decrease FOV
 - **ESC**: Close window
+
+### PokerTable Usage Example
+```c
+// Initialize physics and DOM
+PhysicsWorld physics;
+Physics_Init(&physics);
+
+DOM dom;
+DOM_Init(&dom, 50);
+
+// Create player
+Player player;
+Player_Init(&player, (Vector3){0, 0, -5});
+DOM_AddObject(&dom, (Object*)&player);
+
+// Create poker table
+PokerTable* table = malloc(sizeof(PokerTable));
+Vector3 tableSize = { 4.0f, 0.2f, 2.5f };  // Wide, thin, deep
+PokerTable_Init(table, (Vector3){0, 1.0f, 0}, tableSize, BROWN);
+DOM_AddObject(&dom, (Object*)table);
+
+// In game loop - find closest interactable
+Interactable* closest = NULL;
+float closestDist = FLT_MAX;
+
+for (int i = 0; i < dom.count; i++) {
+    const char* type = dom.objects[i]->GetType(dom.objects[i]);
+    
+    if (strcmp(type, "poker_table") == 0) {
+        Interactable* interactable = (Interactable*)dom.objects[i];
+        float dist = Vector3Distance(player.base.position, interactable->base.position);
+        
+        if (dist < interactable->interactRange && dist < closestDist) {
+            closest = interactable;
+            closestDist = dist;
+        }
+    }
+}
+
+// Handle interaction
+if (closest && IsKeyPressed(KEY_E)) {
+    if (strcmp(closest->base.GetType((Object*)closest), "poker_table") == 0) {
+        PokerTable_InteractWithPlayer((PokerTable*)closest, &player);
+    }
+}
+
+// Cleanup
+PokerTable_Cleanup(table);
+free(table);
+```
 
 ### Deck Usage Example
 ```c

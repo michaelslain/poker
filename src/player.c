@@ -1,6 +1,10 @@
 #include "player.h"
+#include "poker_table.h"
+#include "item.h"
+#include "dom.h"
 #include "raymath.h"
 #include <math.h>
+#include <string.h>
 
 const char* Player_GetType(Object* obj) {
     (void)obj;
@@ -24,6 +28,32 @@ void Player_Init(Player* player, Vector3 pos) {
     player->speed = 5.0f;
     player->lookYaw = 0.0f;
     player->lookPitch = 0.0f;
+}
+
+void Player_HandleInteraction(Player* player) {
+    if (!IsKeyPressed(KEY_E)) return;
+    
+    // Use the existing function to find closest interactable
+    Interactable* closestInteractable = Player_GetClosestInteractable(player);
+    if (!closestInteractable) return;
+    
+    // Handle interaction based on type
+    const char* typeStr = closestInteractable->base.getType((Object*)closestInteractable);
+    
+    // Handle poker table interaction
+    if (strcmp(typeStr, "poker_table") == 0) {
+        PokerTable_InteractWithPlayer((PokerTable*)closestInteractable, player);
+    }
+    // Handle item pickup
+    else if (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0) {
+        Item* item = (Item*)closestInteractable;
+        
+        // Add to inventory and deactivate
+        Inventory_AddItem(&player->inventory, item);
+        item->base.isActive = false;
+        
+        TraceLog(LOG_INFO, "Item picked up: %s, Inventory stacks: %d", typeStr, player->inventory.stackCount);
+    }
 }
 
 void Player_Update(Player* player, float deltaTime) {
@@ -72,7 +102,45 @@ void Player_Update(Player* player, float deltaTime) {
     if (Vector3Length(moveDir) > 0) {
         moveDir = Vector3Normalize(moveDir);
         moveDir = Vector3Scale(moveDir, player->speed * deltaTime);
-        player->base.position = Vector3Add(player->base.position, moveDir);
+        
+        // Store old position for collision resolution
+        Vector3 oldPos = player->base.position;
+        Vector3 newPos = Vector3Add(player->base.position, moveDir);
+        player->base.position = newPos;
+        
+        // Check collision with poker tables
+        DOM* dom = DOM_GetGlobal();
+        if (dom) {
+            float playerRadius = 0.5f; // Player collision radius
+            
+            for (int i = 0; i < dom->count; i++) {
+                Object* obj = dom->objects[i];
+                if (obj->getType == NULL) continue;
+                
+                const char* typeStr = obj->getType(obj);
+                if (strcmp(typeStr, "poker_table") == 0) {
+                    PokerTable* table = (PokerTable*)obj;
+                    
+                    // Simple AABB collision (box vs sphere)
+                    Vector3 tablePos = table->base.base.position;
+                    Vector3 halfSize = {table->size.x / 2, table->size.y / 2, table->size.z / 2};
+                    
+                    // Find closest point on table to player
+                    Vector3 closest;
+                    closest.x = fmaxf(tablePos.x - halfSize.x, fminf(newPos.x, tablePos.x + halfSize.x));
+                    closest.y = fmaxf(tablePos.y - halfSize.y, fminf(newPos.y, tablePos.y + halfSize.y));
+                    closest.z = fmaxf(tablePos.z - halfSize.z, fminf(newPos.z, tablePos.z + halfSize.z));
+                    
+                    float dist = Vector3Distance(newPos, closest);
+                    
+                    if (dist < playerRadius) {
+                        // Collision! Revert to old position
+                        player->base.position = oldPos;
+                        break;
+                    }
+                }
+            }
+        }
     }
     
     // FOV adjustment
@@ -87,6 +155,51 @@ void Player_Update(Player* player, float deltaTime) {
     eyePos.y += 1.7f;
     GameCamera_SetTarget(&player->camera, eyePos);
     GameCamera_Update(&player->camera, (Vector2){0, 0}); // Already handled mouse delta above
+    
+    // Handle interaction (E key)
+    Player_HandleInteraction(player);
+}
+
+Interactable* Player_GetClosestInteractable(Player* player) {
+    // Get global DOM instance
+    DOM* dom = DOM_GetGlobal();
+    if (!dom) return NULL;
+    
+    // Find closest interactable in DOM
+    Interactable* closestInteractable = NULL;
+    float closestDistance = 999999.0f;
+    Vector3 playerPos = player->base.position;
+    
+    for (int i = 0; i < dom->count; i++) {
+        Object* obj = dom->objects[i];
+        
+        // Skip if no type function
+        if (obj->getType == NULL) continue;
+        const char* typeStr = obj->getType(obj);
+        
+        // Check for items (cards, chips) or poker table
+        bool isItem = (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0);
+        bool isPokerTable = (strcmp(typeStr, "poker_table") == 0);
+        
+        if (!isItem && !isPokerTable) continue;
+        
+        // Cast to Interactable based on type
+        Interactable* interactable = NULL;
+        if (isItem) {
+            interactable = &((Item*)obj)->base;
+        } else if (isPokerTable) {
+            interactable = &((PokerTable*)obj)->base;
+        }
+        
+        if (!interactable->isActive) continue;
+        float dist = Vector3Distance(playerPos, interactable->base.position);
+        if (dist <= interactable->interactRange && dist < closestDistance) {
+            closestDistance = dist;
+            closestInteractable = interactable;
+        }
+    }
+    
+    return closestInteractable;
 }
 
 void Player_Cleanup(Player* player) {

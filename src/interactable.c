@@ -46,6 +46,7 @@ void Interactable_Interact(Interactable* interactable) {
 }
 
 void Interactable_DefaultInteract(Interactable* self) {
-    // Default behavior: deactivate (delete) the interactable
-    self->isActive = false;
+    // Default behavior: do nothing
+    // Derived classes should override this callback
+    (void)self;
 }
