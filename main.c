@@ -8,6 +8,7 @@
 #include "chip.h"
 #include "plane.h"
 #include "physics.h"
+#include "spawner.h"
 #include <stdlib.h>
 #include <stddef.h>
 
@@ -59,55 +60,60 @@ int main(void)
     const int screenHeight = 450;
 
     InitWindow(screenWidth, screenHeight, "Poker - First Person");
-    
+
     // Disable cursor for FPS controls
     DisableCursor();
-    
+
     // Initialize physics world
     PhysicsWorld physics;
     Physics_Init(&physics);
-    
+
     // Initialize DOM
     DOM dom;
     DOM_Init(&dom, 50);
-    
+
     // Initialize player (camera is initialized inside player)
     Player player;
     Player_Init(&player, (Vector3){0.0f, 0.0f, 0.0f});
     DOM_AddObject(&dom, (Object*)&player);
-    
+
     // Initialize ground plane with physics
     Plane groundPlane;
     Plane_Init(&groundPlane, (Vector3){0.0f, 0.0f, 0.0f}, (Vector2){50.0f, 50.0f}, LIGHTGRAY, &physics);
     DOM_AddObject(&dom, (Object*)&groundPlane);
-    
-    // Create some card objects in the world (dynamic allocation)
-    // Start them higher up so they fall down
-    int cardCount = 5;
-    Card* cards = (Card*)malloc(sizeof(Card) * cardCount);
-    
-    Card_Init(&cards[0], SUIT_SPADES, RANK_ACE, (Vector3){3.0f, 5.0f, 0.0f}, NULL, &physics);
-    Card_Init(&cards[1], SUIT_HEARTS, RANK_KING, (Vector3){-3.0f, 6.0f, 2.0f}, NULL, &physics);
-    Card_Init(&cards[2], SUIT_DIAMONDS, RANK_QUEEN, (Vector3){0.0f, 7.0f, -5.0f}, NULL, &physics);
-    Card_Init(&cards[3], SUIT_CLUBS, RANK_TEN, (Vector3){5.0f, 8.0f, 5.0f}, NULL, &physics);
-    Card_Init(&cards[4], SUIT_HEARTS, RANK_SEVEN, (Vector3){-2.0f, 9.0f, -3.0f}, NULL, &physics);
-    
-    // Add cards to DOM
+
+    // Use spawners to create objects
+    int maxCards = 20;
+    int maxChips = 25;
+    Card* cards = (Card*)malloc(sizeof(Card) * maxCards);
+    Chip* chips = (Chip*)malloc(sizeof(Chip) * maxChips);
+
+    int cardCount = 0;
+    int chipCount = 0;
+
+    // Create spawners just above the plane
+    Spawner cardSpawner;
+    Spawner_Init(&cardSpawner, (Vector3){0.0f, 2.0f, 0.0f}, 2.0f);  // Radius 2.0
+
+    Spawner chipSpawner;
+    Spawner_Init(&chipSpawner, (Vector3){-5.0f, 2.0f, -5.0f}, 1.5f);  // Radius 1.5
+
+    // Spawn some cards
+    Spawner_SpawnCards(&cardSpawner, SUIT_SPADES, RANK_ACE, 3, &physics, cards, &cardCount);
+    Spawner_SpawnCards(&cardSpawner, SUIT_HEARTS, RANK_KING, 2, &physics, cards, &cardCount);
+
+    // Spawn some chips
+    Spawner_SpawnChips(&chipSpawner, 1, 5, &physics, chips, &chipCount);
+    Spawner_SpawnChips(&chipSpawner, 5, 5, &physics, chips, &chipCount);
+    Spawner_SpawnChips(&chipSpawner, 10, 5, &physics, chips, &chipCount);
+    Spawner_SpawnChips(&chipSpawner, 25, 5, &physics, chips, &chipCount);
+    Spawner_SpawnChips(&chipSpawner, 100, 5, &physics, chips, &chipCount);
+
+    // Add all spawned objects to DOM
     for (int i = 0; i < cardCount; i++) {
         DOM_AddObject(&dom, (Object*)&cards[i]);
     }
-    
-    // Create some chips
-    int chipCount = 5;
-    Chip* chips = (Chip*)malloc(sizeof(Chip) * chipCount);
-    
-    Chip_Init(&chips[0], 1, (Vector3){-5.0f, 5.0f, -5.0f}, NULL, &physics);
-    Chip_Init(&chips[1], 5, (Vector3){-4.0f, 6.0f, -5.0f}, NULL, &physics);
-    Chip_Init(&chips[2], 10, (Vector3){-6.0f, 7.0f, -5.0f}, NULL, &physics);
-    Chip_Init(&chips[3], 25, (Vector3){-5.5f, 8.0f, -4.0f}, NULL, &physics);
-    Chip_Init(&chips[4], 100, (Vector3){-4.5f, 9.0f, -6.0f}, NULL, &physics);
-    
-    // Add chips to DOM
+
     for (int i = 0; i < chipCount; i++) {
         DOM_AddObject(&dom, (Object*)&chips[i]);
     }
@@ -118,7 +124,7 @@ int main(void)
     while (!WindowShouldClose())
     {
         float deltaTime = GetFrameTime();
-        
+
         // Toggle cursor lock with U key
         if (IsKeyPressed(KEY_U)) {
             if (IsCursorHidden()) {
@@ -127,105 +133,105 @@ int main(void)
                 DisableCursor();
             }
         }
-        
+
         // Update player (handles input, camera, and FOV)
         Player_Update(&player, deltaTime);
-        
+
         // Step physics simulation
         Physics_Step(&physics, deltaTime);
-        
+
         // Update all cards (sync physics to object positions)
         for (int i = 0; i < cardCount; i++) {
             Card_Update(&cards[i]);
         }
-        
+
         // Update all chips
         for (int i = 0; i < chipCount; i++) {
             Chip_Update(&chips[i]);
         }
-        
+
         // Find closest interactable (cards or chips)
         int closestCardIndex = -1;
         int closestChipIndex = -1;
         float closestDistance = 999999.0f;
         Vector3 playerPos = Player_GetPosition(&player);
-        
+
         // Check cards
         for (int i = 0; i < cardCount; i++) {
             if (!cards[i].base.base.isActive) continue;
-            
+
             float dist = Vector3Distance(playerPos, cards[i].base.base.base.position);
-            
+
             if (dist <= cards[i].base.base.interactRange && dist < closestDistance) {
                 closestDistance = dist;
                 closestCardIndex = i;
                 closestChipIndex = -1;
             }
         }
-        
+
         // Check chips
         for (int i = 0; i < chipCount; i++) {
             if (!chips[i].base.base.isActive) continue;
-            
+
             float dist = Vector3Distance(playerPos, chips[i].base.base.base.position);
-            
+
             if (dist <= chips[i].base.base.interactRange && dist < closestDistance) {
                 closestDistance = dist;
                 closestChipIndex = i;
                 closestCardIndex = -1;
             }
         }
-        
+
         // Interact on E press
         if (IsKeyPressed(KEY_E)) {
             Inventory* inventory = Player_GetInventory(&player);
-            
+
             if (closestCardIndex != -1) {
                 // Pick up card
                 Inventory_AddItem(inventory, &cards[closestCardIndex].base);
                 DOM_RemoveObject(&dom, (Object*)&cards[closestCardIndex]);
                 cards[closestCardIndex].base.base.isActive = false;
-                
+
                 TraceLog(LOG_INFO, "Card picked up! Inventory stacks: %d", inventory->stackCount);
             } else if (closestChipIndex != -1) {
                 // Pick up chip
                 Inventory_AddItem(inventory, &chips[closestChipIndex].base);
                 DOM_RemoveObject(&dom, (Object*)&chips[closestChipIndex]);
                 chips[closestChipIndex].base.base.isActive = false;
-                
-                TraceLog(LOG_INFO, "Chip picked up! Value: $%d, Inventory stacks: %d", 
+
+                TraceLog(LOG_INFO, "Chip picked up! Value: $%d, Inventory stacks: %d",
                         chips[closestChipIndex].value, inventory->stackCount);
             }
         }
-        
+
         // Draw
         BeginDrawing();
             ClearBackground(RAYWHITE);
-            
+
             Camera3D camera = *Player_GetCamera(&player);
-            
+
             // Render main scene
             BeginMode3D(camera);
                 // Draw ground plane
                 Plane_Draw(&groundPlane);
                 DrawGrid(50, 1.0f);
-                
+
                 // Draw all cards
                 for (int i = 0; i < cardCount; i++) {
                     Card_Draw(&cards[i], camera);
                 }
-                
+
                 // Draw all chips
                 for (int i = 0; i < chipCount; i++) {
                     Chip_Draw(&chips[i], camera);
                 }
             EndMode3D();
-            
+
             // Apply darkening overlay when something is highlighted
             if (closestCardIndex != -1 || closestChipIndex != -1) {
                 // Draw semi-transparent dark overlay over everything
                 DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 100});
-                
+
                 BeginMode3D(camera);
                     if (closestCardIndex != -1) {
                         // Render highlighted card
@@ -235,15 +241,15 @@ int main(void)
                             Matrix transMatrix = MatrixTranslate(pos.x, pos.y, pos.z);
                             Matrix transform = MatrixMultiply(rotMatrix, transMatrix);
                             rlMultMatrixf(MatrixToFloat(transform));
-                            
+
                             float cardWidth = 0.5f;
                             float cardHeight = 0.7f;
                             float cardThickness = 0.02f;
-                            
+
                             DrawCube((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, WHITE);
-                            DrawCubeWires((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, 
+                            DrawCubeWires((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness,
                                          (Color){100, 100, 100, 255});
-                            
+
                             rlTranslatef(0, 0, cardThickness/2 + 0.01f);
                             rlSetTexture(cards[closestCardIndex].texture.texture.id);
                             rlBegin(RL_QUADS);
@@ -256,7 +262,7 @@ int main(void)
                             rlEnd();
                             rlSetTexture(0);
                         rlPopMatrix();
-                        
+
                         Interactable_DrawPrompt(&cards[closestCardIndex].base.base, camera);
                     } else if (closestChipIndex != -1) {
                         // Render highlighted chip
@@ -265,15 +271,15 @@ int main(void)
                     }
                 EndMode3D();
             }
-            
+
             // Draw inventory UI
             Player_DrawInventoryUI(&player);
-            
+
             // Draw UI
             if (closestCardIndex != -1 || closestChipIndex != -1) {
                 DrawText("Press E to interact", screenWidth / 2 - 80, screenHeight - 40, 20, GREEN);
             }
-            
+
             DrawFPS(10, screenHeight - 30);
 
         EndDrawing();
@@ -284,12 +290,12 @@ int main(void)
         Card_Cleanup(&cards[i]);
     }
     free(cards);
-    
+
     for (int i = 0; i < chipCount; i++) {
         Chip_Cleanup(&chips[i]);
     }
     free(chips);
-    
+
     Player_Cleanup(&player);
     Plane_Cleanup(&groundPlane);
     DOM_Cleanup(&dom);

@@ -23,7 +23,7 @@ endif
 TARGET = game
 
 # Source files
-SRCS = main.c src/object.c src/camera.c src/player.c src/interactable.c src/item.c src/card.c src/chip.c src/inventory.c src/inventory_ui.c src/render_utils.c src/plane.c src/physics.c src/rigidbody.c
+SRCS = main.c src/object.c src/camera.c src/player.c src/interactable.c src/item.c src/card.c src/chip.c src/inventory.c src/inventory_ui.c src/render_utils.c src/plane.c src/physics.c src/rigidbody.c src/spawner.c
 OBJS = $(SRCS:.c=.o)
 
 # Build target
