@@ -52,6 +52,17 @@ void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback c
         DrawText(suitSymbol, 128 - suitWidth/2, 200, 30, textColor);
     EndTextureMode();
     
+    // Initialize physics (card dimensions) - only if physics world is provided
+    if (physics) {
+        Vector3 cardSize = { 0.5f, 0.7f, 0.02f };
+        RigidBody_InitBox(&card->rigidBody, physics, pos, cardSize, 0.05f);  // Light mass for cards
+    }
+}
+
+void Card_AttachPhysics(Card* card, Vector3 pos, PhysicsWorld* physics) {
+    // Set the card's position
+    card->base.base.base.position = pos;
+    
     // Initialize physics (card dimensions)
     Vector3 cardSize = { 0.5f, 0.7f, 0.02f };
     RigidBody_InitBox(&card->rigidBody, physics, pos, cardSize, 0.05f);  // Light mass for cards
@@ -60,10 +71,12 @@ void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback c
 void Card_Update(Card* card) {
     if (!card->base.base.isActive) return;
     
-    // Sync the object position with physics body
-    RigidBody_Update(&card->rigidBody);
-    card->base.base.base.position = card->rigidBody.base.position;
-    card->base.base.base.rotation = card->rigidBody.base.rotation;
+    // Only sync if physics is attached (rigidBody has a body)
+    if (card->rigidBody.body) {
+        RigidBody_Update(&card->rigidBody);
+        card->base.base.base.position = card->rigidBody.base.position;
+        card->base.base.base.rotation = card->rigidBody.base.rotation;
+    }
 }
 
 const char* Card_GetSuitSymbol(Suit suit) {

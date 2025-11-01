@@ -38,6 +38,7 @@ typedef struct {
 } Card;
 
 void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback callback, PhysicsWorld* physics);
+void Card_AttachPhysics(Card* card, Vector3 pos, PhysicsWorld* physics);
 void Card_Update(Card* card);
 void Card_Draw(Card* card, Camera3D camera);
 void Card_DrawIcon(Card* card, Rectangle destRect);
