@@ -39,7 +39,7 @@ typedef struct {
 
 void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback callback, PhysicsWorld* physics);
 void Card_Update(Card* card);
-void Card_Draw(Card* card, bool isClosest, Camera3D camera);
+void Card_Draw(Card* card, Camera3D camera);
 void Card_DrawIcon(Card* card, Rectangle destRect);
 void Card_Cleanup(Card* card);
 

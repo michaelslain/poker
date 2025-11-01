@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "raymath.h"
+#include "rlgl.h"
 #include "player.h"
 #include "camera.h"
 #include "interactable.h"
@@ -158,19 +159,63 @@ int main(void)
         BeginDrawing();
             ClearBackground(RAYWHITE);
             
-            BeginMode3D(*Player_GetCamera(&player));
+            Camera3D camera = *Player_GetCamera(&player);
+            
+            // Render main scene
+            BeginMode3D(camera);
                 // Draw ground plane
                 Plane_Draw(&groundPlane);
                 DrawGrid(50, 1.0f);
                 
-                // Draw cards
-                Camera3D camera = *Player_GetCamera(&player);
+                // Draw all cards
                 for (int i = 0; i < cardCount; i++) {
-                    bool isClosest = (i == closestIndex);
-                    Card_Draw(&cards[i], isClosest, camera);
+                    Card_Draw(&cards[i], camera);
                 }
-                
             EndMode3D();
+            
+            // Apply darkening overlay when something is highlighted
+            if (closestIndex != -1) {
+                // Draw semi-transparent dark overlay over everything
+                DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 100});
+                
+                // Render highlighted card on top (brightened)
+                BeginMode3D(camera);
+                    // Draw highlighted card slightly brighter
+                    rlPushMatrix();
+                        Vector3 pos = cards[closestIndex].base.base.base.position;
+                        Matrix rotMatrix = RigidBody_GetRotationMatrix(&cards[closestIndex].rigidBody);
+                        Matrix transMatrix = MatrixTranslate(pos.x, pos.y, pos.z);
+                        Matrix transform = MatrixMultiply(rotMatrix, transMatrix);
+                        rlMultMatrixf(MatrixToFloat(transform));
+                        
+                        float cardWidth = 0.5f;
+                        float cardHeight = 0.7f;
+                        float cardThickness = 0.02f;
+                        
+                        // Draw brighter version
+                        DrawCube((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, 
+                                (Color){255, 255, 255, 255});
+                        DrawCubeWires((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, 
+                                     (Color){100, 100, 100, 255});
+                        
+                        // Draw the texture
+                        rlTranslatef(0, 0, cardThickness/2 + 0.01f);
+                        rlSetTexture(cards[closestIndex].texture.texture.id);
+                        rlBegin(RL_QUADS);
+                            rlColor4ub(255, 255, 255, 255);
+                            rlNormal3f(0.0f, 0.0f, 1.0f);
+                            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(-cardWidth/2, -cardHeight/2, 0.0f);
+                            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(cardWidth/2, -cardHeight/2, 0.0f);
+                            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(cardWidth/2, cardHeight/2, 0.0f);
+                            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(-cardWidth/2, cardHeight/2, 0.0f);
+                        rlEnd();
+                        rlSetTexture(0);
+                    rlPopMatrix();
+                EndMode3D();
+                
+                // Draw the E prompt
+                Interactable_DrawPrompt(&cards[closestIndex].base.base, camera);
+            }
             
             // Draw inventory UI
             Player_DrawInventoryUI(&player);

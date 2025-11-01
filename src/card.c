@@ -88,8 +88,8 @@ Color Card_GetSuitColor(Suit suit) {
     }
 }
 
-void Card_Draw(Card* card, bool isClosest, Camera3D camera) {
-    (void)camera; // We're not using billboard anymore
+void Card_Draw(Card* card, Camera3D camera) {
+    (void)camera;
     if (!card->base.base.isActive) return;
     
     Vector3 pos = card->base.base.base.position;
@@ -108,9 +108,8 @@ void Card_Draw(Card* card, bool isClosest, Camera3D camera) {
     rlPushMatrix();
         rlMultMatrixf(MatrixToFloat(transform));
         
-        Color outlineColor = isClosest ? YELLOW : DARKGRAY;
         DrawCube((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, WHITE);
-        DrawCubeWires((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, outlineColor);
+        DrawCubeWires((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, DARKGRAY);
         
         // Draw the texture on the front face
         rlTranslatef(0, 0, cardThickness/2 + 0.01f);
