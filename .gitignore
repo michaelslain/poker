@@ -1,0 +1,13 @@
+# Compiled files
+*.o
+game
+
+# macOS
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
