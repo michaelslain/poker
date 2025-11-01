@@ -4,6 +4,8 @@
 #include "interactable.h"
 #include "deck.h"
 #include "player.h"
+#include "physics.h"
+#include <ode/ode.h>
 
 #define MAX_PLAYERS 8  // Maximum players at a poker table
 
@@ -20,10 +22,14 @@ typedef struct {
     // Table dimensions
     Vector3 size;  // Width, height (thickness), depth
     Color color;
+    
+    // Physics collision
+    dGeomID geom;
+    PhysicsWorld* physics;
 } PokerTable;
 
 // Initialize poker table
-void PokerTable_Init(PokerTable* table, Vector3 pos, Vector3 size, Color color);
+void PokerTable_Init(PokerTable* table, Vector3 pos, Vector3 size, Color color, PhysicsWorld* physics);
 
 // Update the table (if needed in the future)
 void PokerTable_Update(PokerTable* table);

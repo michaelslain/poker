@@ -41,7 +41,7 @@ int main(void)
 
     // Initialize player (camera is initialized inside player)
     Player player;
-    Player_Init(&player, (Vector3){0.0f, 0.0f, 0.0f});
+    Player_Init(&player, (Vector3){0.0f, 0.0f, 0.0f}, &physics);
     DOM_AddObject(&dom, (Object*)&player);
 
 
@@ -53,7 +53,7 @@ int main(void)
     // Create poker table
     PokerTable* pokerTable = (PokerTable*)malloc(sizeof(PokerTable));
     Vector3 tableSize = {4.0f, 0.2f, 2.5f};  // Wide, thin, deep
-    PokerTable_Init(pokerTable, (Vector3){5.0f, 1.0f, 0.0f}, tableSize, BROWN);
+    PokerTable_Init(pokerTable, (Vector3){5.0f, 1.0f, 0.0f}, tableSize, BROWN, &physics);
     DOM_AddObject(&dom, (Object*)pokerTable);
 
     // Create spawners just above the plane
@@ -156,6 +156,8 @@ int main(void)
                     Card_Cleanup((Card*)obj);
                 } else if (strncmp(typeStr, "chip_", 5) == 0) {
                     Chip_Cleanup((Chip*)obj);
+                } else if (strcmp(typeStr, "poker_table") == 0) {
+                    PokerTable_Cleanup((PokerTable*)obj);
                 }
             }
             free(obj);

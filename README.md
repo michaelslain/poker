@@ -6,6 +6,7 @@ A first-person poker game built with C and raylib featuring an inventory system 
 
 - C (C99)
 - raylib 5.5
+- ODE (Open Dynamics Engine) - Physics simulation
 
 ## Features
 
@@ -19,9 +20,10 @@ A first-person poker game built with C and raylib featuring an inventory system 
 
 ### Prerequisites
 
-Install raylib:
+Install raylib and ODE:
 ```bash
 brew install raylib
+brew install ode
 ```
 
 ### Build and Run

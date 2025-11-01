@@ -5,13 +5,14 @@
 #include "raymath.h"
 #include <math.h>
 #include <string.h>
+#include <ode/ode.h>
 
 const char* Player_GetType(Object* obj) {
     (void)obj;
     return "player";
 }
 
-void Player_Init(Player* player, Vector3 pos) {
+void Player_Init(Player* player, Vector3 pos, PhysicsWorld* physics) {
     Object_Init(&player->base, pos);
     
     // Set the getType function pointer
@@ -28,6 +29,38 @@ void Player_Init(Player* player, Vector3 pos) {
     player->speed = 5.0f;
     player->lookYaw = 0.0f;
     player->lookPitch = 0.0f;
+    
+    // Initialize physics
+    player->physics = physics;
+    
+    if (physics != NULL) {
+        // Create kinematic body (controlled by code, not physics forces)
+        player->body = dBodyCreate(physics->world);
+        dBodySetPosition(player->body, pos.x, pos.y + 0.85f, pos.z);  // Center at mid-height
+        
+        // Set kinematic flag (body won't be affected by forces/gravity)
+        dBodySetKinematic(player->body);
+        
+        // Create capsule geometry (bean-shaped)
+        // Capsule parameters: radius, length (of cylindrical section)
+        float radius = 0.4f;  // Not too wide
+        float height = 1.7f;  // Camera height
+        float cylinderLength = height - (2.0f * radius);  // Subtract the two hemisphere caps
+        
+        player->geom = dCreateCapsule(physics->space, radius, cylinderLength);
+        dGeomSetBody(player->geom, player->body);
+        
+        // Set collision category and mask
+        // Player collides with TABLE only (not with ITEM)
+        dGeomSetCategoryBits(player->geom, COLLISION_CATEGORY_PLAYER);
+        dGeomSetCollideBits(player->geom, COLLISION_CATEGORY_TABLE);
+        
+        // Store reference to player for collision callbacks
+        dGeomSetData(player->geom, player);
+    } else {
+        player->body = NULL;
+        player->geom = NULL;
+    }
 }
 
 void Player_HandleInteraction(Player* player) {
@@ -103,43 +136,52 @@ void Player_Update(Player* player, float deltaTime) {
         moveDir = Vector3Normalize(moveDir);
         moveDir = Vector3Scale(moveDir, player->speed * deltaTime);
         
-        // Store old position for collision resolution
         Vector3 oldPos = player->base.position;
         Vector3 newPos = Vector3Add(player->base.position, moveDir);
-        player->base.position = newPos;
         
-        // Check collision with poker tables
-        DOM* dom = DOM_GetGlobal();
-        if (dom) {
-            float playerRadius = 0.5f; // Player collision radius
+        // Update physics body position and check for collisions
+        if (player->body != NULL && player->geom != NULL) {
+            // Temporarily move the player geometry to the new position
+            dGeomSetPosition(player->geom, newPos.x, newPos.y + 0.85f, newPos.z);
             
-            for (int i = 0; i < dom->count; i++) {
-                Object* obj = dom->objects[i];
-                if (obj->getType == NULL) continue;
-                
-                const char* typeStr = obj->getType(obj);
-                if (strcmp(typeStr, "poker_table") == 0) {
-                    PokerTable* table = (PokerTable*)obj;
+            // Check for collisions with the poker table
+            bool collided = false;
+            DOM* dom = DOM_GetGlobal();
+            if (dom) {
+                for (int i = 0; i < dom->count; i++) {
+                    Object* obj = dom->objects[i];
+                    if (obj->getType == NULL) continue;
                     
-                    // Simple AABB collision (box vs sphere)
-                    Vector3 tablePos = table->base.base.position;
-                    Vector3 halfSize = {table->size.x / 2, table->size.y / 2, table->size.z / 2};
-                    
-                    // Find closest point on table to player
-                    Vector3 closest;
-                    closest.x = fmaxf(tablePos.x - halfSize.x, fminf(newPos.x, tablePos.x + halfSize.x));
-                    closest.y = fmaxf(tablePos.y - halfSize.y, fminf(newPos.y, tablePos.y + halfSize.y));
-                    closest.z = fmaxf(tablePos.z - halfSize.z, fminf(newPos.z, tablePos.z + halfSize.z));
-                    
-                    float dist = Vector3Distance(newPos, closest);
-                    
-                    if (dist < playerRadius) {
-                        // Collision! Revert to old position
-                        player->base.position = oldPos;
-                        break;
+                    const char* typeStr = obj->getType(obj);
+                    if (strcmp(typeStr, "poker_table") == 0) {
+                        PokerTable* table = (PokerTable*)obj;
+                        
+                        if (table->geom != NULL) {
+                            // Check collision between player geom and table geom
+                            dContactGeom contacts[4];
+                            int numContacts = dCollide(player->geom, table->geom, 4, contacts, sizeof(dContactGeom));
+                            
+                            if (numContacts > 0) {
+                                collided = true;
+                                break;
+                            }
+                        }
                     }
                 }
             }
+            
+            if (collided) {
+                // Revert to old position
+                dGeomSetPosition(player->geom, oldPos.x, oldPos.y + 0.85f, oldPos.z);
+                dBodySetPosition(player->body, oldPos.x, oldPos.y + 0.85f, oldPos.z);
+            } else {
+                // Accept new position
+                dBodySetPosition(player->body, newPos.x, newPos.y + 0.85f, newPos.z);
+                player->base.position = newPos;
+            }
+        } else {
+            // No physics - just move directly
+            player->base.position = newPos;
         }
     }
     
@@ -203,6 +245,16 @@ Interactable* Player_GetClosestInteractable(Player* player) {
 }
 
 void Player_Cleanup(Player* player) {
+    // Destroy physics geometry and body
+    if (player->geom != NULL) {
+        dGeomDestroy(player->geom);
+        player->geom = NULL;
+    }
+    if (player->body != NULL) {
+        dBodyDestroy(player->body);
+        player->body = NULL;
+    }
+    
     Inventory_Cleanup(&player->inventory);
 }
 

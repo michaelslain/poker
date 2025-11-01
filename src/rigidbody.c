@@ -1,5 +1,6 @@
 #include "rigidbody.h"
 #include "raymath.h"
+#include "player.h"  // For collision category defines
 
 void RigidBody_InitBox(RigidBody* rb, PhysicsWorld* physics, Vector3 position, Vector3 size, float mass) {
     Object_Init(&rb->base, position);
@@ -17,6 +18,11 @@ void RigidBody_InitBox(RigidBody* rb, PhysicsWorld* physics, Vector3 position, V
     // Create box geometry and attach to body
     rb->geom = dCreateBox(physics->space, size.x, size.y, size.z);
     dGeomSetBody(rb->geom, rb->body);
+    
+    // Set collision category for items (cards, chips)
+    // Items don't collide with player, only with ground and each other
+    dGeomSetCategoryBits(rb->geom, COLLISION_CATEGORY_ITEM);
+    dGeomSetCollideBits(rb->geom, ~COLLISION_CATEGORY_PLAYER);  // Collide with everything except player
 }
 
 void RigidBody_InitSphere(RigidBody* rb, PhysicsWorld* physics, Vector3 position, float radius, float mass) {
@@ -35,6 +41,11 @@ void RigidBody_InitSphere(RigidBody* rb, PhysicsWorld* physics, Vector3 position
     // Create sphere geometry and attach to body
     rb->geom = dCreateSphere(physics->space, radius);
     dGeomSetBody(rb->geom, rb->body);
+    
+    // Set collision category for items (cards, chips)
+    // Items don't collide with player, only with ground and each other
+    dGeomSetCategoryBits(rb->geom, COLLISION_CATEGORY_ITEM);
+    dGeomSetCollideBits(rb->geom, ~COLLISION_CATEGORY_PLAYER);  // Collide with everything except player
 }
 
 void RigidBody_Update(RigidBody* rb) {

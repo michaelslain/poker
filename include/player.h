@@ -6,9 +6,16 @@
 #include "camera.h"
 #include "inventory.h"
 #include "inventory_ui.h"
+#include "physics.h"
+#include <ode/ode.h>
 
 // Forward declaration
 typedef struct Interactable Interactable;
+
+// Collision categories
+#define COLLISION_CATEGORY_PLAYER   (1 << 0)  // 0001
+#define COLLISION_CATEGORY_ITEM     (1 << 1)  // 0010
+#define COLLISION_CATEGORY_TABLE    (1 << 2)  // 0100
 
 typedef struct {
     Object base;
@@ -17,9 +24,14 @@ typedef struct {
     float speed;
     float lookYaw;
     float lookPitch;
+    
+    // Physics
+    dBodyID body;
+    dGeomID geom;
+    PhysicsWorld* physics;
 } Player;
 
-void Player_Init(Player* player, Vector3 pos);
+void Player_Init(Player* player, Vector3 pos, PhysicsWorld* physics);
 void Player_Update(Player* player, float deltaTime);
 void Player_HandleInteraction(Player* player);
 Interactable* Player_GetClosestInteractable(Player* player);

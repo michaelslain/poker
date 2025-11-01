@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "player.h"  // For collision category defines
 
 // Virtual function wrappers
 static void PokerTable_UpdateVirtual(Object* self, float deltaTime) {
@@ -28,7 +29,7 @@ static void PokerTable_OnInteract(Interactable* self) {
     Deck_Shuffle(&table->deck);
 }
 
-void PokerTable_Init(PokerTable* table, Vector3 pos, Vector3 size, Color color) {
+void PokerTable_Init(PokerTable* table, Vector3 pos, Vector3 size, Color color, PhysicsWorld* physics) {
     // Initialize base interactable with callback
     Interactable_Init(&table->base, pos, PokerTable_OnInteract);
     
@@ -50,6 +51,26 @@ void PokerTable_Init(PokerTable* table, Vector3 pos, Vector3 size, Color color) 
     // Set table properties
     table->size = size;
     table->color = color;
+    table->physics = physics;
+    
+    // Create ODE box geometry for collision
+    if (physics != NULL) {
+        // Create a box geometry (static, no body needed)
+        table->geom = dCreateBox(physics->space, size.x, size.y, size.z);
+        
+        // Set the position of the geometry
+        dGeomSetPosition(table->geom, pos.x, pos.y, pos.z);
+        
+        // Set collision category and mask
+        // Table collides with PLAYER only (not with ITEM)
+        dGeomSetCategoryBits(table->geom, COLLISION_CATEGORY_TABLE);
+        dGeomSetCollideBits(table->geom, COLLISION_CATEGORY_PLAYER);
+        
+        // Store a reference to the table in the geom for collision callbacks
+        dGeomSetData(table->geom, table);
+    } else {
+        table->geom = NULL;
+    }
 }
 
 void PokerTable_Update(PokerTable* table) {
@@ -120,6 +141,12 @@ bool PokerTable_HasPlayer(PokerTable* table, Player* player) {
 }
 
 void PokerTable_Cleanup(PokerTable* table) {
+    // Destroy ODE geometry if it exists
+    if (table->geom != NULL) {
+        dGeomDestroy(table->geom);
+        table->geom = NULL;
+    }
+    
     // Cleanup the deck
     Deck_Cleanup(&table->deck);
     
