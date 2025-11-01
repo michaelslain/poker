@@ -2,6 +2,8 @@
 #define CARD_H
 
 #include "item.h"
+#include "rigidbody.h"
+#include "physics.h"
 
 typedef enum {
     SUIT_HEARTS,
@@ -32,12 +34,15 @@ typedef struct {
     Rank rank;
     RenderTexture2D texture;
     bool textureLoaded;
+    RigidBody rigidBody;
 } Card;
 
-void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback callback);
+void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback callback, PhysicsWorld* physics);
+void Card_Update(Card* card);
 void Card_Draw(Card* card, bool isClosest, Camera3D camera);
 void Card_DrawIcon(Card* card, Rectangle destRect);
 void Card_Cleanup(Card* card);
+
 const char* Card_GetSuitSymbol(Suit suit);
 const char* Card_GetRankString(Rank rank);
 Color Card_GetSuitColor(Suit suit);

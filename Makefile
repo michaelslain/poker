@@ -1,7 +1,7 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -I/opt/homebrew/opt/raylib/include -Iinclude
-LDFLAGS = -L/opt/homebrew/opt/raylib/lib -lraylib -lm
+CFLAGS = -Wall -Wextra -std=c99 -I/opt/homebrew/opt/raylib/include -I/opt/homebrew/opt/ode/include -Iinclude
+LDFLAGS = -L/opt/homebrew/opt/raylib/lib -L/opt/homebrew/opt/ode/lib -lraylib -lode -lm
 
 # Detect OS
 ifeq ($(OS),Windows_NT)
@@ -23,7 +23,7 @@ endif
 TARGET = game
 
 # Source files
-SRCS = main.c src/object.c src/camera.c src/player.c src/interactable.c src/item.c src/card.c src/inventory.c src/inventory_ui.c src/render_utils.c
+SRCS = main.c src/object.c src/camera.c src/player.c src/interactable.c src/item.c src/card.c src/inventory.c src/inventory_ui.c src/render_utils.c src/plane.c src/physics.c src/rigidbody.c
 OBJS = $(SRCS:.c=.o)
 
 # Build target

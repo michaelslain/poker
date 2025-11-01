@@ -4,6 +4,8 @@
 #include "camera.h"
 #include "interactable.h"
 #include "card.h"
+#include "plane.h"
+#include "physics.h"
 #include <stdlib.h>
 #include <stddef.h>
 
@@ -59,6 +61,10 @@ int main(void)
     // Disable cursor for FPS controls
     DisableCursor();
     
+    // Initialize physics world
+    PhysicsWorld physics;
+    Physics_Init(&physics);
+    
     // Initialize DOM
     DOM dom;
     DOM_Init(&dom, 50);
@@ -68,15 +74,21 @@ int main(void)
     Player_Init(&player, (Vector3){0.0f, 0.0f, 0.0f});
     DOM_AddObject(&dom, (Object*)&player);
     
+    // Initialize ground plane with physics
+    Plane groundPlane;
+    Plane_Init(&groundPlane, (Vector3){0.0f, 0.0f, 0.0f}, (Vector2){50.0f, 50.0f}, LIGHTGRAY, &physics);
+    DOM_AddObject(&dom, (Object*)&groundPlane);
+    
     // Create some card objects in the world (dynamic allocation)
+    // Start them higher up so they fall down
     int cardCount = 5;
     Card* cards = (Card*)malloc(sizeof(Card) * cardCount);
     
-    Card_Init(&cards[0], SUIT_SPADES, RANK_ACE, (Vector3){3.0f, 0.5f, 0.0f}, NULL);
-    Card_Init(&cards[1], SUIT_HEARTS, RANK_KING, (Vector3){-3.0f, 0.5f, 2.0f}, NULL);
-    Card_Init(&cards[2], SUIT_DIAMONDS, RANK_QUEEN, (Vector3){0.0f, 0.5f, -5.0f}, NULL);
-    Card_Init(&cards[3], SUIT_CLUBS, RANK_TEN, (Vector3){5.0f, 0.5f, 5.0f}, NULL);
-    Card_Init(&cards[4], SUIT_HEARTS, RANK_SEVEN, (Vector3){-2.0f, 0.5f, -3.0f}, NULL);
+    Card_Init(&cards[0], SUIT_SPADES, RANK_ACE, (Vector3){3.0f, 5.0f, 0.0f}, NULL, &physics);
+    Card_Init(&cards[1], SUIT_HEARTS, RANK_KING, (Vector3){-3.0f, 6.0f, 2.0f}, NULL, &physics);
+    Card_Init(&cards[2], SUIT_DIAMONDS, RANK_QUEEN, (Vector3){0.0f, 7.0f, -5.0f}, NULL, &physics);
+    Card_Init(&cards[3], SUIT_CLUBS, RANK_TEN, (Vector3){5.0f, 8.0f, 5.0f}, NULL, &physics);
+    Card_Init(&cards[4], SUIT_HEARTS, RANK_SEVEN, (Vector3){-2.0f, 9.0f, -3.0f}, NULL, &physics);
     
     // Add cards to DOM
     for (int i = 0; i < cardCount; i++) {
@@ -101,6 +113,14 @@ int main(void)
         
         // Update player (handles input, camera, and FOV)
         Player_Update(&player, deltaTime);
+        
+        // Step physics simulation
+        Physics_Step(&physics, deltaTime);
+        
+        // Update all cards (sync physics to object positions)
+        for (int i = 0; i < cardCount; i++) {
+            Card_Update(&cards[i]);
+        }
         
         // Find closest card
         int closestIndex = -1;
@@ -140,7 +160,7 @@ int main(void)
             
             BeginMode3D(*Player_GetCamera(&player));
                 // Draw ground plane
-                DrawPlane((Vector3){0.0f, 0.0f, 0.0f}, (Vector2){50.0f, 50.0f}, LIGHTGRAY);
+                Plane_Draw(&groundPlane);
                 DrawGrid(50, 1.0f);
                 
                 // Draw cards
@@ -171,7 +191,9 @@ int main(void)
     }
     free(cards);
     Player_Cleanup(&player);
+    Plane_Cleanup(&groundPlane);
     DOM_Cleanup(&dom);
+    Physics_Cleanup(&physics);
     CloseWindow();
 
     return 0;

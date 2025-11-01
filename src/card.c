@@ -1,9 +1,10 @@
 #include "card.h"
 #include "render_utils.h"
 #include "rlgl.h"
+#include "raymath.h"
 #include <stdio.h>
 
-void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback callback) {
+void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback callback, PhysicsWorld* physics) {
     // Initialize the base item
     Item_Init(&card->base, pos);
     
@@ -36,6 +37,19 @@ void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback c
         int suitWidth = MeasureText(suitSymbol, 30);
         DrawText(suitSymbol, 128 - suitWidth/2, 200, 30, textColor);
     EndTextureMode();
+    
+    // Initialize physics (card dimensions)
+    Vector3 cardSize = { 0.5f, 0.7f, 0.02f };
+    RigidBody_InitBox(&card->rigidBody, physics, pos, cardSize, 0.05f);  // Light mass for cards
+}
+
+void Card_Update(Card* card) {
+    if (!card->base.base.isActive) return;
+    
+    // Sync the object position with physics body
+    RigidBody_Update(&card->rigidBody);
+    card->base.base.base.position = card->rigidBody.base.position;
+    card->base.base.base.rotation = card->rigidBody.base.rotation;
 }
 
 const char* Card_GetSuitSymbol(Suit suit) {
@@ -85,14 +99,21 @@ void Card_Draw(Card* card, bool isClosest, Camera3D camera) {
     float cardHeight = 0.7f;
     float cardThickness = 0.02f;
     
-    // Draw white card rectangle
-    Color outlineColor = isClosest ? YELLOW : DARKGRAY;
-    DrawCube(pos, cardWidth, cardHeight, cardThickness, WHITE);
-    DrawCubeWires(pos, cardWidth, cardHeight, cardThickness, outlineColor);
+    // Get rotation matrix from physics body
+    Matrix rotMatrix = RigidBody_GetRotationMatrix(&card->rigidBody);
+    Matrix transMatrix = MatrixTranslate(pos.x, pos.y, pos.z);
+    Matrix transform = MatrixMultiply(rotMatrix, transMatrix);
     
-    // Draw the texture on the front face as a simple plane facing forward (positive Z)
+    // Draw white card rectangle with physics rotation
     rlPushMatrix();
-        rlTranslatef(pos.x, pos.y, pos.z + cardThickness/2 + 0.01f);
+        rlMultMatrixf(MatrixToFloat(transform));
+        
+        Color outlineColor = isClosest ? YELLOW : DARKGRAY;
+        DrawCube((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, WHITE);
+        DrawCubeWires((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, outlineColor);
+        
+        // Draw the texture on the front face
+        rlTranslatef(0, 0, cardThickness/2 + 0.01f);
         
         rlSetTexture(card->texture.texture.id);
         rlBegin(RL_QUADS);
@@ -122,4 +143,5 @@ void Card_Cleanup(Card* card) {
         UnloadRenderTexture(card->texture);
         card->textureLoaded = false;
     }
+    RigidBody_Cleanup(&card->rigidBody);
 }
