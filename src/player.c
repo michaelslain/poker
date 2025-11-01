@@ -2,8 +2,16 @@
 #include "raymath.h"
 #include <math.h>
 
+const char* Player_GetType(Object* obj) {
+    (void)obj;
+    return "player";
+}
+
 void Player_Init(Player* player, Vector3 pos) {
     Object_Init(&player->base, pos);
+    
+    // Set the getType function pointer
+    player->base.getType = Player_GetType;
     
     // Initialize camera at eye level
     Vector3 eyePos = pos;

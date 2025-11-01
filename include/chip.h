@@ -9,6 +9,8 @@ typedef struct {
     Item base;
     int value;
     Color color;
+    RenderTexture2D iconTexture;  // Pre-rendered icon texture
+    bool iconTextureLoaded;
     RigidBody rigidBody;
 } Chip;
 
@@ -20,5 +22,8 @@ void Chip_Cleanup(Chip* chip);
 
 // Get color based on value
 Color Chip_GetColorFromValue(int value);
+
+// Get type string for this chip (e.g., "chip_5")
+const char* Chip_GetType(Object* obj);
 
 #endif

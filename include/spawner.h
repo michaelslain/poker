@@ -24,14 +24,17 @@ typedef struct {
     int chipValue;
 } Spawner;
 
+// Include DOM
+#include "dom.h"
+
 void Spawner_Init(Spawner* spawner, Vector3 pos, float radius);
 
-// Spawn cards
+// Spawn cards - allocates, initializes, and adds to DOM
 void Spawner_SpawnCards(Spawner* spawner, Suit suit, Rank rank, int count, 
-                        PhysicsWorld* physics, Card* outputArray, int* currentIndex);
+                        PhysicsWorld* physics, DOM* dom);
 
-// Spawn chips
+// Spawn chips - allocates, initializes, and adds to DOM
 void Spawner_SpawnChips(Spawner* spawner, int value, int count, 
-                        PhysicsWorld* physics, Chip* outputArray, int* currentIndex);
+                        PhysicsWorld* physics, DOM* dom);
 
 #endif

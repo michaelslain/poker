@@ -8,7 +8,7 @@ void Spawner_Init(Spawner* spawner, Vector3 pos, float radius) {
 }
 
 void Spawner_SpawnCards(Spawner* spawner, Suit suit, Rank rank, int count, 
-                        PhysicsWorld* physics, Card* outputArray, int* currentIndex) {
+                        PhysicsWorld* physics, DOM* dom) {
     Vector3 basePos = spawner->base.position;
     float radius = spawner->radius;
     
@@ -24,13 +24,18 @@ void Spawner_SpawnCards(Spawner* spawner, Suit suit, Rank rank, int count,
             basePos.z + sinf(angle) * distance
         };
         
-        Card_Init(&outputArray[*currentIndex], suit, rank, spawnPos, NULL, physics);
-        (*currentIndex)++;
+        // Allocate a new card
+        Card* card = (Card*)malloc(sizeof(Card));
+        Card_Init(card, suit, rank, spawnPos, NULL, physics);
+        card->base.base.base.isDynamicallyAllocated = true;
+        
+        // Add to DOM
+        DOM_AddObject(dom, (Object*)card);
     }
 }
 
 void Spawner_SpawnChips(Spawner* spawner, int value, int count, 
-                        PhysicsWorld* physics, Chip* outputArray, int* currentIndex) {
+                        PhysicsWorld* physics, DOM* dom) {
     Vector3 basePos = spawner->base.position;
     float radius = spawner->radius;
     
@@ -46,7 +51,12 @@ void Spawner_SpawnChips(Spawner* spawner, int value, int count,
             basePos.z + sinf(angle) * distance
         };
         
-        Chip_Init(&outputArray[*currentIndex], value, spawnPos, NULL, physics);
-        (*currentIndex)++;
+        // Allocate a new chip
+        Chip* chip = (Chip*)malloc(sizeof(Chip));
+        Chip_Init(chip, value, spawnPos, NULL, physics);
+        chip->base.base.base.isDynamicallyAllocated = true;
+        
+        // Add to DOM
+        DOM_AddObject(dom, (Object*)chip);
     }
 }

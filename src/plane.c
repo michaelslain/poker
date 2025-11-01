@@ -1,7 +1,16 @@
 #include "plane.h"
 
+const char* Plane_GetType(Object* obj) {
+    (void)obj;
+    return "plane";
+}
+
 void Plane_Init(Plane* plane, Vector3 position, Vector2 size, Color color, PhysicsWorld* physics) {
     Object_Init(&plane->base, position);
+    
+    // Set the getType function pointer
+    plane->base.getType = Plane_GetType;
+    
     plane->size = size;
     plane->color = color;
     plane->physics = physics;

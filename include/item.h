@@ -4,9 +4,12 @@
 #include "interactable.h"
 #include "inventory.h"
 
+// Forward declare Item
+struct Item;
+
 typedef struct Item {
     Interactable base;
-    // Items can have additional properties here in the future
+    // getType is now in Object base class
 } Item;
 
 // Forward declare the interact callback that adds to inventory

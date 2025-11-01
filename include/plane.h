@@ -18,4 +18,6 @@ void Plane_Init(Plane* plane, Vector3 position, Vector2 size, Color color, Physi
 void Plane_Draw(Plane* plane);
 void Plane_Cleanup(Plane* plane);
 
+const char* Plane_GetType(Object* obj);
+
 #endif // PLANE_H

@@ -47,4 +47,7 @@ const char* Card_GetSuitSymbol(Suit suit);
 const char* Card_GetRankString(Rank rank);
 Color Card_GetSuitColor(Suit suit);
 
+// Get type string for this card (e.g., "card_spades_ace")
+const char* Card_GetType(Object* obj);
+
 #endif

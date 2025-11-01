@@ -6,16 +6,10 @@
 // Forward declaration to avoid circular dependency
 struct Item;
 
-typedef enum {
-    ITEM_TYPE_CARD,
-    ITEM_TYPE_CHIP
-} ItemType;
-
 typedef struct {
     struct Item* item;         // First item in stack
     int count;                 // Number of items in stack
-    ItemType type;             // Type of item
-    int chipValue;             // For chips: the value (used for stacking by value)
+    char typeString[64];       // Full type identifier (e.g., "card_spades_ace" or "chip_5")
 } ItemStack;
 
 typedef struct {
@@ -28,8 +22,5 @@ void Inventory_Init(Inventory* inventory, int initialCapacity);
 bool Inventory_AddItem(Inventory* inventory, struct Item* item);
 bool Inventory_RemoveItem(Inventory* inventory, int stackIndex);
 void Inventory_Cleanup(Inventory* inventory);
-
-// Helper to get item type
-ItemType Inventory_GetItemType(struct Item* item);
 
 #endif

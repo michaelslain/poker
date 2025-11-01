@@ -1,12 +1,26 @@
 #include "card.h"
-#include "render_utils.h"
 #include "rlgl.h"
 #include "raymath.h"
 #include <stdio.h>
 
+// Virtual function wrappers
+static void Card_UpdateVirtual(Object* self, float deltaTime) {
+    (void)deltaTime;
+    Card_Update((Card*)self);
+}
+
+static void Card_DrawVirtual(Object* self, Camera3D camera) {
+    Card_Draw((Card*)self, camera);
+}
+
 void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback callback, PhysicsWorld* physics) {
     // Initialize the base item
     Item_Init(&card->base, pos);
+    
+    // Set the virtual function pointers
+    card->base.base.base.getType = Card_GetType;
+    card->base.base.base.update = Card_UpdateVirtual;
+    card->base.base.base.draw = Card_DrawVirtual;
     
     // Override callback if provided
     if (callback) {
@@ -143,4 +157,42 @@ void Card_Cleanup(Card* card) {
         card->textureLoaded = false;
     }
     RigidBody_Cleanup(&card->rigidBody);
+}
+
+const char* Card_GetType(Object* obj) {
+    Card* card = (Card*)obj;
+    static char typeBuffer[64];
+    
+    // Get suit name (lowercase)
+    const char* suitName;
+    switch (card->suit) {
+        case SUIT_HEARTS:   suitName = "hearts"; break;
+        case SUIT_DIAMONDS: suitName = "diamonds"; break;
+        case SUIT_CLUBS:    suitName = "clubs"; break;
+        case SUIT_SPADES:   suitName = "spades"; break;
+        default:            suitName = "unknown"; break;
+    }
+    
+    // Get rank name (lowercase)
+    const char* rankName;
+    switch (card->rank) {
+        case RANK_ACE:   rankName = "ace"; break;
+        case RANK_TWO:   rankName = "two"; break;
+        case RANK_THREE: rankName = "three"; break;
+        case RANK_FOUR:  rankName = "four"; break;
+        case RANK_FIVE:  rankName = "five"; break;
+        case RANK_SIX:   rankName = "six"; break;
+        case RANK_SEVEN: rankName = "seven"; break;
+        case RANK_EIGHT: rankName = "eight"; break;
+        case RANK_NINE:  rankName = "nine"; break;
+        case RANK_TEN:   rankName = "ten"; break;
+        case RANK_JACK:  rankName = "jack"; break;
+        case RANK_QUEEN: rankName = "queen"; break;
+        case RANK_KING:  rankName = "king"; break;
+        default:         rankName = "unknown"; break;
+    }
+    
+    // Format: "card_suit_rank"
+    snprintf(typeBuffer, sizeof(typeBuffer), "card_%s_%s", suitName, rankName);
+    return typeBuffer;
 }

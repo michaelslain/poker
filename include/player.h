@@ -24,4 +24,6 @@ Vector3 Player_GetPosition(Player* player);
 Camera3D* Player_GetCamera(Player* player);
 Inventory* Player_GetInventory(Player* player);
 
+const char* Player_GetType(Object* obj);
+
 #endif

@@ -1,31 +1,8 @@
 #include "inventory.h"
-#include "item.h"
 #include "card.h"
 #include "chip.h"
 #include <stdlib.h>
 #include <string.h>
-
-ItemType Inventory_GetItemType(struct Item* item) {
-    // Try to cast to Chip and check if it has a valid color
-    // Chips will have a color field that matches their value
-    Chip* chip = (Chip*)item;
-    
-    // Check if this looks like a chip by checking if color matches expected values
-    // and value is one of the valid chip values
-    if (chip->value == 1 || chip->value == 5 || chip->value == 10 || 
-        chip->value == 25 || chip->value == 100) {
-        // Additional validation: check if color makes sense
-        Color expectedColor = Chip_GetColorFromValue(chip->value);
-        if (chip->color.r == expectedColor.r && 
-            chip->color.g == expectedColor.g && 
-            chip->color.b == expectedColor.b) {
-            return ITEM_TYPE_CHIP;
-        }
-    }
-    
-    // Otherwise it's a card
-    return ITEM_TYPE_CARD;
-}
 
 void Inventory_Init(Inventory* inventory, int initialCapacity) {
     inventory->stacks = (ItemStack*)malloc(sizeof(ItemStack) * initialCapacity);
@@ -34,20 +11,15 @@ void Inventory_Init(Inventory* inventory, int initialCapacity) {
 }
 
 bool Inventory_AddItem(Inventory* inventory, struct Item* item) {
-    ItemType type = Inventory_GetItemType(item);
+    // Get the type string for this item (e.g., "card_spades_ace" or "chip_5")
+    const char* itemType = item->base.base.getType((Object*)item);
     
-    // For chips, try to find existing stack with same value
-    if (type == ITEM_TYPE_CHIP) {
-        Chip* chip = (Chip*)item;
-        
-        // Look for existing stack with same value
-        for (int i = 0; i < inventory->stackCount; i++) {
-            if (inventory->stacks[i].type == ITEM_TYPE_CHIP &&
-                inventory->stacks[i].chipValue == chip->value) {
-                // Found matching stack, increment count
-                inventory->stacks[i].count++;
-                return true;
-            }
+    // Try to find existing stack with matching type
+    for (int i = 0; i < inventory->stackCount; i++) {
+        if (strcmp(itemType, inventory->stacks[i].typeString) == 0) {
+            // Found matching stack, increment count
+            inventory->stacks[i].count++;
+            return true;
         }
     }
     
@@ -57,7 +29,6 @@ bool Inventory_AddItem(Inventory* inventory, struct Item* item) {
         int newCapacity = inventory->capacity * 2;
         ItemStack* newStacks = (ItemStack*)realloc(inventory->stacks, sizeof(ItemStack) * newCapacity);
         if (!newStacks) return false;
-        
         inventory->stacks = newStacks;
         inventory->capacity = newCapacity;
     }
@@ -65,14 +36,10 @@ bool Inventory_AddItem(Inventory* inventory, struct Item* item) {
     // Add new stack
     inventory->stacks[inventory->stackCount].item = item;
     inventory->stacks[inventory->stackCount].count = 1;
-    inventory->stacks[inventory->stackCount].type = type;
     
-    if (type == ITEM_TYPE_CHIP) {
-        Chip* chip = (Chip*)item;
-        inventory->stacks[inventory->stackCount].chipValue = chip->value;
-    } else {
-        inventory->stacks[inventory->stackCount].chipValue = 0;
-    }
+    // Copy the type string (not just the pointer!)
+    strncpy(inventory->stacks[inventory->stackCount].typeString, itemType, 63);
+    inventory->stacks[inventory->stackCount].typeString[63] = '\0';
     
     inventory->stackCount++;
     return true;
