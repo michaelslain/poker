@@ -10,6 +10,9 @@ void Player_Init(Player* player, Vector3 pos) {
     eyePos.y += 1.7f;
     GameCamera_Init(&player->camera, eyePos);
     
+    // Initialize inventory with capacity of 20
+    Inventory_Init(&player->inventory, 20);
+    
     player->speed = 5.0f;
     player->lookYaw = 0.0f;
     player->lookPitch = 0.0f;
@@ -78,10 +81,22 @@ void Player_Update(Player* player, float deltaTime) {
     GameCamera_Update(&player->camera, (Vector2){0, 0}); // Already handled mouse delta above
 }
 
+void Player_Cleanup(Player* player) {
+    Inventory_Cleanup(&player->inventory);
+}
+
+void Player_DrawInventoryUI(Player* player) {
+    InventoryUI_Draw(&player->inventory);
+}
+
 Vector3 Player_GetPosition(Player* player) {
     return player->base.position;
 }
 
 Camera3D* Player_GetCamera(Player* player) {
     return &player->camera.camera;
+}
+
+Inventory* Player_GetInventory(Player* player) {
+    return &player->inventory;
 }

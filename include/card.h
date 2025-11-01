@@ -1,7 +1,7 @@
 #ifndef CARD_H
 #define CARD_H
 
-#include "interactable.h"
+#include "item.h"
 
 typedef enum {
     SUIT_HEARTS,
@@ -27,7 +27,7 @@ typedef enum {
 } Rank;
 
 typedef struct {
-    Interactable base;
+    Item base;
     Suit suit;
     Rank rank;
     RenderTexture2D texture;
@@ -36,6 +36,7 @@ typedef struct {
 
 void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback callback);
 void Card_Draw(Card* card, bool isClosest, Camera3D camera);
+void Card_DrawIcon(Card* card, Rectangle destRect);
 void Card_Cleanup(Card* card);
 const char* Card_GetSuitSymbol(Suit suit);
 const char* Card_GetRankString(Rank rank);

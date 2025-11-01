@@ -4,8 +4,13 @@
 #include <stdio.h>
 
 void Card_Init(Card* card, Suit suit, Rank rank, Vector3 pos, InteractCallback callback) {
-    // Initialize the base interactable
-    Interactable_Init(&card->base, pos, callback);
+    // Initialize the base item
+    Item_Init(&card->base, pos);
+    
+    // Override callback if provided
+    if (callback) {
+        card->base.base.onInteract = callback;
+    }
     
     // Set card-specific properties
     card->suit = suit;
@@ -71,9 +76,9 @@ Color Card_GetSuitColor(Suit suit) {
 
 void Card_Draw(Card* card, bool isClosest, Camera3D camera) {
     (void)camera; // We're not using billboard anymore
-    if (!card->base.isActive) return;
+    if (!card->base.base.isActive) return;
     
-    Vector3 pos = card->base.base.position;
+    Vector3 pos = card->base.base.base.position;
     
     // Card dimensions
     float cardWidth = 0.5f;
@@ -102,6 +107,14 @@ void Card_Draw(Card* card, bool isClosest, Camera3D camera) {
         rlEnd();
         rlSetTexture(0);
     rlPopMatrix();
+}
+
+void Card_DrawIcon(Card* card, Rectangle destRect) {
+    if (!card->textureLoaded) return;
+    
+    // Draw the card's texture as a flat 2D icon (flip vertically with negative height)
+    Rectangle sourceRec = { 0, 0, (float)card->texture.texture.width, -(float)card->texture.texture.height };
+    DrawTexturePro(card->texture.texture, sourceRec, destRect, (Vector2){0, 0}, 0.0f, WHITE);
 }
 
 void Card_Cleanup(Card* card) {
