@@ -202,15 +202,70 @@ void Player_Update(Player* player, float deltaTime) {
     Player_HandleInteraction(player);
 }
 
+// OLD DISTANCE-BASED SYSTEM (COMMENTED OUT)
+// Interactable* Player_GetClosestInteractable(Player* player) {
+//     // Get global DOM instance
+//     DOM* dom = DOM_GetGlobal();
+//     if (!dom) return NULL;
+//     
+//     // Find closest interactable in DOM
+//     Interactable* closestInteractable = NULL;
+//     float closestDistance = 999999.0f;
+//     Vector3 playerPos = player->base.position;
+//     
+//     for (int i = 0; i < dom->count; i++) {
+//         Object* obj = dom->objects[i];
+//         
+//         // Skip if no type function
+//         if (obj->getType == NULL) continue;
+//         const char* typeStr = obj->getType(obj);
+//         
+//         // Check for items (cards, chips) or poker table
+//         bool isItem = (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0);
+//         bool isPokerTable = (strcmp(typeStr, "poker_table") == 0);
+//         
+//         if (!isItem && !isPokerTable) continue;
+//         
+//         // Cast to Interactable based on type
+//         Interactable* interactable = NULL;
+//         if (isItem) {
+//             interactable = &((Item*)obj)->base;
+//         } else if (isPokerTable) {
+//             interactable = &((PokerTable*)obj)->base;
+//         }
+//         
+//         if (!interactable->isActive) continue;
+//         float dist = Vector3Distance(playerPos, interactable->base.position);
+//         if (dist <= interactable->interactRange && dist < closestDistance) {
+//             closestDistance = dist;
+//             closestInteractable = interactable;
+//         }
+//     }
+//     
+//     return closestInteractable;
+// }
+
+// NEW CROSSHAIR-BASED SYSTEM
 Interactable* Player_GetClosestInteractable(Player* player) {
     // Get global DOM instance
     DOM* dom = DOM_GetGlobal();
     if (!dom) return NULL;
     
-    // Find closest interactable in DOM
+    // Get camera for raycasting
+    Camera3D* camera = Player_GetCamera(player);
+    
+    // Create a ray from the camera center (screen center)
+    Vector3 rayOrigin = camera->position;
+    Vector3 rayDirection = Vector3Normalize((Vector3){
+        camera->target.x - camera->position.x,
+        camera->target.y - camera->position.y,
+        camera->target.z - camera->position.z
+    });
+    
+    // Find the interactable closest to the center of the camera view
     Interactable* closestInteractable = NULL;
     float closestDistance = 999999.0f;
-    Vector3 playerPos = player->base.position;
+    float maxInteractDistance = 5.0f;  // Max interaction range
     
     for (int i = 0; i < dom->count; i++) {
         Object* obj = dom->objects[i];
@@ -234,9 +289,28 @@ Interactable* Player_GetClosestInteractable(Player* player) {
         }
         
         if (!interactable->isActive) continue;
-        float dist = Vector3Distance(playerPos, interactable->base.position);
-        if (dist <= interactable->interactRange && dist < closestDistance) {
-            closestDistance = dist;
+        
+        // Calculate distance from ray to object center
+        Vector3 objPos = interactable->base.position;
+        Vector3 toObj = Vector3Subtract(objPos, rayOrigin);
+        
+        // Project point onto ray
+        float projection = Vector3DotProduct(toObj, rayDirection);
+        
+        // Object must be in front of camera and within range
+        if (projection < 0.1f || projection > maxInteractDistance) continue;
+        
+        // Find closest point on ray to object
+        Vector3 closestPointOnRay = Vector3Add(rayOrigin, Vector3Scale(rayDirection, projection));
+        
+        // Calculate distance from object to ray (how close to crosshair center)
+        float distanceToRay = Vector3Distance(objPos, closestPointOnRay);
+        
+        // Use a threshold for "close enough to crosshair"
+        float crosshairThreshold = 1.0f;  // Objects within 1 unit of ray center
+        
+        if (distanceToRay < crosshairThreshold && projection < closestDistance) {
+            closestDistance = projection;
             closestInteractable = interactable;
         }
     }
