@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "interactable.h"
 #include "card.h"
+#include "chip.h"
 #include "plane.h"
 #include "physics.h"
 #include <stdlib.h>
@@ -95,6 +96,21 @@ int main(void)
     for (int i = 0; i < cardCount; i++) {
         DOM_AddObject(&dom, (Object*)&cards[i]);
     }
+    
+    // Create some chips
+    int chipCount = 5;
+    Chip* chips = (Chip*)malloc(sizeof(Chip) * chipCount);
+    
+    Chip_Init(&chips[0], 1, (Vector3){-5.0f, 5.0f, -5.0f}, NULL, &physics);
+    Chip_Init(&chips[1], 5, (Vector3){-4.0f, 6.0f, -5.0f}, NULL, &physics);
+    Chip_Init(&chips[2], 10, (Vector3){-6.0f, 7.0f, -5.0f}, NULL, &physics);
+    Chip_Init(&chips[3], 25, (Vector3){-5.5f, 8.0f, -4.0f}, NULL, &physics);
+    Chip_Init(&chips[4], 100, (Vector3){-4.5f, 9.0f, -6.0f}, NULL, &physics);
+    
+    // Add chips to DOM
+    for (int i = 0; i < chipCount; i++) {
+        DOM_AddObject(&dom, (Object*)&chips[i]);
+    }
 
     SetTargetFPS(60);
 
@@ -123,11 +139,18 @@ int main(void)
             Card_Update(&cards[i]);
         }
         
-        // Find closest card
-        int closestIndex = -1;
+        // Update all chips
+        for (int i = 0; i < chipCount; i++) {
+            Chip_Update(&chips[i]);
+        }
+        
+        // Find closest interactable (cards or chips)
+        int closestCardIndex = -1;
+        int closestChipIndex = -1;
         float closestDistance = 999999.0f;
         Vector3 playerPos = Player_GetPosition(&player);
         
+        // Check cards
         for (int i = 0; i < cardCount; i++) {
             if (!cards[i].base.base.isActive) continue;
             
@@ -135,24 +158,44 @@ int main(void)
             
             if (dist <= cards[i].base.base.interactRange && dist < closestDistance) {
                 closestDistance = dist;
-                closestIndex = i;
+                closestCardIndex = i;
+                closestChipIndex = -1;
             }
         }
         
-        // Interact with closest card on E press
-        if (closestIndex != -1 && IsKeyPressed(KEY_E)) {
-            // Add card to player's inventory
+        // Check chips
+        for (int i = 0; i < chipCount; i++) {
+            if (!chips[i].base.base.isActive) continue;
+            
+            float dist = Vector3Distance(playerPos, chips[i].base.base.base.position);
+            
+            if (dist <= chips[i].base.base.interactRange && dist < closestDistance) {
+                closestDistance = dist;
+                closestChipIndex = i;
+                closestCardIndex = -1;
+            }
+        }
+        
+        // Interact on E press
+        if (IsKeyPressed(KEY_E)) {
             Inventory* inventory = Player_GetInventory(&player);
-            Inventory_AddItem(inventory, &cards[closestIndex].base);
             
-            // Remove the card from the DOM
-            DOM_RemoveObject(&dom, (Object*)&cards[closestIndex]);
-            
-            // Deactivate the card from the world
-            cards[closestIndex].base.base.isActive = false;
-            
-            TraceLog(LOG_INFO, "Card picked up! Inventory count: %d, DOM count: %d", 
-                     inventory->count, dom.count);
+            if (closestCardIndex != -1) {
+                // Pick up card
+                Inventory_AddItem(inventory, &cards[closestCardIndex].base);
+                DOM_RemoveObject(&dom, (Object*)&cards[closestCardIndex]);
+                cards[closestCardIndex].base.base.isActive = false;
+                
+                TraceLog(LOG_INFO, "Card picked up! Inventory stacks: %d", inventory->stackCount);
+            } else if (closestChipIndex != -1) {
+                // Pick up chip
+                Inventory_AddItem(inventory, &chips[closestChipIndex].base);
+                DOM_RemoveObject(&dom, (Object*)&chips[closestChipIndex]);
+                chips[closestChipIndex].base.base.isActive = false;
+                
+                TraceLog(LOG_INFO, "Chip picked up! Value: $%d, Inventory stacks: %d", 
+                        chips[closestChipIndex].value, inventory->stackCount);
+            }
         }
         
         // Draw
@@ -171,57 +214,63 @@ int main(void)
                 for (int i = 0; i < cardCount; i++) {
                     Card_Draw(&cards[i], camera);
                 }
+                
+                // Draw all chips
+                for (int i = 0; i < chipCount; i++) {
+                    Chip_Draw(&chips[i], camera);
+                }
             EndMode3D();
             
             // Apply darkening overlay when something is highlighted
-            if (closestIndex != -1) {
+            if (closestCardIndex != -1 || closestChipIndex != -1) {
                 // Draw semi-transparent dark overlay over everything
                 DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 100});
                 
-                // Render highlighted card on top (brightened)
                 BeginMode3D(camera);
-                    // Draw highlighted card slightly brighter
-                    rlPushMatrix();
-                        Vector3 pos = cards[closestIndex].base.base.base.position;
-                        Matrix rotMatrix = RigidBody_GetRotationMatrix(&cards[closestIndex].rigidBody);
-                        Matrix transMatrix = MatrixTranslate(pos.x, pos.y, pos.z);
-                        Matrix transform = MatrixMultiply(rotMatrix, transMatrix);
-                        rlMultMatrixf(MatrixToFloat(transform));
+                    if (closestCardIndex != -1) {
+                        // Render highlighted card
+                        rlPushMatrix();
+                            Vector3 pos = cards[closestCardIndex].base.base.base.position;
+                            Matrix rotMatrix = RigidBody_GetRotationMatrix(&cards[closestCardIndex].rigidBody);
+                            Matrix transMatrix = MatrixTranslate(pos.x, pos.y, pos.z);
+                            Matrix transform = MatrixMultiply(rotMatrix, transMatrix);
+                            rlMultMatrixf(MatrixToFloat(transform));
+                            
+                            float cardWidth = 0.5f;
+                            float cardHeight = 0.7f;
+                            float cardThickness = 0.02f;
+                            
+                            DrawCube((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, WHITE);
+                            DrawCubeWires((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, 
+                                         (Color){100, 100, 100, 255});
+                            
+                            rlTranslatef(0, 0, cardThickness/2 + 0.01f);
+                            rlSetTexture(cards[closestCardIndex].texture.texture.id);
+                            rlBegin(RL_QUADS);
+                                rlColor4ub(255, 255, 255, 255);
+                                rlNormal3f(0.0f, 0.0f, 1.0f);
+                                rlTexCoord2f(0.0f, 0.0f); rlVertex3f(-cardWidth/2, -cardHeight/2, 0.0f);
+                                rlTexCoord2f(1.0f, 0.0f); rlVertex3f(cardWidth/2, -cardHeight/2, 0.0f);
+                                rlTexCoord2f(1.0f, 1.0f); rlVertex3f(cardWidth/2, cardHeight/2, 0.0f);
+                                rlTexCoord2f(0.0f, 1.0f); rlVertex3f(-cardWidth/2, cardHeight/2, 0.0f);
+                            rlEnd();
+                            rlSetTexture(0);
+                        rlPopMatrix();
                         
-                        float cardWidth = 0.5f;
-                        float cardHeight = 0.7f;
-                        float cardThickness = 0.02f;
-                        
-                        // Draw brighter version
-                        DrawCube((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, 
-                                (Color){255, 255, 255, 255});
-                        DrawCubeWires((Vector3){0, 0, 0}, cardWidth, cardHeight, cardThickness, 
-                                     (Color){100, 100, 100, 255});
-                        
-                        // Draw the texture
-                        rlTranslatef(0, 0, cardThickness/2 + 0.01f);
-                        rlSetTexture(cards[closestIndex].texture.texture.id);
-                        rlBegin(RL_QUADS);
-                            rlColor4ub(255, 255, 255, 255);
-                            rlNormal3f(0.0f, 0.0f, 1.0f);
-                            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(-cardWidth/2, -cardHeight/2, 0.0f);
-                            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(cardWidth/2, -cardHeight/2, 0.0f);
-                            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(cardWidth/2, cardHeight/2, 0.0f);
-                            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(-cardWidth/2, cardHeight/2, 0.0f);
-                        rlEnd();
-                        rlSetTexture(0);
-                    rlPopMatrix();
+                        Interactable_DrawPrompt(&cards[closestCardIndex].base.base, camera);
+                    } else if (closestChipIndex != -1) {
+                        // Render highlighted chip
+                        Chip_Draw(&chips[closestChipIndex], camera);
+                        Interactable_DrawPrompt(&chips[closestChipIndex].base.base, camera);
+                    }
                 EndMode3D();
-                
-                // Draw the E prompt
-                Interactable_DrawPrompt(&cards[closestIndex].base.base, camera);
             }
             
             // Draw inventory UI
             Player_DrawInventoryUI(&player);
             
             // Draw UI
-            if (closestIndex != -1) {
+            if (closestCardIndex != -1 || closestChipIndex != -1) {
                 DrawText("Press E to interact", screenWidth / 2 - 80, screenHeight - 40, 20, GREEN);
             }
             
@@ -235,6 +284,12 @@ int main(void)
         Card_Cleanup(&cards[i]);
     }
     free(cards);
+    
+    for (int i = 0; i < chipCount; i++) {
+        Chip_Cleanup(&chips[i]);
+    }
+    free(chips);
+    
     Player_Cleanup(&player);
     Plane_Cleanup(&groundPlane);
     DOM_Cleanup(&dom);

@@ -13,7 +13,7 @@ typedef struct Item {
 void Item_DefaultInteract(Interactable* self);
 
 void Item_Init(Item* item, Vector3 pos);
-void Item_Draw(Item* item, bool isClosest);
+void Item_Draw(Item* item, bool isClosest, Camera3D camera);
 void Item_DrawIcon(Item* item, Rectangle destRect);
 
 #endif

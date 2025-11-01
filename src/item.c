@@ -11,9 +11,9 @@ void Item_DefaultInteract(Interactable* self) {
     self->isActive = false;
 }
 
-void Item_Draw(Item* item, bool isClosest) {
+void Item_Draw(Item* item, bool isClosest, Camera3D camera) {
     // Default drawing - just use base interactable draw
-    Interactable_Draw(&item->base, isClosest);
+    Interactable_Draw(&item->base, isClosest, camera);
 }
 
 void Item_DrawIcon(Item* item, Rectangle destRect) {
