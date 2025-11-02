@@ -35,6 +35,8 @@ public:
     RenderTexture2D texture;
     bool textureLoaded;
     RigidBody* rigidBody;
+    Model model;
+    bool isClosestInteractable;
 
     Card(Suit s, Rank r, Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
     virtual ~Card();

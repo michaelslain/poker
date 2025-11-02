@@ -153,18 +153,43 @@ int main(void)
 
             // === 3D RENDERING PASS ===
             BeginMode3D(*camera);
-                // Draw all objects (models have lighting shader already applied)
+                // Apply lighting shader to all 3D objects automatically (except light sources)
+                BeginShaderMode(LightSource::GetLightingShader());
+                    // Draw all objects except light sources
+                    for (int i = 0; i < dom.GetCount(); i++) {
+                        Object* obj = dom.GetObject(i);
+                        if (obj != nullptr) {
+                            const char* type = obj->GetType();
+                            // Skip light sources - they should not receive lighting
+                            if (strcmp(type, "light_bulb") != 0) {
+                                obj->Draw(*camera);
+                            }
+                        }
+                    }
+                EndShaderMode();
+                
+                // Draw light sources without shader (they emit light, don't receive it)
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
                     if (obj != nullptr) {
-                        obj->Draw(*camera);
+                        const char* type = obj->GetType();
+                        if (strcmp(type, "light_bulb") == 0) {
+                            obj->Draw(*camera);
+                        }
                     }
                 }
             EndMode3D();
 
-            // Draw E prompt above closest interactable
+            // Draw E prompt and glow for closest interactable
             if (closestInteractable != nullptr) {
                 BeginMode3D(*camera);
+                    // Draw glow effect (subtle pulsing halo)
+                    float glowPulse = 1.0f + 0.2f * sinf(GetTime() * 3.0f);
+                    Vector3 glowPos = closestInteractable->position;
+                    glowPos.y += 0.3f;
+                    DrawSphere(glowPos, 0.4f * glowPulse, Fade(YELLOW, 0.3f));
+                    DrawSphere(glowPos, 0.5f * glowPulse, Fade(YELLOW, 0.15f));
+                    
                     closestInteractable->DrawPrompt(*camera);
                 EndMode3D();
             }

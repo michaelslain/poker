@@ -59,10 +59,10 @@ void main()
                 float distance = length(lightDir);
                 light = normalize(lightDir);
 
-                // Inverse square falloff with adjustable constants
+                // Moderate falloff for point light
                 float constant = 1.0;
-                float linear = 0.09;
-                float quadratic = 0.032;
+                float linear = 0.18;
+                float quadratic = 0.12;
                 attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
             }
 
