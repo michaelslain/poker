@@ -39,7 +39,7 @@ int main(void)
     DOM::SetGlobal(&dom);
 
     // Initialize player (using C++ new and constructor)
-    Player* player = new Player({0.0f, 0.0f, 0.0f}, &physics);
+    Player* player = new Player({0.0f, 0.0f, 0.0f}, &physics, "Player");
     dom.AddObject(player);
 
     // Initialize ground floor with physics

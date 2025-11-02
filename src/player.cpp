@@ -12,8 +12,8 @@
 #include <cstring>
 #include <ode/ode.h>
 
-Player::Player(Vector3 pos, PhysicsWorld* physicsWorld)
-    : Object(pos), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
+Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName)
+    : Person(pos, playerName), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
       lookYaw(0.0f), lookPitch(0.0f), body(nullptr), geom(nullptr), physics(physicsWorld),
       selectedItemIndex(-1), lastHeldItemIndex(-1)
 {

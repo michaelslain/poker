@@ -2,9 +2,8 @@
 #define PLAYER_HPP
 
 #include "raylib.h"
-#include "object.hpp"
+#include "person.hpp"
 #include "camera.hpp"
-#include "inventory.hpp"
 #include "physics.hpp"
 #include <ode/ode.h>
 
@@ -16,10 +15,9 @@ class Interactable;
 #define COLLISION_CATEGORY_ITEM     (1 << 1)  // 0010
 #define COLLISION_CATEGORY_TABLE    (1 << 2)  // 0100
 
-class Player : public Object {
+class Player : public Person {
 private:
     GameCamera camera;
-    Inventory inventory;
     float speed;
     float lookYaw;
     float lookPitch;
@@ -34,7 +32,7 @@ private:
     int lastHeldItemIndex;  // Remembers the last item that was held
 
 public:
-    Player(Vector3 pos, PhysicsWorld* physicsWorld);
+    Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName = "Player");
     virtual ~Player();
 
     // Override virtual functions
