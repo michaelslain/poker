@@ -71,15 +71,15 @@ int main(void)
     dom.AddObject(pokerTable);
 
     // Create 3 enemies at different positions in the room
-    Enemy* enemy1 = new Enemy({-5.0f, 0.0f, 5.0f}, "Shadow");
+    Enemy* enemy1 = new Enemy({-5.0f, 0.0f, 5.0f}, "Person 1");
     enemy1->isDynamicallyAllocated = true;
     dom.AddObject(enemy1);
 
-    Enemy* enemy2 = new Enemy({5.0f, 0.0f, -5.0f}, "Phantom");
+    Enemy* enemy2 = new Enemy({5.0f, 0.0f, -5.0f}, "Person 2");
     enemy2->isDynamicallyAllocated = true;
     dom.AddObject(enemy2);
 
-    Enemy* enemy3 = new Enemy({-3.0f, 0.0f, -7.0f}, "Wraith");
+    Enemy* enemy3 = new Enemy({-3.0f, 0.0f, -7.0f}, "Person 3");
     enemy3->isDynamicallyAllocated = true;
     dom.AddObject(enemy3);
 
@@ -167,9 +167,9 @@ int main(void)
 
             // === 3D RENDERING PASS ===
             BeginMode3D(*camera);
-                // Apply lighting shader to all 3D objects automatically (except light sources, chips, and closest interactable)
+                // Apply lighting shader to all 3D objects automatically (except light sources, chips, enemies, persons, players, and closest interactable)
                 BeginShaderMode(LightSource::GetLightingShader());
-                    // Draw all objects except light sources, chips, and closest interactable
+                    // Draw all objects except light sources, chips, enemies, persons, players, and closest interactable
                     for (int i = 0; i < dom.GetCount(); i++) {
                         Object* obj = dom.GetObject(i);
                         if (obj != nullptr) {
@@ -177,6 +177,10 @@ int main(void)
                             // Skip light sources and chips - they don't have proper normals for lighting
                             if (strcmp(type, "light_bulb") == 0) continue;
                             if (strncmp(type, "chip_", 5) == 0) continue;
+                            // Skip enemies, persons, and players - they should be pitch black (unaffected by lighting)
+                            if (strcmp(type, "enemy") == 0) continue;
+                            if (strcmp(type, "person") == 0) continue;
+                            if (strcmp(type, "player") == 0) continue;
                             // Skip closest interactable only if it exists and matches
                             if (closestInteractable != nullptr && obj == closestInteractable) continue;
                             
@@ -185,12 +189,13 @@ int main(void)
                     }
                 EndShaderMode();
                 
-                // Draw objects without shader (light sources and chips)
+                // Draw objects without shader (light sources, chips, enemies, persons, and players)
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
                     if (obj != nullptr && obj != closestInteractable) {
                         const char* type = obj->GetType();
-                        if (strcmp(type, "light_bulb") == 0 || strncmp(type, "chip_", 5) == 0) {
+                        if (strcmp(type, "light_bulb") == 0 || strncmp(type, "chip_", 5) == 0 || 
+                            strcmp(type, "enemy") == 0 || strcmp(type, "person") == 0 || strcmp(type, "player") == 0) {
                             obj->Draw(*camera);
                         }
                     }

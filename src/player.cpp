@@ -190,8 +190,19 @@ void Player::Update(float deltaTime) {
     camera.angle.x = lookPitch;
     camera.angle.y = lookYaw;
 
+    // Position camera slightly in front of the player's face (like eyes)
+    // This prevents the camera from being inside the pitch-black head
+    Vector3 forwardDir = {
+        sinf(lookYaw),
+        0.0f,
+        cosf(lookYaw)
+    };
+    
     Vector3 eyePos = position;
-    eyePos.y += 1.7f;
+    eyePos.y += 1.7f;  // Eye level height
+    eyePos.x += forwardDir.x * 0.3f;  // Offset forward slightly
+    eyePos.z += forwardDir.z * 0.3f;
+    
     camera.SetTarget(eyePos);
     camera.Update({0, 0});
 
