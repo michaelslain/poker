@@ -30,6 +30,10 @@ void Player_Init(Player* player, Vector3 pos, PhysicsWorld* physics) {
     player->lookYaw = 0.0f;
     player->lookPitch = 0.0f;
     
+    // Initialize inventory selection
+    player->selectedItemIndex = -1;  // No item selected initially
+    player->lastHeldItemIndex = -1;  // No last held item
+    
     // Initialize physics
     player->physics = physics;
     
@@ -198,6 +202,69 @@ void Player_Update(Player* player, float deltaTime) {
     GameCamera_SetTarget(&player->camera, eyePos);
     GameCamera_Update(&player->camera, (Vector2){0, 0}); // Already handled mouse delta above
     
+    // Handle inventory selection with X key
+    if (IsKeyPressed(KEY_X)) {
+        if (player->selectedItemIndex == -1) {
+            // Nothing selected - select first item or last held item
+            if (player->inventory.stackCount > 0) {
+                if (player->lastHeldItemIndex >= 0 && player->lastHeldItemIndex < player->inventory.stackCount) {
+                    // Go back to last held item
+                    player->selectedItemIndex = player->lastHeldItemIndex;
+                } else {
+                    // Select first item
+                    player->selectedItemIndex = 0;
+                }
+            }
+        } else {
+            // Something is selected - deselect it and remember it
+            player->lastHeldItemIndex = player->selectedItemIndex;
+            player->selectedItemIndex = -1;
+        }
+    }
+    
+    // Handle left/right arrow keys for inventory navigation
+    if (IsKeyPressed(KEY_RIGHT)) {
+        if (player->inventory.stackCount > 0) {
+            if (player->selectedItemIndex == -1) {
+                // Nothing selected, select first item
+                player->selectedItemIndex = 0;
+            } else {
+                // Move to next item (wrap around)
+                player->selectedItemIndex = (player->selectedItemIndex + 1) % player->inventory.stackCount;
+            }
+            player->lastHeldItemIndex = player->selectedItemIndex;
+        }
+    }
+    
+    if (IsKeyPressed(KEY_LEFT)) {
+        if (player->inventory.stackCount > 0) {
+            if (player->selectedItemIndex == -1) {
+                // Nothing selected, select last item
+                player->selectedItemIndex = player->inventory.stackCount - 1;
+            } else {
+                // Move to previous item (wrap around)
+                player->selectedItemIndex--;
+                if (player->selectedItemIndex < 0) {
+                    player->selectedItemIndex = player->inventory.stackCount - 1;
+                }
+            }
+            player->lastHeldItemIndex = player->selectedItemIndex;
+        }
+    }
+    
+    // Clamp selected index if inventory changed (items removed)
+    if (player->inventory.stackCount == 0) {
+        player->selectedItemIndex = -1;
+        player->lastHeldItemIndex = -1;
+    } else if (player->selectedItemIndex >= player->inventory.stackCount) {
+        player->selectedItemIndex = player->inventory.stackCount - 1;
+    }
+    
+    // Also clamp lastHeldItemIndex
+    if (player->lastHeldItemIndex >= player->inventory.stackCount) {
+        player->lastHeldItemIndex = -1;
+    }
+    
     // Handle interaction (E key)
     Player_HandleInteraction(player);
 }
@@ -333,7 +400,7 @@ void Player_Cleanup(Player* player) {
 }
 
 void Player_DrawInventoryUI(Player* player) {
-    InventoryUI_Draw(&player->inventory);
+    InventoryUI_Draw(&player->inventory, player->selectedItemIndex);
 }
 
 Vector3 Player_GetPosition(Player* player) {

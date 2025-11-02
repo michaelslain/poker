@@ -5,7 +5,7 @@
 #include "raylib.h"
 #include <string.h>
 
-void InventoryUI_Draw(Inventory* inventory) {
+void InventoryUI_Draw(Inventory* inventory, int selectedIndex) {
     // Draw inventory as a horizontal row in the top-left corner
     float iconSize = 60.0f;
     float spacing = 10.0f;
@@ -33,8 +33,12 @@ void InventoryUI_Draw(Inventory* inventory) {
             Card_DrawIcon((Card*)item, destRect);
         }
         
-        // Draw border
-        DrawRectangleLinesEx(destRect, 2, LIGHTGRAY);
+        // Draw border - white if selected, light gray otherwise
+        if (i == selectedIndex) {
+            DrawRectangleLinesEx(destRect, 3, WHITE);  // Thicker white outline for selected
+        } else {
+            DrawRectangleLinesEx(destRect, 2, LIGHTGRAY);
+        }
         
         // Draw stack count in bottom-right corner if > 1
         if (stack->count > 1) {

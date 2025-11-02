@@ -29,6 +29,10 @@ typedef struct {
     dBodyID body;
     dGeomID geom;
     PhysicsWorld* physics;
+    
+    // Inventory selection
+    int selectedItemIndex;  // -1 = no item selected, 0+ = selected item index
+    int lastHeldItemIndex;  // Remembers the last item that was held
 } Player;
 
 void Player_Init(Player* player, Vector3 pos, PhysicsWorld* physics);

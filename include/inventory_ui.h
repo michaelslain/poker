@@ -3,6 +3,6 @@
 
 #include "inventory.h"
 
-void InventoryUI_Draw(Inventory* inventory);
+void InventoryUI_Draw(Inventory* inventory, int selectedIndex);
 
 #endif

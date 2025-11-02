@@ -1,19 +1,45 @@
 #include "dom.h"
 #include <stdlib.h>
 
+#include "dom.h"
+#include "raylib.h"
+#include <stdlib.h>
+
 // Global DOM instance
 static DOM* g_dom = NULL;
 
 void DOM_Init(DOM* dom, int initialCapacity) {
     dom->objects = (Object**)malloc(sizeof(Object*) * initialCapacity);
+    if (dom->objects == NULL) {
+        TraceLog(LOG_ERROR, "DOM_Init: malloc failed!");
+        return;
+    }
     dom->count = 0;
     dom->capacity = initialCapacity;
+    TraceLog(LOG_INFO, "DOM_Init: Initialized with capacity %d", initialCapacity);
 }
 
 void DOM_AddObject(DOM* dom, Object* obj) {
+    if (dom == NULL) {
+        TraceLog(LOG_ERROR, "DOM_AddObject: dom is NULL!");
+        return;
+    }
+    if (obj == NULL) {
+        TraceLog(LOG_ERROR, "DOM_AddObject: obj is NULL!");
+        return;
+    }
+    if (dom->objects == NULL) {
+        TraceLog(LOG_ERROR, "DOM_AddObject: dom->objects is NULL!");
+        return;
+    }
+    
     if (dom->count >= dom->capacity) {
         dom->capacity *= 2;
         dom->objects = (Object**)realloc(dom->objects, sizeof(Object*) * dom->capacity);
+        if (dom->objects == NULL) {
+            TraceLog(LOG_ERROR, "DOM_AddObject: realloc failed!");
+            return;
+        }
     }
     dom->objects[dom->count++] = obj;
 }

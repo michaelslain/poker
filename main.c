@@ -70,26 +70,6 @@ int main(void)
     Spawner_SpawnChips(&chipSpawner, 25, 5, &physics, &dom);
     Spawner_SpawnChips(&chipSpawner, 100, 5, &physics, &dom);
 
-    // Load post-processing shader
-    Shader highlightShader = LoadShader(0, "shaders/highlight.fs");
-    
-    // Get shader uniform locations
-    int resolutionLoc = GetShaderLocation(highlightShader, "resolution");
-    int brightnessBoostLoc = GetShaderLocation(highlightShader, "brightnessBoost");
-    int vignetteStrengthLoc = GetShaderLocation(highlightShader, "vignetteStrength");
-    int vignetteRadiusLoc = GetShaderLocation(highlightShader, "vignetteRadius");
-    
-    // Set constant vignette values
-    float resolution[2] = { (float)screenWidth, (float)screenHeight };
-    SetShaderValue(highlightShader, resolutionLoc, resolution, SHADER_UNIFORM_VEC2);
-    float vignetteStrength = 0.5f;
-    SetShaderValue(highlightShader, vignetteStrengthLoc, &vignetteStrength, SHADER_UNIFORM_FLOAT);
-    float vignetteRadius = 0.7f;
-    SetShaderValue(highlightShader, vignetteRadiusLoc, &vignetteRadius, SHADER_UNIFORM_FLOAT);
-    
-    // Create render texture for post-processing
-    RenderTexture2D target = LoadRenderTexture(screenWidth, screenHeight);
-
     SetTargetFPS(60);
 
     // Main game loop
@@ -120,53 +100,38 @@ int main(void)
             }
         }
 
-        // Get closest interactable for highlighting
+        // Get closest interactable for E prompt
         Interactable* closestInteractable = Player_GetClosestInteractable(&player);
-        
-        // Set brightness boost based on whether something is highlighted
-        float brightnessBoost = (closestInteractable != NULL) ? 0.3f : 0.0f;
-        SetShaderValue(highlightShader, brightnessBoostLoc, &brightnessBoost, SHADER_UNIFORM_FLOAT);
 
         // Draw
         BeginDrawing();
             ClearBackground(RAYWHITE);
             
-            // Render scene to texture
-            BeginTextureMode(target);
-                ClearBackground(RAYWHITE);
-                Camera3D camera = *Player_GetCamera(&player);
+            Camera3D camera = *Player_GetCamera(&player);
+            
+            // Render main scene
+            BeginMode3D(camera);
+                // Draw ground plane
+                Plane_Draw(&groundPlane);
+                DrawGrid(50, 1.0f);
                 
-                // Render main scene
-                BeginMode3D(camera);
-                    // Draw ground plane
-                    Plane_Draw(&groundPlane);
-                    DrawGrid(50, 1.0f);
-                    
-                    // Draw all objects in DOM
-                    for (int i = 0; i < dom.count; i++) {
-                        Object* obj = dom.objects[i];
-                        if (obj != NULL && obj->draw != NULL) {
-                            obj->draw(obj, camera);
-                        }
+                // Draw all objects in DOM
+                for (int i = 0; i < dom.count; i++) {
+                    Object* obj = dom.objects[i];
+                    if (obj != NULL && obj->draw != NULL) {
+                        obj->draw(obj, camera);
                     }
-                EndMode3D();
-                
-                // Draw E prompt above closest interactable
-                if (closestInteractable != NULL) {
-                    BeginMode3D(camera);
-                        Interactable_DrawPrompt(closestInteractable, camera);
-                    EndMode3D();
                 }
-            EndTextureMode();
+            EndMode3D();
             
-            // Draw render texture with shader
-            BeginShaderMode(highlightShader);
-                DrawTextureRec(target.texture, 
-                    (Rectangle){ 0, 0, (float)target.texture.width, -(float)target.texture.height },
-                    (Vector2){ 0, 0 }, WHITE);
-            EndShaderMode();
+            // Draw E prompt above closest interactable
+            if (closestInteractable != NULL) {
+                BeginMode3D(camera);
+                    Interactable_DrawPrompt(closestInteractable, camera);
+                EndMode3D();
+            }
             
-            // Draw UI on top (no shader)
+            // Draw UI on top
             Player_DrawInventoryUI(&player);
             DrawFPS(10, screenHeight - 30);
         EndDrawing();
@@ -192,10 +157,6 @@ int main(void)
             free(obj);
         }
     }
-    
-    // Cleanup shader and render texture
-    UnloadRenderTexture(target);
-    UnloadShader(highlightShader);
     
     Player_Cleanup(&player);
     Plane_Cleanup(&groundPlane);
