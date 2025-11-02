@@ -25,6 +25,12 @@ int main(void)
     const int screenWidth = 800;
     const int screenHeight = 450;
     InitWindow(screenWidth, screenHeight, "Poker - First Person");
+    
+    // Disable raylib's verbose logging (textures, FBOs, etc.)
+    SetTraceLogLevel(LOG_WARNING);  // Only show warnings and errors from raylib
+    
+    // Poker logs will still show because POKER_LOG uses TraceLog directly
+    POKER_LOG(LOG_INFO, "=== GAME STARTING ===");
 
     // Disable cursor for FPS controls
     DisableCursor();
@@ -42,6 +48,16 @@ int main(void)
     // Initialize player (using C++ new and constructor)
     Player* player = new Player({0.0f, 0.0f, 0.0f}, &physics, "Player");
     dom.AddObject(player);
+    
+    // Give player starting chips (500 chips total)
+    // Add chips directly to player's inventory
+    Inventory* playerInv = player->GetInventory();
+    for (int i = 0; i < 5; i++) {  // 5x 100 chips
+        Chip* chip = new Chip(100, {0, 0, 0}, nullptr);  // No physics, just in inventory
+        chip->isDynamicallyAllocated = true;
+        playerInv->AddItem(chip);
+    }
+    TraceLog(LOG_INFO, "Player initialized with 500 chips in inventory");
 
     // Initialize ground floor with physics
     Floor* groundFloor = new Floor({0.0f, 0.0f, 0.0f}, {50.0f, 50.0f}, {50, 0, 12, 255}, &physics);
@@ -74,14 +90,35 @@ int main(void)
     Enemy* enemy1 = new Enemy({-5.0f, 0.0f, 5.0f}, "Person 1");
     enemy1->isDynamicallyAllocated = true;
     dom.AddObject(enemy1);
+    // Give enemy1 starting chips (500 chips)
+    Inventory* enemy1Inv = enemy1->GetInventory();
+    for (int i = 0; i < 5; i++) {
+        Chip* chip = new Chip(100, {0, 0, 0}, nullptr);
+        chip->isDynamicallyAllocated = true;
+        enemy1Inv->AddItem(chip);
+    }
 
     Enemy* enemy2 = new Enemy({5.0f, 0.0f, -5.0f}, "Person 2");
     enemy2->isDynamicallyAllocated = true;
     dom.AddObject(enemy2);
+    // Give enemy2 starting chips (500 chips)
+    Inventory* enemy2Inv = enemy2->GetInventory();
+    for (int i = 0; i < 5; i++) {
+        Chip* chip = new Chip(100, {0, 0, 0}, nullptr);
+        chip->isDynamicallyAllocated = true;
+        enemy2Inv->AddItem(chip);
+    }
 
     Enemy* enemy3 = new Enemy({-3.0f, 0.0f, -7.0f}, "Person 3");
     enemy3->isDynamicallyAllocated = true;
     dom.AddObject(enemy3);
+    // Give enemy3 starting chips (500 chips)
+    Inventory* enemy3Inv = enemy3->GetInventory();
+    for (int i = 0; i < 5; i++) {
+        Chip* chip = new Chip(100, {0, 0, 0}, nullptr);
+        chip->isDynamicallyAllocated = true;
+        enemy3Inv->AddItem(chip);
+    }
     
     // Seat enemies at the poker table
     int seat1 = pokerTable->FindClosestOpenSeat(enemy1->position);
@@ -250,6 +287,10 @@ int main(void)
             // Set 2D mode explicitly
             BeginMode2D({{0, 0}, {0, 0}, 0, 1.0f});
                 player->DrawInventoryUI();
+                
+                // Draw betting UI (will only show if bettingUIActive is true)
+                // DrawBettingUI handles whether to show or not internally
+                player->DrawBettingUI();
             EndMode2D();
 
             // Draw FPS counter

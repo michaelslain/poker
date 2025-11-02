@@ -43,15 +43,18 @@ The game uses C++ inheritance with virtual functions for polymorphism:
 ```
 Object (base class with virtual functions)
 ├── Interactable
-│   └── Item
-│       ├── Card (with RigidBody*)
-│       └── Chip (with RigidBody*)
-├── Player (contains GameCamera and Inventory)
+│   ├── Item
+│   │   ├── Card (with RigidBody*)
+│   │   └── Chip (with RigidBody*)
+│   └── PokerTable (poker game manager)
+├── Person (abstract base with Inventory)
+│   ├── Player (human player with GameCamera)
+│   ├── Enemy (AI player)
+│   └── Dealer (NPC)
 ├── Plane (ground plane with physics collision)
 ├── RigidBody (physics-enabled objects)
 └── Spawner (creates and manages spawned objects)
 
-PokerTable (inherits from Interactable)
 GameCamera (standalone class)
 PhysicsWorld (standalone class)
 DOM (Document Object Model - manages all objects)
@@ -119,18 +122,50 @@ poker/
 - All other components inherit from this
 - Uses RAII pattern
 
+**Person** (`person.hpp/cpp`):
+- Inherits from Object
+- Abstract base class for Player, Enemy, and Dealer
+- Contains `Inventory` instance for chip and card management
+- `name` field for identification
+- `isSitting` flag for seated state
+- `height` field (customizable, e.g., enemies are 1.5x taller)
+- Virtual `PromptBet()` for betting decisions (returns -1 for thinking, 0=fold, 1=call, 2=raise)
+- `SitDown()` and `StandUp()` for seating management
+- Provides common interface for poker table interaction
+- Returns type string in format: "player", "enemy", "dealer"
+
 **Player** (`player.hpp/cpp`):
+- Inherits from Person
 - First-person controller with WASD movement
 - Mouse look with reduced sensitivity (0.001f)
 - Contains `GameCamera` instance
-- Contains `Inventory` instance
 - FOV control with `[` and `]` keys
 - Crosshair-based interaction system (raycasting)
 - Pickup behavior: adds items to inventory, removes from DOM
 - Inventory selection: X key to select/deselect, arrow keys to navigate
 - ODE physics capsule geometry for collision
 - Proper collision detection with poker table using `dCollide()`
-- No jumping implemented yet
+- Betting UI: Shows fold/call/raise options with slider for raise amount
+- Overrides `PromptBet()` to use UI-based betting decisions
+- Returns type: "player"
+
+**Enemy** (`enemy.hpp/cpp`):
+- Inherits from Person
+- AI-controlled poker player
+- Thinking timer system: 2-4 second random delay before betting decisions
+- Simple AI logic: Random choice between fold/call/raise
+- Checks total chip value (not stack count) for affordability
+- Taller than player (1.5x normal height) for visual distinction
+- Overrides `PromptBet()` with state machine (thinking → decision)
+- Returns type: "enemy"
+
+**Dealer** (`dealer.hpp/cpp`):
+- Inherits from Person
+- Non-player character positioned at poker table
+- Does not participate in poker hands
+- Visual presence only (no AI or betting logic)
+- Owned as child object by PokerTable
+- Returns type: "dealer"
 
 **GameCamera** (`camera.hpp/cpp`):
 - Wraps raylib's Camera3D
@@ -208,18 +243,40 @@ poker/
 - `Reset()` resets count to 52
 - Destructor cleans up all cards
 
-**PokerTable** (`poker_table.hpp/cpp`):
+**PokerTable** (`poker_table.hpp/cpp`) - **SIMPLIFIED DESIGN (398 lines)**:
 - Inherits from Interactable
-- Manages up to 8 players: `std::array<Player*, MAX_PLAYERS>`
-- Contains `Deck` instance
+- Manages 8 seats with Person* occupants (Player or Enemy)
+- **Dual-reference pattern**: Deck and community cards are both attributes (for game logic) AND children (for DOM rendering)
+- Deck* and Dealer* owned as child objects
 - ODE box geometry (`dGeomID`) for collision
+- Simple state: `handActive`, `pot`, `currentBet`, `currentSeat`, `bettingActive`
 - Constructor: `PokerTable(Vector3 pos, Vector3 size, Color color, PhysicsWorld*)`
 - Virtual functions: `Update()`, `Draw()`, `Interact()`, `GetType()`
-- `AddPlayer()`, `RemovePlayer()`, `HasPlayer()` for player management
-- `InteractWithPlayer(Player*)` for custom interaction
-- `GetGeom()` accessor for collision detection
+- Seating: `SeatPerson()`, `UnseatPerson()`, `FindSeatIndex()`, `FindClosestOpenSeat()`
 - Renders as brown box with green felt top
-- Destructor cleans up geometry
+
+**Simplified Poker Game Logic**:
+- **Seat management**: Simple `Seat` struct with `Person* occupant`, `currentBet`, `hasFolded`
+- **Dealer button**: Rotates with `NextOccupiedSeat()` helper
+- **Blinds**: Posted in `StartHand()` via `TakeChips()` helper (SB=5, BB=10)
+- **Hole cards**: Deal 2 cards per player directly into inventories (NOT stored in separate array)
+- **Community cards**: Stored in `std::vector<Card*>` AND added as children via `AddChild()` for rendering. Positioned in a line (0.6 spacing) offset to the side of the table (left side, -0.3z offset) and raised 0.15 above table surface for visibility
+- **Betting**: Single `ProcessBetting(dt)` called each frame handles all betting logic
+- **Value-based chips**: `CountChips()`, `TakeChips()`, `GiveChips()` helpers use inventory system
+- **Hand flow**: `StartHand()` → betting → `DealFlop()` → betting → `DealTurn()` → betting → `DealRiver()` → betting → `EndHand()`
+- **Winner**: First non-folded player found (simplified, no hand evaluation yet)
+- **Cleanup**: `EndHand()` removes hole cards from inventories, deletes them, starts next hand
+
+**Key Implementation Details**:
+- **No separate hole cards tracking**: Cards only exist in player inventories
+- **Dual-reference for rendering**: `deck` pointer + `AddChild(deck)` so DOM renders it
+- **Community cards**: `communityCards.push_back(card)` + `AddChild(card)` for dual-reference. Cards positioned at `{startX + (i * 0.6f), tableY + 0.15f, tableZ - 0.3f}` for flop (i=0-2), turn (i=3), river (i=4), starting from `position.x - 1.0f`
+- **Mid-hand joining**: Players marked as `hasFolded = true` if joining during active hand
+- **Person::PromptBet()**: Returns -1 (thinking), 0 (fold), 1 (call), or 2 (raise)
+- **Enemy thinking**: 2-4 second timer before returning action
+- **Player betting UI**: Displays fold/call/raise buttons with values
+- **Chip affordability**: Checks `CountChips(person)` total value, not stack count
+- **Automatic progression**: Hands start automatically when 2+ players seated
 
 ### Physics System
 

@@ -17,7 +17,7 @@ public:
     bool isDynamicallyAllocated;
 
     Object(Vector3 pos = {0.0f, 0.0f, 0.0f});
-    virtual ~Object() = default;
+    virtual ~Object();
 
     virtual void Update(float deltaTime);
     virtual void Draw(Camera3D camera);

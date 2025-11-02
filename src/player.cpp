@@ -15,7 +15,9 @@
 Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName)
     : Person(pos, playerName, 1.0f), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
       lookYaw(0.0f), lookPitch(0.0f), body(nullptr), geom(nullptr), physics(physicsWorld),
-      selectedItemIndex(-1), lastHeldItemIndex(-1)
+      selectedItemIndex(-1), lastHeldItemIndex(-1),
+      bettingUIActive(false), bettingChoice(-1), raiseSliderValue(0), raiseMin(0), raiseMax(0),
+      storedCurrentBet(0), storedCallAmount(0)
 {
     if (physics != nullptr) {
         // Create kinematic body (controlled by code, not physics forces)
@@ -62,10 +64,24 @@ void Player::HandleInteraction() {
 
     const char* typeStr = closestInteractable->GetType();
 
-    // Handle poker table interaction
+    // Handle poker table interaction (sit down or stand up)
     if (strcmp(typeStr, "poker_table") == 0) {
         PokerTable* table = static_cast<PokerTable*>(closestInteractable);
-        table->InteractWithPlayer(this);
+        
+        // Check if we're already seated at this table
+        int seatIndex = table->FindSeatIndex(this);
+        if (seatIndex != -1) {
+            // Already seated, stand up
+            table->UnseatPerson(this);
+        } else {
+            // Not seated, find closest seat and sit down
+            int closestSeat = table->FindClosestOpenSeat(position);
+            if (closestSeat != -1) {
+                table->SeatPerson(this, closestSeat);
+            } else {
+                printf("Table is full!\n");
+            }
+        }
     }
     // Handle item pickup
     else if (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0 || strcmp(typeStr, "pistol") == 0) {
@@ -464,4 +480,125 @@ void Player::SitDown(Vector3 seatPos) {
 void Player::StandUp() {
     // Call base class to clear seating state
     Person::StandUp();
+}
+
+int Player::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) {
+    // First call: Initialize UI
+    if (!bettingUIActive) {
+        bettingUIActive = true;
+        bettingChoice = -1;  // Reset choice
+        raiseMin = minRaise;
+        raiseMax = maxRaise;
+        raiseSliderValue = minRaise;  // Default to minimum raise
+        storedCurrentBet = currentBet;
+        storedCallAmount = callAmount;
+    }
+    
+    // Wait for player to make a choice (poker table will call this repeatedly each frame)
+    // Returns -1 while waiting, returns choice when made
+    if (bettingChoice == -1) {
+        return -1;  // Still waiting for input
+    }
+    
+    // Choice was made
+    bettingUIActive = false;
+    
+    if (bettingChoice == 2) {  // Raise
+        raiseAmount = raiseSliderValue;
+    }
+    
+    int choice = bettingChoice;
+    bettingChoice = -1;  // Reset for next time
+    return choice;
+}
+
+void Player::DrawBettingUI() {
+    if (!bettingUIActive) return;
+    
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    // Draw semi-transparent background
+    DrawRectangle(0, screenHeight - 200, screenWidth, 200, (Color){0, 0, 0, 200});
+    
+    // Draw title
+    DrawText("YOUR TURN TO BET", screenWidth / 2 - 100, screenHeight - 190, 20, WHITE);
+    DrawText(TextFormat("Current Bet: %d | To Call: %d", storedCurrentBet, storedCallAmount), screenWidth / 2 - 120, screenHeight - 160, 16, YELLOW);
+    
+    // Draw options
+    int buttonY = screenHeight - 120;
+    int buttonWidth = 150;
+    int buttonHeight = 40;
+    int spacing = 20;
+    
+    // Fold button (1)
+    Rectangle foldButton = {(float)(screenWidth / 2 - buttonWidth - spacing - buttonWidth / 2), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
+    Color foldColor = DARKGRAY;
+    if (IsKeyPressed(KEY_ONE)) {
+        bettingChoice = 0;
+    }
+    DrawRectangleRec(foldButton, foldColor);
+    DrawText("FOLD", (int)foldButton.x + 45, (int)foldButton.y + 10, 20, WHITE);
+    DrawText("1", (int)foldButton.x + 65, (int)foldButton.y + 32, 10, LIGHTGRAY);
+    
+    // Call/Check button (2)
+    Rectangle callButton = {(float)(screenWidth / 2 - buttonWidth / 2), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
+    Color callColor = GREEN;
+    if (IsKeyPressed(KEY_TWO)) {
+        bettingChoice = 1;
+    }
+    DrawRectangleRec(callButton, callColor);
+    
+    // Show "CHECK" if call amount is 0, otherwise show "CALL X"
+    if (storedCallAmount == 0) {
+        DrawText("CHECK", (int)callButton.x + 40, (int)callButton.y + 10, 20, WHITE);
+    } else {
+        DrawText(TextFormat("CALL %d", storedCallAmount), (int)callButton.x + 30, (int)callButton.y + 10, 20, WHITE);
+    }
+    DrawText("2", (int)callButton.x + 65, (int)callButton.y + 32, 10, LIGHTGRAY);
+    
+    // Raise button (3)
+    Rectangle raiseButton = {(float)(screenWidth / 2 + spacing + buttonWidth / 2), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
+    Color raiseColor = RED;
+    DrawRectangleRec(raiseButton, raiseColor);
+    DrawText("RAISE", (int)raiseButton.x + 40, (int)raiseButton.y + 10, 20, WHITE);
+    DrawText("3", (int)raiseButton.x + 65, (int)raiseButton.y + 32, 10, LIGHTGRAY);
+    
+    // Always show slider for raise option
+    {
+        int sliderY = screenHeight - 60;
+        int sliderX = screenWidth / 2 - 200;
+        int sliderWidth = 400;
+        
+        // Draw slider background
+        DrawRectangle(sliderX, sliderY, sliderWidth, 20, DARKGRAY);
+        
+        // Handle left/right arrow keys to adjust raise amount
+        if (IsKeyPressed(KEY_LEFT) || IsKeyDown(KEY_LEFT)) {
+            raiseSliderValue -= 5;
+            if (raiseSliderValue < raiseMin) raiseSliderValue = raiseMin;
+        }
+        if (IsKeyPressed(KEY_RIGHT) || IsKeyDown(KEY_RIGHT)) {
+            raiseSliderValue += 5;
+            if (raiseSliderValue > raiseMax) raiseSliderValue = raiseMax;
+        }
+        
+        // Calculate slider position
+        float sliderPercent = (float)(raiseSliderValue - raiseMin) / (float)(raiseMax - raiseMin);
+        int sliderPos = sliderX + (int)(sliderPercent * sliderWidth);
+        
+        // Draw slider
+        DrawRectangle(sliderX, sliderY, (int)(sliderPercent * sliderWidth), 20, RED);
+        DrawCircle(sliderPos, sliderY + 10, 12, ORANGE);
+        
+        // Draw raise amount
+        DrawText(TextFormat("Raise to: %d (Min: %d, Max: %d)", raiseSliderValue, raiseMin, raiseMax),
+                 sliderX, sliderY - 25, 16, WHITE);
+        DrawText("Use LEFT/RIGHT arrows to adjust, press 3 to confirm", sliderX + 40, sliderY + 25, 12, LIGHTGRAY);
+    }
+    
+    // Confirm raise with KEY_THREE
+    if (IsKeyPressed(KEY_THREE)) {
+        bettingChoice = 2;
+    }
 }

@@ -30,6 +30,14 @@ public:
     virtual void StandUp();
     bool IsSeated() const { return isSeated; }
     
+    // Betting (to be overridden by Player and Enemy)
+    // Returns: 0=fold, 1=call, 2=raise
+    // raiseAmount is set if action is raise
+    virtual int PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) {
+        (void)currentBet; (void)callAmount; (void)minRaise; (void)maxRaise; (void)raiseAmount;
+        return 0; // Default: fold
+    }
+    
     // Body rotation
     void SetBodyYaw(float yaw) { bodyYaw = yaw; }
     float GetBodyYaw() const { return bodyYaw; }

@@ -105,9 +105,9 @@ const char* Chip::GetType() const {
 }
 
 Color Chip::GetColorFromValue(int value) {
-    if (value >= 100) return BLACK;
-    if (value >= 25) return GREEN;
-    if (value >= 10) return BLUE;
-    if (value >= 5) return RED;
-    return WHITE;
+    if (value >= 100) return BLACK;   // $100 chips
+    if (value >= 25) return GREEN;    // $25 chips
+    if (value >= 10) return BLUE;     // $10 chips
+    if (value >= 5) return RED;       // $5 chips
+    return WHITE;                      // $1 chips (anything < 5, typically 1)
 }

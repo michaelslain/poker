@@ -10,6 +10,21 @@ Object::Object(Vector3 pos)
 {
 }
 
+Object::~Object() {
+    // Remove self from parent's children vector
+    if (parent != nullptr) {
+        parent->RemoveChild(this);
+    }
+    
+    // Note: We don't delete children here because they may be managed elsewhere
+    // (e.g., in the DOM). Just clear the parent pointer.
+    for (Object* child : children) {
+        if (child != nullptr) {
+            child->parent = nullptr;
+        }
+    }
+}
+
 void Object::Update(float deltaTime) {
     (void)deltaTime;
     // Default: do nothing

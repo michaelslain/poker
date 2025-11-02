@@ -3,14 +3,14 @@
 
 #include "object.hpp"
 #include "card.hpp"
-#include <array>
+#include <vector>
 
 #define DECK_SIZE 52
 
 class Deck : public Object {
 private:
-    std::array<Card*, DECK_SIZE> cards;
-    int count;
+    std::vector<Card*> cards;  // Stack of cards (back = top of deck)
+    std::vector<Card*> allCards;  // All 52 cards for cleanup
 
 public:
     Deck(Vector3 pos = {0, 0, 0});
@@ -21,13 +21,14 @@ public:
     const char* GetType() const override;
     
     void Shuffle();
-    Card* DrawCard();  // Renamed from Draw to avoid conflict with Object::Draw
-    Card* Peek();
-    void Reset();
+    Card* DrawCard();  // Pop from top of stack
+    Card* Peek();      // Look at top without removing
+    void Reset();      // Push all cards back onto stack
     void Cleanup();
     
     // Accessors
-    int GetCount() const { return count; }
+    int GetCount() const { return cards.size(); }
+    bool IsEmpty() const { return cards.empty(); }
 };
 
 #endif

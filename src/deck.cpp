@@ -1,31 +1,31 @@
 #include "deck.hpp"
 #include <cstdlib>
 #include <ctime>
+#include <algorithm>
+#include <random>
 
-Deck::Deck(Vector3 pos) : Object(pos), count(0) {
+Deck::Deck(Vector3 pos) : Object(pos) {
     TraceLog(LOG_INFO, "Deck: Creating deck at position (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
     
     // Generate all 52 cards
-    // Cards are stored in the cards[] array for game logic
-    // AND added as children for automatic recursive rendering
-    int index = 0;
     for (int suit = SUIT_HEARTS; suit <= SUIT_SPADES; suit++) {
         for (int rank = RANK_ACE; rank <= RANK_KING; rank++) {
             // Create card at origin with no physics (cards are part of the deck, not individual objects)
             Card* card = new Card(static_cast<Suit>(suit), static_cast<Rank>(rank), {0, 0, 0}, nullptr);
             card->isDynamicallyAllocated = true;
-            cards[index] = card;
             
-            // Add card as child for rendering
-            // Both cards[] and children vector point to the same Card instances
+            // Add to allCards for cleanup tracking
+            allCards.push_back(card);
+            
+            // Push onto stack
+            cards.push_back(card);
+            
+            // Add as child of deck for rendering
             AddChild(card);
-            
-            index++;
         }
     }
     
-    count = DECK_SIZE;
-    TraceLog(LOG_INFO, "Deck: Created %d cards and added as children", count);
+    TraceLog(LOG_INFO, "Deck: Created %d cards and added to stack", (int)cards.size());
 }
 
 Deck::~Deck() {
@@ -36,29 +36,22 @@ void Deck::Update(float deltaTime) {
     (void)deltaTime;
     
     // Update card positions to stack them properly
-    // Only the first 'count' cards in the array are active (still in deck)
-    // The rest have been drawn and should be inactive
+    // Only cards in the stack are active and rendered
     float cardThickness = 0.02f;
     
-    // First, make all cards inactive
-    for (int i = 0; i < DECK_SIZE; i++) {
-        if (cards[i] != nullptr) {
-            cards[i]->isActive = false;
-        }
-    }
-    
-    // Then activate and position only the cards still in the deck
-    for (int i = 0; i < count; i++) {
-        if (cards[i] != nullptr) {
-            cards[i]->isActive = true;
-            cards[i]->position = {
+    // Position and activate only the cards still in the stack
+    for (size_t i = 0; i < cards.size(); i++) {
+        Card* card = cards[i];
+        if (card != nullptr) {
+            card->isActive = true;
+            card->position = {
                 position.x,
                 position.y + i * cardThickness,
                 position.z
             };
             // Cards should lay flat face-down on the table
             // Rotate 90 degrees on X to lay flat, then 180 on Z to flip face-down
-            cards[i]->rotation = {90.0f, 0.0f, 180.0f};
+            card->rotation = {90.0f, 0.0f, 180.0f};
         }
     }
 }
@@ -74,49 +67,64 @@ const char* Deck::GetType() const {
 }
 
 void Deck::Shuffle() {
-    if (count <= 1) return;
+    if (cards.size() <= 1) return;
     
-    // Fisher-Yates shuffle algorithm
-    for (int i = count - 1; i > 0; i--) {
-        int j = rand() % (i + 1);
-        
-        // Swap cards[i] and cards[j]
-        Card* temp = cards[i];
-        cards[i] = cards[j];
-        cards[j] = temp;
-    }
+    // Use std::shuffle with random device for proper random shuffling
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::shuffle(cards.begin(), cards.end(), gen);
 }
 
 Card* Deck::DrawCard() {
-    if (count <= 0) {
+    if (cards.empty()) {
         return nullptr;
     }
     
-    // Draw from the "top" (end of array)
-    count--;
-    return cards[count];
+    // Pop from the top of the stack (back of vector)
+    Card* drawnCard = cards.back();
+    cards.pop_back();
+    
+    // Remove the card from this deck's children since it's being dealt elsewhere
+    if (drawnCard) {
+        RemoveChild(drawnCard);
+    }
+    
+    return drawnCard;
 }
 
 Card* Deck::Peek() {
-    if (count <= 0) {
+    if (cards.empty()) {
         return nullptr;
     }
     
-    return cards[count - 1];
+    return cards.back();
 }
 
 void Deck::Reset() {
-    // Reset count to full deck (doesn't recreate cards)
-    count = DECK_SIZE;
+    // Clear the stack
+    cards.clear();
+    
+    // Push all cards back onto the stack
+    for (Card* card : allCards) {
+        if (card != nullptr) {
+            cards.push_back(card);
+            // Re-add as child for rendering
+            AddChild(card);
+        }
+    }
+    
+    TraceLog(LOG_INFO, "Deck: Reset to %d cards, re-added to stack", (int)cards.size());
 }
 
 void Deck::Cleanup() {
-    // Cleanup and free all cards
-    for (int i = 0; i < DECK_SIZE; i++) {
-        if (cards[i]) {
-            delete cards[i];
-            cards[i] = nullptr;
+    // Clear the stack
+    cards.clear();
+    
+    // Delete all cards
+    for (Card* card : allCards) {
+        if (card) {
+            delete card;
         }
     }
-    count = 0;
+    allCards.clear();
 }

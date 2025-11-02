@@ -36,35 +36,36 @@ INFO: RLGL: Default OpenGL state initialized successfully
 INFO: TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
 INFO: FONT: Default font loaded successfully (224 glyphs)
 INFO: SYSTEM: Working Directory: /Users/michaelslain/Documents/dev/poker
+INFO: === GAME STARTING ===
 INFO: FILEIO: [shaders/lighting.vs] Text file loaded successfully
 INFO: FILEIO: [shaders/lighting.fs] Text file loaded successfully
 INFO: SHADER: [ID 4] Vertex shader compiled successfully
 INFO: SHADER: [ID 5] Fragment shader compiled successfully
 INFO: SHADER: [ID 6] Program shader loaded successfully
 INFO: DOM: Initialized
+INFO: TEXTURE: [ID 3] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 1] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 1] Framebuffer object created successfully
+INFO: TEXTURE: [ID 4] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 2] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 2] Framebuffer object created successfully
+INFO: TEXTURE: [ID 5] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 3] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 3] Framebuffer object created successfully
+INFO: TEXTURE: [ID 6] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 4] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 4] Framebuffer object created successfully
+INFO: TEXTURE: [ID 7] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 5] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 5] Framebuffer object created successfully
+INFO: Player initialized with 500 chips in inventory
 INFO: VAO: [ID 2] Mesh uploaded successfully to VRAM (GPU)
 INFO: VAO: [ID 3] Mesh uploaded successfully to VRAM (GPU)
 INFO: VAO: [ID 4] Mesh uploaded successfully to VRAM (GPU)
 INFO: VAO: [ID 5] Mesh uploaded successfully to VRAM (GPU)
 INFO: VAO: [ID 6] Mesh uploaded successfully to VRAM (GPU)
 INFO: VAO: [ID 7] Mesh uploaded successfully to VRAM (GPU)
-INFO: PokerTable: Creating deck...
 INFO: Deck: Creating deck at position (4.00, 1.15, 0.00)
-INFO: TEXTURE: [ID 3] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
-INFO: TEXTURE: [ID 1] Depth renderbuffer loaded successfully (32 bits)
-INFO: FBO: [ID 1] Framebuffer object created successfully
-INFO: TEXTURE: [ID 4] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
-INFO: TEXTURE: [ID 2] Depth renderbuffer loaded successfully (32 bits)
-INFO: FBO: [ID 2] Framebuffer object created successfully
-INFO: TEXTURE: [ID 5] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
-INFO: TEXTURE: [ID 3] Depth renderbuffer loaded successfully (32 bits)
-INFO: FBO: [ID 3] Framebuffer object created successfully
-INFO: TEXTURE: [ID 6] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
-INFO: TEXTURE: [ID 4] Depth renderbuffer loaded successfully (32 bits)
-INFO: FBO: [ID 4] Framebuffer object created successfully
-INFO: TEXTURE: [ID 7] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
-INFO: TEXTURE: [ID 5] Depth renderbuffer loaded successfully (32 bits)
-INFO: FBO: [ID 5] Framebuffer object created successfully
 INFO: TEXTURE: [ID 8] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 6] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 6] Framebuffer object created successfully
@@ -206,12 +207,6 @@ INFO: FBO: [ID 51] Framebuffer object created successfully
 INFO: TEXTURE: [ID 54] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 52] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 52] Framebuffer object created successfully
-INFO: Deck: Created 52 cards and added as children
-INFO: PokerTable: Deck created, shuffling...
-INFO: PokerTable: Deck initialized
-INFO: PokerTable: Adding dealer as child...
-INFO: PokerTable: Adding deck as child...
-INFO: PokerTable: Children added successfully
 INFO: TEXTURE: [ID 55] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 53] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 53] Framebuffer object created successfully
@@ -227,6 +222,7 @@ INFO: FBO: [ID 56] Framebuffer object created successfully
 INFO: TEXTURE: [ID 59] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 57] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 57] Framebuffer object created successfully
+INFO: Deck: Created 52 cards and added as children
 INFO: TEXTURE: [ID 60] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 58] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 58] Framebuffer object created successfully
@@ -272,19 +268,22 @@ INFO: FBO: [ID 71] Framebuffer object created successfully
 INFO: TEXTURE: [ID 74] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 72] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 72] Framebuffer object created successfully
-INFO: TEXTURE: [ID 75] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: Seated Person 1 at seat 2
+INFO: Seated Person 2 at seat 7
+INFO: Seated Person 3 at seat 3
+INFO: TEXTURE: [ID 75] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 73] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 73] Framebuffer object created successfully
-INFO: TEXTURE: [ID 76] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 76] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 74] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 74] Framebuffer object created successfully
-INFO: TEXTURE: [ID 77] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 77] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 75] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 75] Framebuffer object created successfully
-INFO: TEXTURE: [ID 78] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 78] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 76] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 76] Framebuffer object created successfully
-INFO: TEXTURE: [ID 79] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 79] Texture loaded successfully (256x356 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 77] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 77] Framebuffer object created successfully
 INFO: TEXTURE: [ID 80] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
@@ -302,8 +301,135 @@ INFO: FBO: [ID 81] Framebuffer object created successfully
 INFO: TEXTURE: [ID 84] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
 INFO: TEXTURE: [ID 82] Depth renderbuffer loaded successfully (32 bits)
 INFO: FBO: [ID 82] Framebuffer object created successfully
+INFO: TEXTURE: [ID 85] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 83] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 83] Framebuffer object created successfully
+INFO: TEXTURE: [ID 86] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 84] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 84] Framebuffer object created successfully
+INFO: TEXTURE: [ID 87] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 85] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 85] Framebuffer object created successfully
+INFO: TEXTURE: [ID 88] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 86] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 86] Framebuffer object created successfully
+INFO: TEXTURE: [ID 89] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 87] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 87] Framebuffer object created successfully
+INFO: TEXTURE: [ID 90] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 88] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 88] Framebuffer object created successfully
+INFO: TEXTURE: [ID 91] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 89] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 89] Framebuffer object created successfully
+INFO: TEXTURE: [ID 92] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 90] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 90] Framebuffer object created successfully
+INFO: TEXTURE: [ID 93] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 91] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 91] Framebuffer object created successfully
+INFO: TEXTURE: [ID 94] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 92] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 92] Framebuffer object created successfully
+INFO: TEXTURE: [ID 95] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 93] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 93] Framebuffer object created successfully
+INFO: TEXTURE: [ID 96] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 94] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 94] Framebuffer object created successfully
+INFO: TEXTURE: [ID 97] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 95] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 95] Framebuffer object created successfully
+INFO: TEXTURE: [ID 98] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 96] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 96] Framebuffer object created successfully
+INFO: TEXTURE: [ID 99] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 97] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 97] Framebuffer object created successfully
+INFO: TEXTURE: [ID 100] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 98] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 98] Framebuffer object created successfully
+INFO: TEXTURE: [ID 101] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 99] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 99] Framebuffer object created successfully
+INFO: TEXTURE: [ID 102] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 100] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 100] Framebuffer object created successfully
+INFO: TEXTURE: [ID 103] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 101] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 101] Framebuffer object created successfully
+INFO: TEXTURE: [ID 104] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 102] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 102] Framebuffer object created successfully
 INFO: TIMER: Target time per frame: 16.667 milliseconds
-INFO: Item picked up: card_spades_ace, Inventory stacks: 1
-INFO: Item picked up: card_spades_ace, Inventory stacks: 1
-INFO: Item picked up: card_hearts_king, Inventory stacks: 2
-INFO: Item picked up: card_spades_ace, Inventory stacks: 2
+INFO: Deck: Reset to 52 cards, re-added as children
+INFO: Dealt hole cards to 3 players
+INFO: TEXTURE: [ID 105] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 103] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 103] Framebuffer object created successfully
+INFO: TEXTURE: [ID 106] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 104] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 104] Framebuffer object created successfully
+INFO: TEXTURE: [ID 107] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 105] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 105] Framebuffer object created successfully
+INFO: TEXTURE: [ID 108] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 106] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 106] Framebuffer object created successfully
+INFO: TEXTURE: [ID 109] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 107] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 107] Framebuffer object created successfully
+INFO: Person 1 bets 500 chips (pot now: 501)
+INFO: TEXTURE: [ID 110] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 108] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 108] Framebuffer object created successfully
+INFO: TEXTURE: [ID 111] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 109] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 109] Framebuffer object created successfully
+INFO: TEXTURE: [ID 112] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 110] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 110] Framebuffer object created successfully
+INFO: TEXTURE: [ID 113] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 111] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 111] Framebuffer object created successfully
+INFO: TEXTURE: [ID 114] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 112] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 112] Framebuffer object created successfully
+INFO: TEXTURE: [ID 115] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 113] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 113] Framebuffer object created successfully
+INFO: TEXTURE: [ID 116] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 114] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 114] Framebuffer object created successfully
+INFO: TEXTURE: [ID 117] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 115] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 115] Framebuffer object created successfully
+INFO: TEXTURE: [ID 118] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 116] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 116] Framebuffer object created successfully
+INFO: TEXTURE: [ID 119] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 117] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 117] Framebuffer object created successfully
+INFO: TEXTURE: [ID 120] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 118] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 118] Framebuffer object created successfully
+INFO: TEXTURE: [ID 121] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 119] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 119] Framebuffer object created successfully
+INFO: TEXTURE: [ID 122] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 120] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 120] Framebuffer object created successfully
+INFO: Gave 499 chips to Person 3
+INFO: TEXTURE: [ID 123] Texture loaded successfully (60x60 | R8G8B8A8 | 1 mipmaps)
+INFO: TEXTURE: [ID 121] Depth renderbuffer loaded successfully (32 bits)
+INFO: FBO: [ID 121] Framebuffer object created successfully
+INFO: Person 3 bets 1 chips (pot now: 502)
+INFO: Blinds posted: seat 2 (SB=1336041136), seat 3 (BB=1)
+INFO: === Hand started, dealer button at seat 1 ===
+INFO: Enemy Person 2: Started thinking (2.4 seconds)...
+INFO: FBO: [ID 103] Unloaded framebuffer from VRAM (GPU)
+INFO: FBO: [ID 104] Unloaded framebuffer from VRAM (GPU)
+INFO: FBO: [ID 105] Unloaded framebuffer from VRAM (GPU)
+INFO: FBO: [ID 106] Unloaded framebuffer from VRAM (GPU)
+INFO: FBO: [ID 107] Unloaded framebuffer from VRAM (GPU)
+INFO: FBO: [ID 121] Unloaded framebuffer from VRAM (GPU)

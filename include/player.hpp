@@ -30,6 +30,15 @@ private:
     // Inventory selection
     int selectedItemIndex;  // -1 = no item selected, 0+ = selected item index
     int lastHeldItemIndex;  // Remembers the last item that was held
+    
+    // Betting UI state
+    bool bettingUIActive;   // Is betting UI currently shown
+    int bettingChoice;      // -1=waiting, 0=fold, 1=call, 2=raise
+    int raiseSliderValue;   // Current raise amount from slider
+    int raiseMin;           // Minimum raise
+    int raiseMax;           // Maximum raise
+    int storedCurrentBet;   // Stored for UI display
+    int storedCallAmount;   // Stored for UI display
 
 public:
     Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName = "Player");
@@ -49,6 +58,12 @@ public:
     // Seating methods (override to handle physics)
     void SitDown(Vector3 seatPos) override;
     void StandUp() override;
+    
+    // Override PromptBet for UI-based betting
+    int PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) override;
+    
+    // Betting UI
+    void DrawBettingUI();
     
     // Accessors
     Camera3D* GetCamera() { return camera.GetCamera(); }
