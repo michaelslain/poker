@@ -30,6 +30,10 @@ private:
     // Inventory selection
     int selectedItemIndex;  // -1 = no item selected, 0+ = selected item index
     int lastHeldItemIndex;  // Remembers the last item that was held
+    
+    // Seating
+    bool isSeated;          // Whether player is seated at a table
+    Vector3 seatPosition;   // Position where player is seated
 
 public:
     Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName = "Player");
@@ -46,6 +50,11 @@ public:
     void DrawInventoryUI();
     void DrawHeldItem();
 
+    // Seating methods
+    void SitDown(Vector3 seatPos);
+    void StandUp();
+    bool IsSeated() const { return isSeated; }
+    
     // Accessors
     Camera3D* GetCamera() { return camera.GetCamera(); }
     Inventory* GetInventory() { return &inventory; }

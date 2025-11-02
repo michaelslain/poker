@@ -15,7 +15,7 @@
 Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName)
     : Person(pos, playerName, 1.0f), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
       lookYaw(0.0f), lookPitch(0.0f), body(nullptr), geom(nullptr), physics(physicsWorld),
-      selectedItemIndex(-1), lastHeldItemIndex(-1)
+      selectedItemIndex(-1), lastHeldItemIndex(-1), isSeated(false), seatPosition({0, 0, 0})
 {
     if (physics != nullptr) {
         // Create kinematic body (controlled by code, not physics forces)
@@ -109,24 +109,40 @@ void Player::Update(float deltaTime) {
         cosf(lookYaw + PI/2)
     };
 
-    // WASD movement
+    // WASD movement (disabled when seated)
     Vector3 moveDir = {0.0f, 0.0f, 0.0f};
 
-    if (IsKeyDown(KEY_W)) {
-        moveDir = Vector3Add(moveDir, forward);
-    }
-    if (IsKeyDown(KEY_S)) {
-        moveDir = Vector3Subtract(moveDir, forward);
-    }
-    if (IsKeyDown(KEY_D)) {
-        moveDir = Vector3Subtract(moveDir, right);
-    }
-    if (IsKeyDown(KEY_A)) {
-        moveDir = Vector3Add(moveDir, right);
+    if (isSeated) {
+        // When seated, lock position to seat
+        position = seatPosition;
+        
+        // Also lock physics body to seat position
+        if (body != nullptr) {
+            dBodySetPosition(body, seatPosition.x, seatPosition.y + 0.85f, seatPosition.z);
+        }
+        if (geom != nullptr) {
+            dGeomSetPosition(geom, seatPosition.x, seatPosition.y + 0.85f, seatPosition.z);
+        }
+        
+        // Skip movement processing when seated
+    } else {
+        // Only process movement when not seated
+        if (IsKeyDown(KEY_W)) {
+            moveDir = Vector3Add(moveDir, forward);
+        }
+        if (IsKeyDown(KEY_S)) {
+            moveDir = Vector3Subtract(moveDir, forward);
+        }
+        if (IsKeyDown(KEY_D)) {
+            moveDir = Vector3Subtract(moveDir, right);
+        }
+        if (IsKeyDown(KEY_A)) {
+            moveDir = Vector3Add(moveDir, right);
+        }
     }
 
-    // Normalize and apply speed
-    if (Vector3Length(moveDir) > 0) {
+    // Normalize and apply speed (only when not seated)
+    if (!isSeated && Vector3Length(moveDir) > 0) {
         moveDir = Vector3Normalize(moveDir);
         moveDir = Vector3Scale(moveDir, speed * deltaTime);
 
@@ -415,4 +431,28 @@ void Player::DrawHeldItem() {
         TraceLog(LOG_INFO, "Drawing held pistol at selected index %d", selectedItemIndex);
         pistol->DrawHeld(*cam);
     }
+}
+
+void Player::SitDown(Vector3 seatPos) {
+    TraceLog(LOG_INFO, "SitDown called with position: %.2f, %.2f, %.2f", seatPos.x, seatPos.y, seatPos.z);
+    isSeated = true;
+    seatPosition = seatPos;
+    position = seatPos;  // Move player to seat immediately
+    
+    TraceLog(LOG_INFO, "SitDown: Updating physics body");
+    // Update physics body position
+    if (body != nullptr) {
+        dBodySetPosition(body, seatPos.x, seatPos.y + 0.85f, seatPos.z);
+        TraceLog(LOG_INFO, "SitDown: Body position set");
+    }
+    if (geom != nullptr) {
+        dGeomSetPosition(geom, seatPos.x, seatPos.y + 0.85f, seatPos.z);
+        TraceLog(LOG_INFO, "SitDown: Geom position set");
+    }
+    TraceLog(LOG_INFO, "SitDown complete");
+}
+
+void Player::StandUp() {
+    isSeated = false;
+    // Position remains where the seat was, player can move freely from there
 }

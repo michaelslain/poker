@@ -1,5 +1,6 @@
 #include "poker_table.hpp"
 #include "player.hpp"
+#include "raymath.h"
 #include <cstdio>
 
 PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, PhysicsWorld* physicsWorld)
@@ -8,6 +9,44 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
     // Initialize players array
     for (int i = 0; i < MAX_PLAYERS; i++) {
         players[i] = nullptr;
+    }
+    
+    // Initialize 8 seats around the table (2 per side)
+    // Table layout:
+    //     seat6   seat7
+    //   +-----------+
+    // s4|           |s5
+    // e |           |e
+    // a |           |a
+    // t2|           |t3
+    //   +-----------+
+    //     seat0   seat1
+    
+    float halfWidth = size.x / 2.0f;
+    float halfDepth = size.z / 2.0f;
+    float seatDistance = 1.2f;  // Distance from table edge to seat position
+    float groundLevel = 0.0f;   // Seats should be at ground level, not table height
+    
+    // Bottom side (facing +Z): seats 0, 1
+    seats[0].position = {pos.x - halfWidth/2, groundLevel, pos.z + halfDepth + seatDistance};
+    seats[1].position = {pos.x + halfWidth/2, groundLevel, pos.z + halfDepth + seatDistance};
+    
+    // Left side (facing -X): seats 2, 3
+    seats[2].position = {pos.x - halfWidth - seatDistance, groundLevel, pos.z + halfDepth/2};
+    seats[3].position = {pos.x - halfWidth - seatDistance, groundLevel, pos.z - halfDepth/2};
+    
+    // Right side (facing +X): seats 4, 5
+    seats[4].position = {pos.x + halfWidth + seatDistance, groundLevel, pos.z + halfDepth/2};
+    seats[5].position = {pos.x + halfWidth + seatDistance, groundLevel, pos.z - halfDepth/2};
+    
+    // Top side (facing -Z): seats 6, 7
+    seats[6].position = {pos.x - halfWidth/2, groundLevel, pos.z - halfDepth - seatDistance};
+    seats[7].position = {pos.x + halfWidth/2, groundLevel, pos.z - halfDepth - seatDistance};
+    
+    // Mark all seats as unoccupied
+    for (int i = 0; i < MAX_SEATS; i++) {
+        seats[i].occupant = nullptr;
+        seats[i].isOccupied = false;
     }
     
     // Deck is automatically initialized by its constructor
@@ -111,15 +150,81 @@ bool PokerTable::HasPlayer(Player* player) {
 }
 
 void PokerTable::InteractWithPlayer(Player* player) {
-    if (HasPlayer(player)) {
+    // Check if player is already seated
+    if (IsPlayerSeated(player)) {
         printf("You are already seated at this table.\n");
+        UnseatPlayer(player);
+        RemovePlayer(player);
         return;
     }
     
-    if (AddPlayer(player)) {
-        printf("You joined the poker table! Players at table: %d/%d\n", playerCount, MAX_PLAYERS);
-        deck.Shuffle();
-    } else {
-        printf("Table is full! (%d/%d players)\n", playerCount, MAX_PLAYERS);
+    // Find closest open seat
+    int seatIndex = FindClosestOpenSeat(player->GetPosition());
+    if (seatIndex == -1) {
+        printf("Table is full! (%d/%d seats occupied)\n", playerCount, MAX_SEATS);
+        return;
     }
+    
+    // Seat the player
+    if (SeatPlayer(player, seatIndex) && AddPlayer(player)) {
+        printf("You sat down at seat %d! Players at table: %d/%d\n", seatIndex, playerCount, MAX_PLAYERS);
+        deck.Shuffle();
+    }
+}
+
+int PokerTable::FindClosestOpenSeat(Vector3 playerPos) {
+    int closestSeat = -1;
+    float closestDist = FLT_MAX;
+    
+    for (int i = 0; i < MAX_SEATS; i++) {
+        if (!seats[i].isOccupied) {
+            float dist = Vector3Distance(playerPos, seats[i].position);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestSeat = i;
+            }
+        }
+    }
+    
+    return closestSeat;
+}
+
+bool PokerTable::SeatPlayer(Player* player, int seatIndex) {
+    if (seatIndex < 0 || seatIndex >= MAX_SEATS) {
+        return false;
+    }
+    
+    if (seats[seatIndex].isOccupied) {
+        return false;
+    }
+    
+    // Mark seat as occupied
+    seats[seatIndex].occupant = player;
+    seats[seatIndex].isOccupied = true;
+    
+    // Move player to seat and lock their position
+    player->SitDown(seats[seatIndex].position);
+    
+    return true;
+}
+
+void PokerTable::UnseatPlayer(Player* player) {
+    for (int i = 0; i < MAX_SEATS; i++) {
+        if (seats[i].occupant == player) {
+            seats[i].occupant = nullptr;
+            seats[i].isOccupied = false;
+            player->StandUp();  // Allow player to move again
+            printf("You left your seat.\n");
+            return;
+        }
+    }
+}
+
+bool PokerTable::IsPlayerSeated(Player* player) {
+    for (int i = 0; i < MAX_SEATS; i++) {
+        if (seats[i].occupant == player) {
+            return true;
+        }
+    }
+    return false;
 }
