@@ -60,8 +60,8 @@ int main(void)
     dom.AddObject(wallEast);
     dom.AddObject(wallWest);
 
-    // Create light bulb at center of room (dimmer warm light)
-    LightBulb* lightBulb = new LightBulb({0.0f, 4.0f, 0.0f}, (Color){50, 42, 32, 255});
+    // Create light bulb at center of room (blue light)
+    LightBulb* lightBulb = new LightBulb({0.0f, 4.0f, 0.0f}, (Color){120, 140, 200, 255});
     dom.AddObject(lightBulb);
 
     // Create poker table inside the room
@@ -153,43 +153,43 @@ int main(void)
 
             // === 3D RENDERING PASS ===
             BeginMode3D(*camera);
-                // Apply lighting shader to all 3D objects automatically (except light sources)
+                // Apply lighting shader to all 3D objects automatically (except light sources, chips, and closest interactable)
                 BeginShaderMode(LightSource::GetLightingShader());
-                    // Draw all objects except light sources
+                    // Draw all objects except light sources, chips, and closest interactable
                     for (int i = 0; i < dom.GetCount(); i++) {
                         Object* obj = dom.GetObject(i);
                         if (obj != nullptr) {
                             const char* type = obj->GetType();
-                            // Skip light sources - they should not receive lighting
-                            if (strcmp(type, "light_bulb") != 0) {
-                                obj->Draw(*camera);
-                            }
+                            // Skip light sources and chips - they don't have proper normals for lighting
+                            if (strcmp(type, "light_bulb") == 0) continue;
+                            if (strncmp(type, "chip_", 5) == 0) continue;
+                            // Skip closest interactable only if it exists and matches
+                            if (closestInteractable != nullptr && obj == closestInteractable) continue;
+                            
+                            obj->Draw(*camera);
                         }
                     }
                 EndShaderMode();
                 
-                // Draw light sources without shader (they emit light, don't receive it)
+                // Draw objects without shader (light sources and chips)
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
-                    if (obj != nullptr) {
+                    if (obj != nullptr && obj != closestInteractable) {
                         const char* type = obj->GetType();
-                        if (strcmp(type, "light_bulb") == 0) {
+                        if (strcmp(type, "light_bulb") == 0 || strncmp(type, "chip_", 5) == 0) {
                             obj->Draw(*camera);
                         }
                     }
                 }
             EndMode3D();
 
-            // Draw E prompt and glow for closest interactable
+            // Draw E prompt and closest interactable without shader (so it's bright/visible)
             if (closestInteractable != nullptr) {
                 BeginMode3D(*camera);
-                    // Draw glow effect (subtle pulsing halo)
-                    float glowPulse = 1.0f + 0.2f * sinf(GetTime() * 3.0f);
-                    Vector3 glowPos = closestInteractable->position;
-                    glowPos.y += 0.3f;
-                    DrawSphere(glowPos, 0.4f * glowPulse, Fade(YELLOW, 0.3f));
-                    DrawSphere(glowPos, 0.5f * glowPulse, Fade(YELLOW, 0.15f));
+                    // Draw the closest interactable without lighting shader (unaffected, fully bright)
+                    closestInteractable->Draw(*camera);
                     
+                    // Draw E prompt
                     closestInteractable->DrawPrompt(*camera);
                 EndMode3D();
             }
@@ -197,7 +197,10 @@ int main(void)
             // Draw held item (pistol) in 3D space - disable depth test so it draws on top
             rlDisableDepthTest();
             BeginMode3D(*camera);
-                player->DrawHeldItem();
+                // Apply lighting shader to held item
+                BeginShaderMode(LightSource::GetLightingShader());
+                    player->DrawHeldItem();
+                EndShaderMode();
             EndMode3D();
             rlEnableDepthTest();
 

@@ -1,6 +1,6 @@
 #include "chip.hpp"
-#include "rlgl.h"
 #include "raymath.h"
+#include "rlgl.h"
 #include <cstdio>
 
 Chip::Chip(int chipValue, Vector3 pos, PhysicsWorld* physics)
@@ -23,11 +23,11 @@ Chip::Chip(int chipValue, Vector3 pos, PhysicsWorld* physics)
 
     BeginTextureMode(iconTexture);
         ClearBackground({40, 40, 40, 255});
-
+        
         int centerX = 30;
         int centerY = 30;
         int chipRadius = 20;
-
+        
         DrawCircle(centerX, centerY, chipRadius, color);
         DrawCircleLines(centerX, centerY, chipRadius, DARKGRAY);
         DrawCircleLines(centerX, centerY, chipRadius - 1, DARKGRAY);
@@ -58,24 +58,42 @@ void Chip::Update(float deltaTime) {
 void Chip::Draw(Camera3D camera) {
     (void)camera;
     if (!isActive) return;
-
+    
     float radius = 0.3f;
     float height = 0.1f;
-
+    
+    // Ensure color is correct (recalculate from value)
+    Color baseColor = GetColorFromValue(value);
+    
+    // Simple manual lighting: darken based on distance from light source
+    // Light is at (0, 4, 0) - hardcoded for now
+    Vector3 lightPos = {0.0f, 4.0f, 0.0f};
+    float distanceToLight = Vector3Distance(position, lightPos);
+    
+    // Simple attenuation
+    float attenuation = 1.0f / (1.0f + 0.18f * distanceToLight + 0.12f * distanceToLight * distanceToLight);
+    attenuation = fmaxf(0.3f, attenuation); // Minimum brightness of 30%
+    
+    // Apply attenuation to color
+    Color drawColor = {
+        (unsigned char)(baseColor.r * attenuation),
+        (unsigned char)(baseColor.g * attenuation),
+        (unsigned char)(baseColor.b * attenuation),
+        baseColor.a
+    };
+    
     Matrix rotMatrix = rigidBody ? rigidBody->GetRotationMatrix() : MatrixIdentity();
     Matrix transMatrix = MatrixTranslate(position.x, position.y, position.z);
     Matrix transform = MatrixMultiply(rotMatrix, transMatrix);
-
+    
     rlPushMatrix();
         rlMultMatrixf(MatrixToFloat(transform));
-
-        DrawCylinder({0, 0, 0}, radius, radius, height, 16, color);
+        DrawCylinder({0, 0, 0}, radius, radius, height, 16, drawColor);
     rlPopMatrix();
 }
 
 void Chip::DrawIcon(Rectangle destRect) {
     if (!iconTextureLoaded) return;
-
     Rectangle sourceRec = { 0, 0, (float)iconTexture.texture.width, -(float)iconTexture.texture.height };
     DrawTexturePro(iconTexture.texture, sourceRec, destRect, {0, 0}, 0.0f, WHITE);
 }
