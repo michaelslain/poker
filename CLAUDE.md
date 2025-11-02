@@ -1,13 +1,16 @@
 ## Project Overview
-A first-person poker game built with C and raylib using a component-based architecture with inventory system, DOM-based object management, and ODE physics engine integration.
+A first-person poker game built with C++ and raylib using object-oriented architecture with inheritance, inventory system, DOM-based object management, and ODE physics engine integration.
 
 ## Build System
-The project uses a Makefile with macOS-specific raylib paths:
+The project uses a Makefile with macOS-specific paths:
 - Raylib include path: `/opt/homebrew/opt/raylib/include`
 - Raylib library path: `/opt/homebrew/opt/raylib/lib`
-- Compiler flags: `-Wall -Wextra -std=c99 -Iinclude`
+- ODE include path: `/opt/homebrew/opt/ode/include`
+- ODE library path: `/opt/homebrew/opt/ode/lib`
+- Compiler: `g++` with `-std=c++17`
+- Compiler flags: `-Wall -Wextra -std=c++17 -Iinclude`
 - Target executable: `game`
-- Links against: `-lraylib -lode`
+- Links against: `-lraylib -lode -lm -framework OpenGL -framework Cocoa -framework IOKit -framework CoreAudio -framework CoreVideo`
 
 ### Build Commands
 ```bash
@@ -21,8 +24,9 @@ make clean     # Remove build artifacts (*.o and game executable)
 ### IDE Setup (Zed)
 A `.clangd` file is configured with:
 - Raylib include path
+- ODE include path
 - Project include path (`-I/Users/michaelslain/Documents/dev/poker/include`)
-- C language mode (`-x c`)
+- C++ language mode (`-x c++`)
 
 ### Prerequisites
 Raylib and ODE must be installed via Homebrew:
@@ -33,331 +37,313 @@ brew install ode
 
 ## Code Architecture
 
-### Component Hierarchy
-The game uses an inheritance-style component system through struct composition:
+### Object-Oriented Class Hierarchy
+The game uses C++ inheritance with virtual functions for polymorphism:
 
 ```
-Object (base)
+Object (base class with virtual functions)
 ├── Interactable
 │   └── Item
-│       ├── Card (with RigidBody)
-│       └── Chip (with RigidBody)
+│       ├── Card (with RigidBody*)
+│       └── Chip (with RigidBody*)
 ├── Player (contains GameCamera and Inventory)
-├── GameCamera
 ├── Plane (ground plane with physics collision)
 ├── RigidBody (physics-enabled objects)
 └── Spawner (creates and manages spawned objects)
+
+PokerTable (inherits from Interactable)
+GameCamera (standalone class)
+PhysicsWorld (standalone class)
+DOM (Document Object Model - manages all objects)
+Inventory (dynamic item collection)
+Deck (card deck management)
 ```
 
-**Inheritance Pattern**: Each "child" struct contains the "parent" struct as its first member, allowing safe casting.
+**OOP Features**:
+- Virtual functions: `Update()`, `Draw()`, `GetType()`
+- Constructor/destructor pattern (RAII)
+- Member functions instead of free functions
+- `std::vector` and `std::array` for collections
+- `std::string` for text handling
+- `new`/`delete` instead of `malloc`/`free`
+- Override keyword for clarity
+- Proper encapsulation with public/private members
 
 ### Directory Structure
 ```
 poker/
-├── include/          # Header files
-│   ├── object.h
-│   ├── camera.h
-│   ├── player.h
-│   ├── interactable.h
-│   ├── item.h
-│   ├── card.h
-│   ├── chip.h
-│   ├── deck.h
-│   ├── poker_table.h
-│   ├── inventory.h
-│   ├── inventory_ui.h
-│   ├── render_utils.h
-│   ├── dom.h
-│   ├── spawner.h
-│   ├── physics.h
-│   ├── rigidbody.h
-│   └── plane.h
-├── src/              # Implementation files
-│   ├── object.c
-│   ├── camera.c
-│   ├── player.c
-│   ├── interactable.c
-│   ├── item.c
-│   ├── card.c
-│   ├── chip.c
-│   ├── deck.c
-│   ├── poker_table.c
-│   ├── inventory.c
-│   ├── inventory_ui.c
-│   ├── render_utils.c
-│   ├── spawner.c
-│   ├── physics.c
-│   ├── rigidbody.c
-│   └── plane.c
-└── main.c            # Game entry point with DOM
+├── include/          # Header files (.hpp)
+│   ├── object.hpp
+│   ├── camera.hpp
+│   ├── player.hpp
+│   ├── interactable.hpp
+│   ├── item.hpp
+│   ├── card.hpp
+│   ├── chip.hpp
+│   ├── deck.hpp
+│   ├── poker_table.hpp
+│   ├── inventory.hpp
+│   ├── inventory_ui.hpp
+│   ├── render_utils.hpp
+│   ├── dom.hpp
+│   ├── spawner.hpp
+│   ├── physics.hpp
+│   ├── rigidbody.hpp
+│   └── plane.hpp
+├── src/              # Implementation files (.cpp)
+│   ├── object.cpp
+│   ├── camera.cpp
+│   ├── player.cpp
+│   ├── interactable.cpp
+│   ├── item.cpp
+│   ├── card.cpp
+│   ├── chip.cpp
+│   ├── deck.cpp
+│   ├── poker_table.cpp
+│   ├── inventory.cpp
+│   ├── inventory_ui.cpp
+│   ├── render_utils.cpp
+│   ├── spawner.cpp
+│   ├── physics.cpp
+│   ├── rigidbody.cpp
+│   └── plane.cpp
+└── main.cpp          # Game entry point with DOM
 ```
 
 ### Core Components
 
-**Object** (`object.h/c`):
-- Base component with position, rotation, scale
-- Has active flag for lifecycle management
-- Type system: `GetType()` virtual function returns type string
+**Object** (`object.hpp/cpp`):
+- Base class with position, rotation, scale
+- `isActive` flag for lifecycle management
+- Virtual functions: `Update(float deltaTime)`, `Draw(Camera3D camera)`, `GetType() const`
 - All other components inherit from this
+- Uses RAII pattern
 
-**Player** (`player.h/c`):
+**Player** (`player.hpp/cpp`):
 - First-person controller with WASD movement
-- Mouse look (inverted: moving mouse left pans left, moving mouse up pans up)
-- Contains its own `GameCamera` instance
-- Contains an `Inventory` instance
+- Mouse look with reduced sensitivity (0.001f)
+- Contains `GameCamera` instance
+- Contains `Inventory` instance
 - FOV control with `[` and `]` keys
+- Crosshair-based interaction system (raycasting)
 - Pickup behavior: adds items to inventory, removes from DOM
+- Inventory selection: X key to select/deselect, arrow keys to navigate
+- ODE physics capsule geometry for collision
+- Proper collision detection with poker table using `dCollide()`
 - No jumping implemented yet
-- `Player_GetInventory()` accessor for inventory
-- `Player_DrawInventoryUI()` renders inventory icons
-- `Player_GetType()` returns "player"
 
-**GameCamera** (`camera.h/c`):
+**GameCamera** (`camera.hpp/cpp`):
 - Wraps raylib's Camera3D
-- Tracks pitch/yaw angles
-- `GameCamera_AdjustFOV()` handles FOV controls
+- Tracks pitch/yaw angles (Vector2)
+- `AdjustFOV()` handles FOV controls
+- `SetTarget()` positions camera
+- `GetCamera()` returns pointer to internal Camera3D
 - Eye-level offset: 1.7 units above player position
 
-**Interactable** (`interactable.h/c`):
+**Interactable** (`interactable.hpp/cpp`):
+- Inherits from Object
 - Objects player can interact with (press E)
-- 3-unit interaction range
-- Closest interactable is highlighted
-- Callback system: `InteractCallback` for custom behaviors
-- Default behavior: deactivate (delete) the object
+- `interactRange` field (default 3.0 units)
+- `std::function<void(Interactable*)> onInteract` callback
+- `Interact()` virtual function
+- `DrawPrompt(Camera3D)` renders "E" prompt billboard
+- Default behavior defined by callback
 
-**Item** (`item.h/c`):
+**Item** (`item.hpp/cpp`):
 - Inherits from Interactable
 - Bridge between Interactable and inventory-compatible objects
-- Default interact behavior: deactivates item (for pickup)
-- `Item_DrawIcon(Rectangle destRect)`: Virtual function for UI rendering
+- `DrawIcon(Rectangle destRect)` virtual function for UI rendering
 - All inventory-compatible objects must inherit from Item
 
-**Card** (`card.h/c`):
+**Card** (`card.hpp/cpp`):
 - Inherits from Item
 - Component hierarchy: Card → Item → Interactable → Object
-- Has `Suit` (SUIT_HEARTS, SUIT_DIAMONDS, SUIT_CLUBS, SUIT_SPADES) and `Rank` (RANK_ACE-RANK_KING)
-- Contains a `RigidBody` for physics simulation (optional)
-- **Texture-based rendering**: Each card generates a RenderTexture2D once during init
-- Displays rank (large) and suit name (smaller) on white background
-- Colors: Red for hearts/diamonds, black for clubs/spades
-- `Card_Init()`: Initialize card with optional physics (pass NULL to skip physics)
-- `Card_AttachPhysics()`: Attach physics to a card after creation (useful for deck cards)
-- `Card_DrawIcon()`: Renders texture as 2D icon with negative height to flip correctly
-- `Card_Update()`: Syncs physics body with object position (only if physics attached)
-- `Card_Draw()`: Renders card as 3D quad with proper orientation using rotation matrix
-- `Card_Cleanup()`: Unloads texture and cleans up rigid body
-- `Card_GetType()`: Returns type string like "card_ace_spades"
+- Uses C-style enums: `Suit` (SUIT_HEARTS, SUIT_DIAMONDS, SUIT_CLUBS, SUIT_SPADES)
+- Uses C-style enums: `Rank` (RANK_ACE - RANK_KING)
+- Contains `RigidBody*` for physics (optional, can be nullptr)
+- `RenderTexture2D texture` for card face rendering
+- Constructor: `Card(Suit, Rank, Vector3 pos, PhysicsWorld* physics)`
+- Destructor: Automatically cleans up texture and rigid body
+- `AttachPhysics()` for adding physics after creation
+- `Update()` syncs with physics body
+- `Draw()` renders as 3D quad with texture
+- `DrawIcon()` renders as 2D icon (flipped)
+- Static utility functions: `GetSuitSymbol()`, `GetRankString()`, `GetSuitColor()`
 
-**Chip** (`chip.h/c`):
+**Chip** (`chip.hpp/cpp`):
 - Inherits from Item
-- Component hierarchy: Chip → Item → Interactable → Object
-- Has integer `value` field (1, 5, 10, 25, 100, etc.)
-- Contains a `RigidBody` for physics simulation
-- Color-coded by value: WHITE(1), RED(5), BLUE(10), GREEN(25), BLACK(100)
-- **Texture-based rendering**: Each chip generates a RenderTexture2D once during init
-- Displays value as text on colored circle
-- `Chip_DrawIcon()`: Renders texture as 2D icon with negative height to flip correctly
-- `Chip_Update()`: Syncs physics body with object position
-- `Chip_Draw()`: Renders chip as 3D cylinder with proper orientation
-- `Chip_Cleanup()`: Unloads texture and cleans up rigid body
-- `Chip_GetColorFromValue()`: Returns color based on chip value
-- `Chip_GetType()`: Returns type string like "chip_5" or "chip_100"
+- Integer `value` field (1, 5, 10, 25, 100)
+- Contains `RigidBody*` for physics
+- Color-coded: WHITE(1), RED(5), BLUE(10), GREEN(25), BLACK(100)
+- `RenderTexture2D iconTexture` for chip rendering
+- Constructor: `Chip(int value, Vector3 pos, PhysicsWorld* physics)`
+- Destructor: Automatically cleans up texture and rigid body
+- `Update()` syncs with physics body
+- `Draw()` renders as 3D cylinder
+- `DrawIcon()` renders as 2D icon
+- Static function: `GetColorFromValue()`
 
-**Inventory** (`inventory.h/c`):
-- Dynamic array of Item pointers
-- Auto-expands capacity when full (doubles capacity)
-- `Inventory_Init(int initialCapacity)`: Initialize with starting capacity
-- `Inventory_AddItem(Item* item)`: Add item to inventory
-- `Inventory_Cleanup()`: Free all items and array memory
-- Tracks `count` and `capacity` separately
+**Inventory** (`inventory.hpp/cpp`):
+- Uses `std::vector<ItemStack>` for dynamic storage
+- `ItemStack` contains: `Item* item`, `int count`, `std::string typeString`
+- `AddItem(Item*)` adds or increments stack
+- `RemoveItem(int stackIndex)` decrements or removes stack
+- Accessors: `GetStackCount()`, `GetStack(int index)`, `GetStacks()`
+- Automatic cleanup in destructor
 
-**InventoryUI** (`inventory_ui.h/c`):
-- Separate module for rendering inventory contents
-- `InventoryUI_Draw(Inventory* inventory)`: Draws all items as 60x60 icons
-- Renders in horizontal row at top-left (10, 10)
-- Delegates to `Item_DrawIcon()` for each item's rendering
+**InventoryUI** (`inventory_ui.hpp/cpp`):
+- `InventoryUI_Draw(Inventory*, int selectedIndex)` function
+- Renders items as 60x60 icons at top-left
+- White outline for selected item
+- Displays stack count if > 1
+- Delegates to `Item::DrawIcon()` polymorphically
 
-**Deck** (`deck.h/c`):
-- NOT an Object - standalone data structure
-- NOT added to DOM - manages card allocation separately
-- Contains array of 52 Card pointers (all suits and ranks)
-- `Deck_Init()`: Allocates and initializes all 52 cards without physics
-- `Deck_Shuffle()`: Randomly shuffles the deck using Fisher-Yates algorithm
-- `Deck_Draw()`: Returns top card and removes it from deck (returns NULL if empty)
-- `Deck_Peek()`: Returns top card without removing it (returns NULL if empty)
-- `Deck_Reset()`: Resets count to 52 without recreating cards
-- `Deck_Cleanup()`: Cleans up and frees all 52 cards
-- **Usage Pattern**: Create deck → shuffle → draw cards → attach physics → add to DOM
-- Cards drawn from deck need `Card_AttachPhysics()` before adding to world
+**Deck** (`deck.hpp/cpp`):
+- NOT an Object - standalone class
+- Uses `std::array<Card*, DECK_SIZE>` (52 cards)
+- Constructor automatically creates all 52 cards (no physics)
+- `Shuffle()` uses Fisher-Yates algorithm
+- `Draw()` returns top card, decrements count
+- `Peek()` returns top card without removing
+- `Reset()` resets count to 52
+- Destructor cleans up all cards
 
-**PokerTable** (`poker_table.h/c`):
+**PokerTable** (`poker_table.hpp/cpp`):
 - Inherits from Interactable
-- Component hierarchy: PokerTable → Interactable → Object
-- Manages poker game state and players
-- Contains a `Deck` instance for dealing cards
-- Stores up to 8 players in `Player* players[MAX_PLAYERS]` array
-- Tracks `playerCount` for number of seated players
-- Has `size` (Vector3) and `color` for rendering
-- `PokerTable_Init()`: Initialize table with position, size, and color
-- `PokerTable_AddPlayer()`: Add player to table (returns false if full)
-- `PokerTable_RemovePlayer()`: Remove player from table
-- `PokerTable_HasPlayer()`: Check if player is seated
-- `PokerTable_InteractWithPlayer()`: Manual interaction with player reference
-- `PokerTable_Draw()`: Renders brown table with green felt top
-- `PokerTable_Cleanup()`: Cleans up deck and clears player references
-- `PokerTable_GetType()`: Returns "poker_table"
-- Default interaction callback shuffles deck and prints message
-- **Rendering**: Brown rectangular slab with darker green felt surface on top
-- **Note**: Player references are stored but not owned (not freed on cleanup)
+- Manages up to 8 players: `std::array<Player*, MAX_PLAYERS>`
+- Contains `Deck` instance
+- ODE box geometry (`dGeomID`) for collision
+- Constructor: `PokerTable(Vector3 pos, Vector3 size, Color color, PhysicsWorld*)`
+- Virtual functions: `Update()`, `Draw()`, `Interact()`, `GetType()`
+- `AddPlayer()`, `RemovePlayer()`, `HasPlayer()` for player management
+- `InteractWithPlayer(Player*)` for custom interaction
+- `GetGeom()` accessor for collision detection
+- Renders as brown box with green felt top
+- Destructor cleans up geometry
 
 ### Physics System
 
-**PhysicsWorld** (`physics.h/c`):
+**PhysicsWorld** (`physics.hpp/cpp`):
 - Wrapper around ODE (Open Dynamics Engine)
-- Contains `dWorldID`, `dSpaceID`, and `dJointGroupID`
-- `Physics_Init()`: Initializes ODE world with gravity
-- `Physics_Step(deltaTime)`: Steps physics simulation
-- `Physics_NearCallback()`: Handles collision detection
-- `Physics_Cleanup()`: Destroys ODE world and resources
-- Gravity set to (0, -9.81, 0)
+- Contains `dWorldID`, `dSpaceID`, `dJointGroupID`
+- Constructor initializes ODE with gravity (0, -9.81, 0)
+- Destructor cleans up ODE resources
+- `Step(float deltaTime)` advances physics simulation
+- Static `NearCallback()` for collision handling
+- Handles contact joints and surface properties
 
-**RigidBody** (`rigidbody.h/c`):
-- Component for physics-enabled objects
+**RigidBody** (`rigidbody.hpp/cpp`):
+- Inherits from Object
 - Contains ODE `dBodyID` and `dGeomID`
 - Reference to `PhysicsWorld*`
-- `RigidBody_InitBox()`: Initialize box-shaped rigid body with mass
-- `RigidBody_InitSphere()`: Initialize sphere-shaped rigid body with mass
-- `RigidBody_Update()`: Syncs Object position with physics body position
-- `RigidBody_GetRotationMatrix()`: Returns raylib Matrix from ODE rotation
-- `RigidBody_Cleanup()`: Destroys ODE body and geometry
-- Automatically handles position and rotation sync
+- `InitBox(PhysicsWorld*, Vector3 pos, Vector3 size, float mass)`
+- `InitSphere(PhysicsWorld*, Vector3 pos, float radius, float mass)`
+- `Update(float deltaTime)` syncs Object position with physics body
+- `GetRotationMatrix()` converts ODE rotation to raylib Matrix
+- Destructor destroys ODE body and geometry
+- Collision categories for items vs. player
 
-**Plane** (`plane.h/c`):
+**Plane** (`plane.hpp/cpp`):
+- Inherits from Object
 - Represents ground plane with physics collision
-- Has `Vector2 size` and `Color` for rendering
 - Contains ODE `dGeomID` (static geometry, no body)
-- `Plane_Init()`: Creates infinite plane geometry for collision
-- `Plane_Draw()`: Renders plane as 3D rectangle
-- `Plane_Cleanup()`: Destroys ODE geometry
-- `Plane_GetType()`: Returns "plane"
-- Used for ground and static collision surfaces
+- Constructor: `Plane(Vector3 position, Vector2 size, Color color, PhysicsWorld*)`
+- `Draw()` renders plane rectangle
+- Destructor destroys ODE geometry
+- Used for ground and static surfaces
 
 ### DOM (Document Object Model)
 
-**DOM Structure** (`dom.h`, implemented in `main.c`):
-```c
-typedef struct {
-    Object** objects;
-    int count;
-    int capacity;
-} DOM;
-```
-
-**DOM Functions**:
-- `DOM_Init(DOM* dom, int initialCapacity)`: Initialize DOM with capacity
-- `DOM_AddObject(DOM* dom, Object* obj)`: Add object to DOM
-- `DOM_RemoveObject(DOM* dom, Object* obj)`: Remove object from DOM (shifts array)
-- `DOM_Cleanup(DOM* dom)`: Free DOM array (not objects themselves)
+**DOM** (`dom.hpp/cpp`):
+- Uses `std::vector<Object*>` for dynamic storage
+- Static global instance pointer
+- `AddObject(Object*)` adds to vector
+- `RemoveObject(Object*)` erases from vector
+- `Cleanup()` clears vector (doesn't delete objects)
+- Accessors: `GetCount()`, `GetObject(int)`, `GetObjects()`
+- Static functions: `SetGlobal(DOM*)`, `GetGlobal()`
+- All scene objects tracked here for updates and rendering
 
 **DOM Usage**:
-- All scene objects (player, cards, chips, planes, etc.) are tracked in the DOM
-- Player is added to DOM at initialization
-- Ground plane is added to DOM
-- Spawners create objects and add them to DOM automatically
-- When items are picked up:
-  1. Add to player's inventory
-  2. Remove from DOM
-  3. Deactivate item
-- DOM is iterated for rendering, updates, and cleanup
+- Player added to DOM at initialization
+- Ground plane added to DOM
+- Spawners create objects and add to DOM
+- On item pickup: add to inventory, remove from DOM, deactivate
+- Iterate DOM for rendering and updates
 
 ### Spawner System
 
-**Spawner** (`spawner.h/c`):
-- Component for spawning objects in random positions
-- Has `SpawnType` enum: `SPAWN_TYPE_CARD`, `SPAWN_TYPE_CHIP`
-- Has `radius` field for spawn area
-- Position determines spawn center
-- `Spawner_Init()`: Initialize spawner with position and radius
-- `Spawner_SpawnCards(suit, rank, count, physics, dom)`: Spawns cards within radius
-- `Spawner_SpawnChips(value, count, physics, dom)`: Spawns chips within radius
-- Automatically allocates objects with `malloc()`
-- Automatically initializes objects with physics
-- Automatically adds objects to DOM
-- Spawns objects at random positions within radius from center
-- Objects spawn above ground with initial height
+**Spawner** (`spawner.hpp/cpp`):
+- Inherits from Object
+- `float radius` for spawn area
+- Constructor: `Spawner(Vector3 pos, float radius)`
+- `SpawnCards(Suit, Rank, count, PhysicsWorld*, DOM*)` spawns cards randomly
+- `SpawnChips(int value, count, PhysicsWorld*, DOM*)` spawns chips randomly
+- Automatically allocates objects with `new`
+- Automatically initializes with physics
+- Automatically adds to DOM
+- Sets `isDynamicallyAllocated = true` flag
 
 ### Rendering Utilities
 
-**render_utils** (`render_utils.h/c`):
-- `DrawTextBillboard()`: Renders text facing camera (billboarded)
-- `DrawText3D()`: Renders text in 3D space without billboarding
+**render_utils** (`render_utils.hpp/cpp`):
+- `DrawTextBillboard()`: Renders text facing camera
+- `DrawText3D()`: Renders text in 3D space
 - Shared utilities for 3D text rendering
 
 ### Important Rendering Notes
 
 **RenderTexture2D Usage**:
-- Cards and chips use `BeginTextureMode/EndTextureMode` to render text to textures
-- Textures are created once during initialization, not every frame
-- When drawing as 2D icons: use negative height in source rectangle to flip upside-down textures
-- When drawing in 3D: normal UV coordinates (0,0 → 1,1) work correctly
-- Cards and chips must call cleanup functions to unload textures
-
-**3D Text Rendering**:
-- DO NOT use `DrawText()` with rlgl matrix transforms - it doesn't work correctly
-- Use texture-based approach: render text to RenderTexture2D, then draw as textured quad
-- This is more efficient and avoids distortion issues
-
-**2D UI Rendering**:
-- Inventory icons use `DrawTexturePro()` with negative source height
-- Example: `Rectangle sourceRec = { 0, 0, width, -height }`
-- This flips the texture right-side up for UI display
+- Cards and chips use `BeginTextureMode/EndTextureMode`
+- Textures created once in constructor
+- 2D UI: negative height in source rectangle to flip
+- 3D rendering: normal UV coordinates work correctly
+- Cleanup in destructor unloads textures
 
 **3D Physics Object Rendering**:
-- Cards and chips use rotation matrices from ODE
-- `rlPushMatrix()` / `rlPopMatrix()` for local transforms
-- `rlMultMatrixf()` applies ODE rotation matrix
-- Render geometry between matrix operations
-- Automatically synced with physics simulation
+- Cards and chips use `RigidBody::GetRotationMatrix()`
+- `rlPushMatrix()` / `rlPopMatrix()` for transforms
+- `rlMultMatrixf()` applies rotation matrix
+- Automatically synced with physics
 
 ### Memory Management
 
-**Dynamic Allocation**:
-- Cards and chips are dynamically allocated with `malloc()`
-- Inventory uses dynamic array that auto-expands
-- DOM uses dynamic array of Object pointers
-- Spawners handle allocation automatically
-- Must call cleanup functions before `free()`:
-  - `Card_Cleanup()` for each card
-  - `Chip_Cleanup()` for each chip
-  - `RigidBody_Cleanup()` for rigid bodies
-  - `Plane_Cleanup()` for planes
-  - `Inventory_Cleanup()` for inventory
-  - `Physics_Cleanup()` for physics world
-  - `DOM_Cleanup()` for DOM
-- Cleanup order: Component cleanups → free → CloseWindow()
+**C++ RAII Pattern**:
+- Constructors initialize resources
+- Destructors clean up resources automatically
+- `new`/`delete` for dynamic allocation
+- Smart ownership model
+- Must call `delete` on dynamically allocated objects
+- DOM tracks objects but doesn't own them
 
 **Object Lifecycle**:
-1. Create object with `malloc()` (or let Spawner do it)
-2. Initialize object (e.g., `Card_Init()`, `Chip_Init()`)
-3. Add to DOM with `DOM_AddObject()`
+1. Create with `new` (or let Spawner do it)
+2. Constructor initializes (e.g., `Card`, `Chip`)
+3. Add to DOM with `dom.AddObject()`
 4. Object exists in world with physics
-5. `Update()` syncs physics body position each frame
-6. On pickup: Add to inventory, then `DOM_RemoveObject()`
-7. On cleanup: `Inventory_Cleanup()` or manual cleanup handles freeing
+5. `Update()` called each frame
+6. On pickup: add to inventory, `dom.RemoveObject()`
+7. Cleanup: `delete` dynamically allocated objects
+8. Destructors handle resource cleanup
 
-**Physics Lifecycle**:
-1. Initialize `PhysicsWorld` before creating any physics objects
-2. Create RigidBody components during object initialization
-3. Call `Physics_Step()` each frame before updating objects
-4. Call `RigidBody_Update()` to sync positions after physics step
-5. Cleanup rigid bodies before objects
-6. Cleanup physics world last
+**Cleanup Pattern**:
+```cpp
+// Main cleanup loop
+for (int i = 0; i < dom.GetCount(); i++) {
+    Object* obj = dom.GetObject(i);
+    if (obj->isDynamicallyAllocated) {
+        delete obj;  // Destructor handles cleanup
+    }
+}
+```
 
 ### Controls
 - **WASD**: Move around
-- **Mouse**: Look around (cursor locked by default)
+- **Mouse**: Look around (reduced sensitivity: 0.001f)
 - **U**: Toggle cursor lock/unlock
-- **E**: Interact with closest highlighted object (pickup items)
+- **E**: Interact with closest object (crosshair-based)
+- **X**: Select/deselect item in inventory
+- **Left/Right Arrow**: Navigate inventory selection
 - **[ ]**: Increase/decrease FOV
 - **ESC**: Close window
 
@@ -411,58 +397,30 @@ PokerTable_Cleanup(table);
 free(table);
 ```
 
-### Deck Usage Example
-```c
-// Initialize deck
-Deck deck;
-Deck_Init(&deck);
-
-// Shuffle the deck
-srand(time(NULL));  // Seed random number generator
-Deck_Shuffle(&deck);
-
-// Draw cards and spawn them in the world
-for (int i = 0; i < 5; i++) {
-    Card* card = Deck_Draw(&deck);
-    if (card) {
-        // Attach physics to the card
-        Vector3 spawnPos = { i * 1.0f, 2.0f, 0.0f };
-        Card_AttachPhysics(card, spawnPos, &physics);
-        
-        // Add to DOM
-        DOM_AddObject(&dom, (Object*)card);
-    }
-}
-
-// Later, cleanup the entire deck (including any undrawn cards)
-Deck_Cleanup(&deck);
-```
-
 ### Main Game Loop Pattern
-```c
+```cpp
 // Initialization
-PhysicsWorld physics;
-Physics_Init(&physics);
+PhysicsWorld physics;  // Constructor initializes ODE
+DOM dom;               // Constructor initializes vector
+DOM::SetGlobal(&dom);
 
-DOM dom;
-DOM_Init(&dom, 50);
+// Create player
+Player* player = new Player({0, 0, 0}, &physics);
+dom.AddObject(player);
 
-Player player;
-Player_Init(&player, startPos);
-DOM_AddObject(&dom, (Object*)&player);
+// Create ground
+Plane* ground = new Plane({0, 0, 0}, {50, 50}, LIGHTGRAY, &physics);
+dom.AddObject(ground);
 
-// Create ground plane
-Plane groundPlane;
-Plane_Init(&groundPlane, (Vector3){0, 0, 0}, (Vector2){50, 50}, LIGHTGRAY, &physics);
-DOM_AddObject(&dom, (Object*)&groundPlane);
+// Create poker table
+PokerTable* table = new PokerTable({5, 1, 0}, {4, 0.2, 2.5}, BROWN, &physics);
+table->isDynamicallyAllocated = true;
+dom.AddObject(table);
 
-// Create spawner
-Spawner spawner;
-Spawner_Init(&spawner, (Vector3){0, 2, 0}, 2.0f);
-
-// Spawn objects (spawner handles allocation and DOM addition)
-Spawner_SpawnCards(&spawner, SUIT_SPADES, RANK_ACE, 3, &physics, &dom);
-Spawner_SpawnChips(&spawner, 5, 10, &physics, &dom);
+// Spawn objects
+Spawner spawner({0, 2, 0}, 2.0f);
+spawner.SpawnCards(SUIT_SPADES, RANK_ACE, 3, &physics, &dom);
+spawner.SpawnChips(5, 10, &physics, &dom);
 
 SetTargetFPS(60);
 
@@ -470,90 +428,106 @@ SetTargetFPS(60);
 while (!WindowShouldClose()) {
     float deltaTime = GetFrameTime();
     
-    // Handle cursor toggle
-    if (IsKeyPressed(KEY_U)) { /* toggle cursor */ }
+    // Update
+    player->Update(deltaTime);
+    physics.Step(deltaTime);
     
-    // Physics step
-    Physics_Step(&physics, deltaTime);
-    
-    // Update all objects in DOM
-    for (int i = 0; i < dom.count; i++) {
-        Object* obj = dom.objects[i];
-        const char* type = obj->GetType(obj);
-        
-        if (strncmp(type, "card_", 5) == 0) {
-            Card_Update((Card*)obj);
-        } else if (strncmp(type, "chip_", 5) == 0) {
-            Chip_Update((Chip*)obj);
-        } else if (strcmp(type, "player") == 0) {
-            Player_Update((Player*)obj, deltaTime);
-        }
+    for (int i = 0; i < dom.GetCount(); i++) {
+        dom.GetObject(i)->Update(deltaTime);
     }
-    
-    // Find closest interactable from DOM
-    // Handle E key interaction
-    // On pickup: Inventory_AddItem + DOM_RemoveObject
     
     // Draw
     BeginDrawing();
     ClearBackground(RAYWHITE);
     
-    BeginMode3D(*Player_GetCamera(&player));
-        // Draw objects from DOM
-        for (int i = 0; i < dom.count; i++) {
-            // Draw based on type
+    Camera3D* cam = player->GetCamera();
+    BeginMode3D(*cam);
+        for (int i = 0; i < dom.GetCount(); i++) {
+            dom.GetObject(i)->Draw(*cam);
         }
     EndMode3D();
     
-    // Draw UI
-    Player_DrawInventoryUI(&player);
+    player->DrawInventoryUI();
     DrawFPS(10, screenHeight - 30);
-    
     EndDrawing();
 }
 
 // Cleanup
-// Free all allocated objects with their cleanup functions
-for (int i = 0; i < dom.count; i++) {
-    // Call appropriate cleanup based on type
+for (int i = 0; i < dom.GetCount(); i++) {
+    Object* obj = dom.GetObject(i);
+    if (obj->isDynamicallyAllocated) {
+        delete obj;  // Calls destructor
+    }
 }
-DOM_Cleanup(&dom);
-Physics_Cleanup(&physics);
-CloseWindow();
+delete player;
+delete ground;
+
+// PhysicsWorld destructor called automatically
 ```
 
 ### Type System
-Objects use a virtual function pattern for runtime type identification:
-- Each component implements `GetType()` function
-- Returns string identifier: "player", "plane", "card_ace_spades", "chip_5"
-- Used for type-specific behavior in DOM iteration
+Objects use virtual `GetType() const` for runtime type identification:
+- Returns string: "player", "plane", "card_hearts_ace", "chip_5", "poker_table"
 - Use `strncmp(type, "card_", 5)` for prefix matching
 - Use `strcmp(type, "player")` for exact matching
+- Polymorphic - overridden in each derived class
+
+### Common Patterns
+
+**Creating Objects**:
+```cpp
+// Direct allocation
+Card* card = new Card(SUIT_SPADES, RANK_ACE, {0, 2, 0}, &physics);
+card->isDynamicallyAllocated = true;
+dom.AddObject(card);
+
+// Or use Spawner (recommended)
+spawner.SpawnCards(SUIT_HEARTS, RANK_KING, 5, &physics, &dom);
+```
+
+**Polymorphic Updates**:
+```cpp
+for (int i = 0; i < dom.GetCount(); i++) {
+    dom.GetObject(i)->Update(deltaTime);  // Calls correct virtual function
+}
+```
+
+**Item Pickup**:
+```cpp
+Item* item = static_cast<Item*>(interactable);
+player->GetInventory()->AddItem(item);
+item->isActive = false;
+dom.RemoveObject(item);
+```
+
+**Collision Detection**:
+```cpp
+// Player checks collision with table
+dContactGeom contacts[4];
+int numContacts = dCollide(playerGeom, tableGeom, 4, contacts, sizeof(dContactGeom));
+if (numContacts > 0) {
+    // Handle collision
+}
+```
 
 ### Common Pitfalls
 
-1. **Text Rendering**: Never try to render 2D `DrawText()` in 3D with matrix transforms - use RenderTexture2D instead
+1. **Virtual Functions**: Always mark overrides with `override` keyword for safety
 
-2. **Memory**: Always cleanup RenderTextures before freeing cards/chips, cleanup rigid bodies, and use DOM_Cleanup or Inventory_Cleanup to properly free objects
+2. **Memory Management**: Delete dynamically allocated objects; destructors handle cleanup
 
-3. **Physics Order**: Always call `Physics_Step()` before updating objects, then call `RigidBody_Update()` to sync positions
+3. **Physics Order**: Call `physics.Step()` before `Update()` calls
 
-4. **Player Camera**: Player contains its own camera - use `Player_GetCamera()` to get it for rendering
+4. **DOM Ownership**: DOM doesn't own objects - must delete separately
 
-5. **Component Access**: Access nested members like `card.base.base.base.position` (Card → Item → Interactable → Object)
+5. **Texture Cleanup**: Destructors automatically unload RenderTexture2D
 
-6. **Upside-Down Icons**: Use negative height in source rectangle when drawing RenderTexture2D as 2D UI icons
+6. **Collision Categories**: Set proper ODE collision bits for player/item/table
 
-7. **DOM Removal**: Always remove objects from DOM when picking them up, otherwise they'll be rendered and updated despite being in inventory
+7. **Enum Syntax**: Use C-style enums (SUIT_SPADES, not Suit::SPADES)
 
-8. **Item Inheritance**: All inventory-compatible objects must inherit from Item, not directly from Interactable
+8. **Null Checks**: Check `rigidBody != nullptr` before accessing
 
-9. **Forward Declarations**: Use `struct Item;` forward declarations to avoid typedef redefinition warnings between inventory.h and item.h
+9. **Spawner Flag**: Spawned objects have `isDynamicallyAllocated = true`
 
-10. **Physics World Reference**: RigidBody components need a reference to the PhysicsWorld - pass it during initialization
-
-11. **Spawner Allocation**: Spawners automatically allocate objects with malloc() - don't allocate before calling spawn functions
-
-12. **Type Checking**: Use the `GetType()` virtual function and string comparison for runtime type identification in DOM iterations
-
-13. **Rotation Matrices**: When rendering physics objects, use `RigidBody_GetRotationMatrix()` and apply with `rlMultMatrixf()` for proper 3D orientation
+10. **Constructor Initialization**: Use member initializer lists for efficiency
