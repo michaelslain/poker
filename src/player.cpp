@@ -96,6 +96,21 @@ void Player::Update(float deltaTime) {
     if (lookPitch > 89.0f * DEG2RAD) lookPitch = 89.0f * DEG2RAD;
     if (lookPitch < -89.0f * DEG2RAD) lookPitch = -89.0f * DEG2RAD;
 
+    // Body rotation follows camera when turning more than 45 degrees
+    float maxHeadTurnAngle = 45.0f * DEG2RAD;  // 45 degrees in radians
+    float angleDifference = lookYaw - bodyYaw;
+    
+    // Normalize angle difference to [-PI, PI]
+    while (angleDifference > PI) angleDifference -= 2 * PI;
+    while (angleDifference < -PI) angleDifference += 2 * PI;
+    
+    // If head is turned more than 45 degrees, rotate body to follow
+    if (angleDifference > maxHeadTurnAngle) {
+        bodyYaw = lookYaw - maxHeadTurnAngle;
+    } else if (angleDifference < -maxHeadTurnAngle) {
+        bodyYaw = lookYaw + maxHeadTurnAngle;
+    }
+
     // Calculate forward and right vectors from yaw
     Vector3 forward = {
         sinf(lookYaw),

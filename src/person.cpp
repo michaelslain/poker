@@ -3,7 +3,7 @@
 #include "rlgl.h"
 
 Person::Person(Vector3 pos, const std::string& personName, float personHeight)
-    : Object(pos), inventory(), name(personName), height(personHeight), 
+    : Object(pos), inventory(), name(personName), height(personHeight), bodyYaw(0.0f),
       isSeated(false), seatPosition({0, 0, 0}) {
 }
 
@@ -102,7 +102,7 @@ void Person::Draw(Camera3D camera) {
     rlPushMatrix();
     rlTranslatef(position.x, position.y, position.z);
     rlRotatef(rotation.x, 1, 0, 0);
-    rlRotatef(rotation.y, 0, 1, 0);
+    rlRotatef(bodyYaw * RAD2DEG, 0, 1, 0);  // Use bodyYaw for Y rotation
     rlRotatef(rotation.z, 0, 0, 1);
     rlScalef(scale.x, scale.y, scale.z);
     
@@ -179,6 +179,22 @@ void Person::SitDown(Vector3 seatPos) {
     isSeated = true;
     seatPosition = seatPos;
     position = seatPos;  // Move person to seat immediately
+}
+
+void Person::SitDownFacingPoint(Vector3 seatPos, Vector3 faceTowards) {
+    isSeated = true;
+    seatPosition = seatPos;
+    position = seatPos;  // Move person to seat immediately
+    
+    // Calculate direction from seat to target point
+    Vector3 direction = {
+        faceTowards.x - seatPos.x,
+        0.0f,  // Keep y at 0 for horizontal rotation only
+        faceTowards.z - seatPos.z
+    };
+    
+    // Calculate yaw angle to face the target
+    bodyYaw = atan2f(direction.x, direction.z);
 }
 
 void Person::StandUp() {

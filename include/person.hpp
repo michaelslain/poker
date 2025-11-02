@@ -11,6 +11,7 @@ protected:
     Inventory inventory;
     std::string name;
     float height;  // Height multiplier for the mesh (1.0 = normal, >1.0 = taller)
+    float bodyYaw;  // Body rotation in radians (Y-axis rotation)
 
     // Seating
     bool isSeated;          // Whether person is seated at a table
@@ -25,8 +26,13 @@ public:
 
     // Seating methods
     virtual void SitDown(Vector3 seatPos);
+    virtual void SitDownFacingPoint(Vector3 seatPos, Vector3 faceTowards);
     virtual void StandUp();
     bool IsSeated() const { return isSeated; }
+    
+    // Body rotation
+    void SetBodyYaw(float yaw) { bodyYaw = yaw; }
+    float GetBodyYaw() const { return bodyYaw; }
 
     // Accessors
     Inventory* GetInventory() { return &inventory; }

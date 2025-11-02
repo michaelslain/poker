@@ -203,8 +203,8 @@ bool PokerTable::SeatPerson(Person* person, int seatIndex) {
     seats[seatIndex].occupant = person;
     seats[seatIndex].isOccupied = true;
     
-    // Move player to seat and lock their position
-    person->SitDown(seats[seatIndex].position);
+    // Move person to seat facing the center of the table
+    person->SitDownFacingPoint(seats[seatIndex].position, position);
     
     return true;
 }
