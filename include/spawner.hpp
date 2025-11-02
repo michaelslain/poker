@@ -18,6 +18,7 @@ public:
     // Spawning methods
     void SpawnCards(Suit suit, Rank rank, int count, PhysicsWorld* physics, DOM* dom);
     void SpawnChips(int value, int count, PhysicsWorld* physics, DOM* dom);
+    void SpawnPistols(int count, PhysicsWorld* physics, DOM* dom);
     
     const char* GetType() const override;
 };

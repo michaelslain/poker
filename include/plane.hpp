@@ -16,7 +16,7 @@ private:
 public:
     Plane(Vector3 position, Vector2 planeSize, Color planeColor, PhysicsWorld* physicsWorld);
     virtual ~Plane();
-    
+
     // Override virtual functions
     void Draw(Camera3D camera) override;
     const char* GetType() const override;

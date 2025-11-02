@@ -23,12 +23,12 @@ private:
     float speed;
     float lookYaw;
     float lookPitch;
-    
+
     // Physics
     dBodyID body;
     dGeomID geom;
     PhysicsWorld* physics;
-    
+
     // Inventory selection
     int selectedItemIndex;  // -1 = no item selected, 0+ = selected item index
     int lastHeldItemIndex;  // Remembers the last item that was held
@@ -36,20 +36,23 @@ private:
 public:
     Player(Vector3 pos, PhysicsWorld* physicsWorld);
     virtual ~Player();
-    
+
     // Override virtual functions
     void Update(float deltaTime) override;
     const char* GetType() const override;
-    
+
     // Player-specific methods
     void HandleInteraction();
+    void HandleShooting();
     Interactable* GetClosestInteractable();
     void DrawInventoryUI();
-    
+    void DrawHeldItem();
+
     // Accessors
     Camera3D* GetCamera() { return camera.GetCamera(); }
     Inventory* GetInventory() { return &inventory; }
     Vector3 GetPosition() const { return position; }
+    int GetSelectedItemIndex() const { return selectedItemIndex; }
 };
 
 #endif

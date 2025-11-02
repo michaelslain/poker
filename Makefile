@@ -23,7 +23,7 @@ endif
 TARGET = game
 
 # Source files (C++ extensions)
-SRCS = main.cpp src/object.cpp src/camera.cpp src/player.cpp src/interactable.cpp src/item.cpp src/card.cpp src/chip.cpp src/deck.cpp src/poker_table.cpp src/dom.cpp src/inventory.cpp src/inventory_ui.cpp src/render_utils.cpp src/plane.cpp src/physics.cpp src/rigidbody.cpp src/spawner.cpp
+SRCS = main.cpp src/object.cpp src/camera.cpp src/player.cpp src/interactable.cpp src/item.cpp src/card.cpp src/chip.cpp src/pistol.cpp src/bullet.cpp src/deck.cpp src/poker_table.cpp src/dom.cpp src/inventory.cpp src/inventory_ui.cpp src/render_utils.cpp src/plane.cpp src/physics.cpp src/rigidbody.cpp src/spawner.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 # Build target

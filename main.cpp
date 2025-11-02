@@ -3,6 +3,8 @@
 #include "interactable.hpp"
 #include "card.hpp"
 #include "chip.hpp"
+#include "pistol.hpp"
+#include "bullet.hpp"
 #include "plane.hpp"
 #include "player.hpp"
 #include "physics.hpp"
@@ -45,6 +47,7 @@ int main(void)
     // Create spawners just above the plane
     Spawner cardSpawner({0.0f, 2.0f, 0.0f}, 2.0f);
     Spawner chipSpawner({-5.0f, 2.0f, -5.0f}, 1.5f);
+    Spawner pistolSpawner({3.0f, 2.0f, 3.0f}, 1.0f);
     
     // Spawn some cards (spawner allocates and adds to DOM)
     cardSpawner.SpawnCards(SUIT_SPADES, RANK_ACE, 3, &physics, &dom);
@@ -56,6 +59,9 @@ int main(void)
     chipSpawner.SpawnChips(10, 5, &physics, &dom);
     chipSpawner.SpawnChips(25, 5, &physics, &dom);
     chipSpawner.SpawnChips(100, 5, &physics, &dom);
+    
+    // Spawn a pistol
+    pistolSpawner.SpawnPistols(1, &physics, &dom);
     
     SetTargetFPS(60);
     
@@ -79,11 +85,23 @@ int main(void)
         // Step physics simulation
         physics.Step(deltaTime);
         
-        // Update all objects in DOM
+        // Update all objects in DOM (except player - already updated above)
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
-            if (obj != nullptr) {
+            if (obj != nullptr && obj != player) {  // Skip player - already updated
                 obj->Update(deltaTime);
+            }
+        }
+        
+        // Remove expired bullets from DOM
+        for (int i = dom.GetCount() - 1; i >= 0; i--) {
+            Object* obj = dom.GetObject(i);
+            if (obj != nullptr && strcmp(obj->GetType(), "bullet") == 0) {
+                Bullet* bullet = static_cast<Bullet*>(obj);
+                if (bullet->IsExpired() || !bullet->isActive) {
+                    dom.RemoveObject(bullet);
+                    delete bullet;
+                }
             }
         }
         
@@ -117,6 +135,13 @@ int main(void)
                     closestInteractable->DrawPrompt(*camera);
                 EndMode3D();
             }
+            
+            // Draw held item (pistol) in 3D space - disable depth test so it draws on top
+            rlDisableDepthTest();
+            BeginMode3D(*camera);
+                player->DrawHeldItem();
+            EndMode3D();
+            rlEnableDepthTest();
             
             // Draw UI on top
             player->DrawInventoryUI();

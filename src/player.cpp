@@ -2,6 +2,8 @@
 #include "item.hpp"
 #include "interactable.hpp"
 #include "poker_table.hpp"
+#include "pistol.hpp"
+#include "bullet.hpp"
 #include "dom.hpp"
 #include "inventory_ui.hpp"
 #include "raymath.h"
@@ -65,7 +67,7 @@ void Player::HandleInteraction() {
         table->InteractWithPlayer(this);
     }
     // Handle item pickup
-    else if (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0) {
+    else if (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0 || strcmp(typeStr, "pistol") == 0) {
         Item* item = static_cast<Item*>(closestInteractable);
         
         inventory.AddItem(item);
@@ -236,6 +238,9 @@ void Player::Update(float deltaTime) {
     
     // Handle interaction (E key)
     HandleInteraction();
+    
+    // Handle shooting (left click)
+    HandleShooting();
 }
 
 Interactable* Player::GetClosestInteractable() {
@@ -260,7 +265,7 @@ Interactable* Player::GetClosestInteractable() {
         Object* obj = dom->GetObject(i);
         const char* typeStr = obj->GetType();
         
-        bool isItem = (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0);
+        bool isItem = (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0 || strcmp(typeStr, "pistol") == 0);
         bool isPokerTable = (strcmp(typeStr, "poker_table") == 0);
         
         if (!isItem && !isPokerTable) continue;
@@ -295,6 +300,77 @@ Interactable* Player::GetClosestInteractable() {
     return closestInteractable;
 }
 
+void Player::HandleShooting() {
+    // Only shoot if left mouse button is pressed and we have an item selected
+    if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) return;
+    
+    TraceLog(LOG_INFO, "=== MOUSE CLICKED - HandleShooting called ===");
+    
+    if (selectedItemIndex < 0 || selectedItemIndex >= inventory.GetStackCount()) return;
+    
+    // Get the selected item
+    ItemStack* stack = inventory.GetStack(selectedItemIndex);
+    if (!stack || !stack->item) return;
+    
+    // Check if it's a pistol
+    const char* itemType = stack->item->GetType();
+    if (strcmp(itemType, "pistol") != 0) return;
+    
+    Pistol* pistol = static_cast<Pistol*>(stack->item);
+    
+    // Check if we can shoot
+    if (!pistol->CanShoot()) {
+        TraceLog(LOG_INFO, "Out of ammo!");
+        return;
+    }
+    
+    TraceLog(LOG_INFO, "Before shoot - Ammo: %d", pistol->GetAmmo());
+    
+    // Shoot the pistol (decrements ammo)
+    pistol->Shoot();
+    
+    TraceLog(LOG_INFO, "After shoot - Ammo: %d", pistol->GetAmmo());
+    
+    // Create bullet from camera center
+    Camera3D* cam = GetCamera();
+    Vector3 bulletStart = cam->position;
+    Vector3 direction = Vector3Normalize({
+        cam->target.x - cam->position.x,
+        cam->target.y - cam->position.y,
+        cam->target.z - cam->position.z
+    });
+    
+    // Create bullet and add to DOM
+    Bullet* bullet = new Bullet(bulletStart, direction, 50.0f);
+    DOM* dom = DOM::GetGlobal();
+    if (dom) {
+        dom->AddObject(bullet);
+    }
+    
+    TraceLog(LOG_INFO, "Bullet created! Total ammo now: %d", pistol->GetAmmo());
+}
+
 void Player::DrawInventoryUI() {
     InventoryUI_Draw(&inventory, selectedItemIndex);
+}
+
+void Player::DrawHeldItem() {
+    // Only draw if we have an item selected
+    if (selectedItemIndex < 0 || selectedItemIndex >= inventory.GetStackCount()) {
+        return;
+    }
+    
+    ItemStack* stack = inventory.GetStack(selectedItemIndex);
+    if (!stack || !stack->item) {
+        return;
+    }
+    
+    // Check if it's a pistol
+    const char* itemType = stack->item->GetType();
+    if (strcmp(itemType, "pistol") == 0) {
+        Pistol* pistol = static_cast<Pistol*>(stack->item);
+        Camera3D* cam = GetCamera();
+        TraceLog(LOG_INFO, "Drawing held pistol at selected index %d", selectedItemIndex);
+        pistol->DrawHeld(*cam);
+    }
 }

@@ -2,6 +2,7 @@
 #include "inventory.hpp"
 #include "card.hpp"
 #include "chip.hpp"
+#include "pistol.hpp"
 #include "raylib.h"
 #include <cstring>
 
@@ -35,9 +36,21 @@ void InventoryUI_Draw(Inventory* inventory, int selectedIndex) {
             DrawRectangleLinesEx(destRect, 2, LIGHTGRAY);
         }
         
-        // Draw stack count in bottom-right corner if > 1
-        if (stack->count > 1) {
-            const char* countText = TextFormat("%d", stack->count);
+        // Draw count in bottom-right corner
+        // For pistols, show ammo count instead of stack count
+        const char* countText = nullptr;
+        const char* itemType = item->GetType();
+        
+        if (strcmp(itemType, "pistol") == 0) {
+            // Show ammo count for pistols
+            Pistol* pistol = static_cast<Pistol*>(item);
+            countText = TextFormat("%d", pistol->GetAmmo());
+        } else if (stack->count > 1) {
+            // Show stack count for other items
+            countText = TextFormat("%d", stack->count);
+        }
+        
+        if (countText != nullptr) {
             int textWidth = MeasureText(countText, 16);
             float textX = x + iconSize - textWidth - 5;
             float textY = y + iconSize - 20;
