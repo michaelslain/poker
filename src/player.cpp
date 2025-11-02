@@ -70,8 +70,14 @@ void Player::HandleInteraction() {
     else if (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0 || strcmp(typeStr, "pistol") == 0) {
         Item* item = static_cast<Item*>(closestInteractable);
         
+        // Add to inventory
         inventory.AddItem(item);
-        item->isActive = false;
+        
+        // Remove from DOM - inventory now owns it
+        DOM* dom = DOM::GetGlobal();
+        if (dom) {
+            dom->RemoveObject(item);
+        }
         
         TraceLog(LOG_INFO, "Item picked up: %s, Inventory stacks: %d", typeStr, inventory.GetStackCount());
     }
@@ -351,6 +357,21 @@ void Player::HandleShooting() {
     }
     
     TraceLog(LOG_INFO, "Bullet created! Total ammo now: %d", pistol->GetAmmo());
+    
+    // Check if pistol is out of ammo after shooting
+    if (pistol->GetAmmo() <= 0) {
+        TraceLog(LOG_INFO, "Pistol out of ammo! Removing from inventory and deleting.");
+        
+        // Remove from inventory
+        inventory.RemoveItem(selectedItemIndex);
+        
+        // Delete the pistol immediately (inventory no longer references it)
+        delete pistol;
+        
+        // Deselect item since it's gone
+        selectedItemIndex = -1;
+        lastHeldItemIndex = -1;
+    }
 }
 
 void Player::DrawInventoryUI() {

@@ -15,7 +15,13 @@ bool Inventory::AddItem(Item* item) {
     // Get the type string for this item (e.g., "card_spades_ace" or "chip_5")
     const char* itemType = item->GetType();
     
-    // Try to find existing stack with matching type
+    // Pistols don't stack (each has unique ammo) - always create new slot
+    if (strcmp(itemType, "pistol") == 0) {
+        stacks.push_back(ItemStack(item, 1, itemType));
+        return true;
+    }
+    
+    // Try to find existing stack with matching type for other items
     for (size_t i = 0; i < stacks.size(); i++) {
         if (stacks[i].typeString == itemType) {
             // Found matching stack, increment count
