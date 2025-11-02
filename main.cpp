@@ -11,6 +11,7 @@
 #include "light.hpp"
 #include "light_bulb.hpp"
 #include "player.hpp"
+#include "enemy.hpp"
 #include "physics.hpp"
 #include "spawner.hpp"
 #include "poker_table.hpp"
@@ -68,6 +69,19 @@ int main(void)
     PokerTable* pokerTable = new PokerTable({5.0f, 1.0f, 0.0f}, {4.0f, 0.2f, 2.5f}, BROWN, &physics);
     pokerTable->isDynamicallyAllocated = true;
     dom.AddObject(pokerTable);
+
+    // Create 3 enemies at different positions in the room
+    Enemy* enemy1 = new Enemy({-5.0f, 0.0f, 5.0f}, "Shadow");
+    enemy1->isDynamicallyAllocated = true;
+    dom.AddObject(enemy1);
+
+    Enemy* enemy2 = new Enemy({5.0f, 0.0f, -5.0f}, "Phantom");
+    enemy2->isDynamicallyAllocated = true;
+    dom.AddObject(enemy2);
+
+    Enemy* enemy3 = new Enemy({-3.0f, 0.0f, -7.0f}, "Wraith");
+    enemy3->isDynamicallyAllocated = true;
+    dom.AddObject(enemy3);
 
     // Create spawners inside the room
     Spawner cardSpawner({0.0f, 2.0f, 3.0f}, 2.0f);
