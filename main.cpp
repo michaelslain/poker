@@ -156,10 +156,11 @@ int main(void)
         physics.Step(deltaTime);
 
         // Update all objects in DOM (except player - already updated above)
+        // Only update root objects (those without parents) - they will recursively update their children
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
-            if (obj != nullptr && obj != player) {  // Skip player - already updated
-                obj->Update(deltaTime);
+            if (obj != nullptr && obj != player && obj->GetParent() == nullptr) {  // Skip player and non-root objects
+                obj->UpdateWithChildren(deltaTime);
             }
         }
 
@@ -185,10 +186,10 @@ int main(void)
             BeginMode3D(*camera);
                 // Apply lighting shader to all 3D objects automatically (except light sources, chips, enemies, persons, players, and closest interactable)
                 BeginShaderMode(LightSource::GetLightingShader());
-                    // Draw all objects except light sources, chips, enemies, persons, players, and closest interactable
+                    // Draw all root objects (and their children recursively) except light sources, chips, enemies, persons, players, and closest interactable
                     for (int i = 0; i < dom.GetCount(); i++) {
                         Object* obj = dom.GetObject(i);
-                        if (obj != nullptr) {
+                        if (obj != nullptr && obj->GetParent() == nullptr) {  // Only draw root objects
                             const char* type = obj->GetType();
                             // Skip light sources and chips - they don't have proper normals for lighting
                             if (strcmp(type, "light_bulb") == 0) continue;
@@ -200,19 +201,19 @@ int main(void)
                             // Skip closest interactable only if it exists and matches
                             if (closestInteractable != nullptr && obj == closestInteractable) continue;
                             
-                            obj->Draw(*camera);
+                            obj->DrawWithChildren(*camera);
                         }
                     }
                 EndShaderMode();
                 
-                // Draw objects without shader (light sources, chips, enemies, persons, and players)
+                // Draw root objects without shader (light sources, chips, enemies, persons, and players)
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
-                    if (obj != nullptr && obj != closestInteractable) {
+                    if (obj != nullptr && obj != closestInteractable && obj->GetParent() == nullptr) {  // Only draw root objects
                         const char* type = obj->GetType();
                         if (strcmp(type, "light_bulb") == 0 || strncmp(type, "chip_", 5) == 0 || 
                             strcmp(type, "enemy") == 0 || strcmp(type, "person") == 0 || strcmp(type, "player") == 0) {
-                            obj->Draw(*camera);
+                            obj->DrawWithChildren(*camera);
                         }
                     }
                 }
@@ -222,7 +223,8 @@ int main(void)
             if (closestInteractable != nullptr) {
                 BeginMode3D(*camera);
                     // Draw the closest interactable without lighting shader (unaffected, fully bright)
-                    closestInteractable->Draw(*camera);
+                    // Use DrawWithChildren to also draw any children (e.g., Deck and Dealer for PokerTable)
+                    closestInteractable->DrawWithChildren(*camera);
                     
                     // Draw E prompt
                     closestInteractable->DrawPrompt(*camera);

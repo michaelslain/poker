@@ -1,6 +1,8 @@
 #include "poker_table.hpp"
 #include "player.hpp"
 #include "person.hpp"
+#include "dealer.hpp"
+#include "dom.hpp"
 #include "raymath.h"
 #include <cstdio>
 
@@ -50,8 +52,31 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
         seats[i].isOccupied = false;
     }
     
-    // Deck is automatically initialized by its constructor
-    deck.Shuffle();
+    // Create and initialize the deck
+    // Position it on top of the table, offset to the side (leaving room for flop in center)
+    Vector3 deckPos = {
+        pos.x - halfWidth * 0.5f,  // Left side of center
+        pos.y + size.y / 2.0f + 0.05f,  // On top of table
+        pos.z  // Center depth
+    };
+    TraceLog(LOG_INFO, "PokerTable: Creating deck...");
+    deck = new Deck(deckPos);
+    TraceLog(LOG_INFO, "PokerTable: Deck created, shuffling...");
+    deck->Shuffle();
+    deck->isDynamicallyAllocated = true;
+    TraceLog(LOG_INFO, "PokerTable: Deck initialized");
+    
+    // Create the dealer at the center of one side of the table
+    Vector3 dealerPos = {pos.x, groundLevel, pos.z - halfDepth - seatDistance};
+    dealer = new Dealer(dealerPos, "Dealer");
+    dealer->isDynamicallyAllocated = true;
+    
+    // Add dealer and deck as children of the poker table
+    TraceLog(LOG_INFO, "PokerTable: Adding dealer as child...");
+    AddChild(dealer);
+    TraceLog(LOG_INFO, "PokerTable: Adding deck as child...");
+    AddChild(deck);
+    TraceLog(LOG_INFO, "PokerTable: Children added successfully");
     
     // Create ODE box geometry for collision
     if (physics != nullptr) {
@@ -71,6 +96,18 @@ PokerTable::~PokerTable() {
     if (geom != nullptr) {
         dGeomDestroy(geom);
         geom = nullptr;
+    }
+    
+    // Delete deck
+    if (deck != nullptr) {
+        delete deck;
+        deck = nullptr;
+    }
+    
+    // Delete dealer (it will be removed from DOM during cleanup)
+    if (dealer != nullptr) {
+        delete dealer;
+        dealer = nullptr;
     }
     
     // Clear player references (don't delete players, they're owned elsewhere)
@@ -102,7 +139,7 @@ void PokerTable::Draw(Camera3D camera) {
 
 void PokerTable::Interact() {
     printf("Interacted with poker table! Players at table: %d/%d\n", playerCount, MAX_PLAYERS);
-    deck.Shuffle();
+    deck->Shuffle();
 }
 
 const char* PokerTable::GetType() const {
@@ -169,7 +206,7 @@ void PokerTable::InteractWithPlayer(Player* player) {
     // Seat the player
     if (SeatPerson(player, seatIndex) && AddPlayer(player)) {
         printf("You sat down at seat %d! Players at table: %d/%d\n", seatIndex, playerCount, MAX_PLAYERS);
-        deck.Shuffle();
+        deck->Shuffle();
     }
 }
 

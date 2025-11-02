@@ -74,8 +74,18 @@ void Card::Draw(Camera3D camera) {
     float cardHeight = 0.7f;
     float cardThickness = 0.02f;
     
-    // Get rotation matrix from physics body
-    Matrix rotMatrix = rigidBody ? rigidBody->GetRotationMatrix() : MatrixIdentity();
+    // Get rotation matrix from physics body or from rotation vector
+    Matrix rotMatrix;
+    if (rigidBody) {
+        rotMatrix = rigidBody->GetRotationMatrix();
+    } else {
+        // Use rotation vector (euler angles in degrees)
+        rotMatrix = MatrixRotateXYZ((Vector3){
+            rotation.x * DEG2RAD,
+            rotation.y * DEG2RAD,
+            rotation.z * DEG2RAD
+        });
+    }
     Matrix transMatrix = MatrixTranslate(position.x, position.y, position.z);
     Matrix transform = MatrixMultiply(rotMatrix, transMatrix);
     

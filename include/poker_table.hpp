@@ -13,6 +13,7 @@
 // Forward declarations
 class Player;
 class Person;
+class Dealer;
 
 struct Seat {
     Vector3 position;     // World position of the seat
@@ -25,7 +26,8 @@ private:
     std::array<Player*, MAX_PLAYERS> players;
     std::array<Seat, MAX_SEATS> seats;
     int playerCount;
-    Deck deck;
+    Deck* deck;        // Owned by this table
+    Dealer* dealer;    // Owned by this table
     Vector3 size;
     Color color;
     dGeomID geom;
@@ -55,7 +57,8 @@ public:
     
     // Accessors
     int GetPlayerCount() const { return playerCount; }
-    Deck* GetDeck() { return &deck; }
+    Deck* GetDeck() { return deck; }
+    Dealer* GetDealer() { return dealer; }
     dGeomID GetGeom() const { return geom; }
 };
 

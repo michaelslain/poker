@@ -16,7 +16,7 @@ void Interactable::Interact() {
 void Interactable::DrawPrompt(Camera3D camera) {
     // Position prompt above the object
     Vector3 promptPos = { position.x, position.y + 1.0f, position.z };
-    
+
     // Draw "E" text (white)
     DrawTextBillboard(camera, "E", promptPos, 20, WHITE);
 }
