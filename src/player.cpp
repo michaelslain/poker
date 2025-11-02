@@ -184,6 +184,7 @@ void Player::Update(float deltaTime) {
     
     // Handle inventory selection with X key
     if (IsKeyPressed(KEY_X)) {
+        TraceLog(LOG_INFO, "X key pressed! Current selected: %d, Stack count: %d", selectedItemIndex, inventory.GetStackCount());
         if (selectedItemIndex == -1) {
             if (inventory.GetStackCount() > 0) {
                 if (lastHeldItemIndex >= 0 && lastHeldItemIndex < inventory.GetStackCount()) {
@@ -191,10 +192,12 @@ void Player::Update(float deltaTime) {
                 } else {
                     selectedItemIndex = 0;
                 }
+                TraceLog(LOG_INFO, "Selected item index: %d", selectedItemIndex);
             }
         } else {
             lastHeldItemIndex = selectedItemIndex;
             selectedItemIndex = -1;
+            TraceLog(LOG_INFO, "Deselected item. Last held: %d", lastHeldItemIndex);
         }
     }
     
