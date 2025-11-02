@@ -29,6 +29,7 @@ public:
     bool AddItem(Item* item);
     bool RemoveItem(int stackIndex);
     void Cleanup();
+    void Sort();  // Sort inventory by type: weapons, cards (by rank), chips (by value)
     
     // Accessors
     int GetStackCount() const { return stacks.size(); }
