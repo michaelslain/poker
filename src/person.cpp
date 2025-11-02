@@ -2,8 +2,8 @@
 #include "raymath.h"
 #include "rlgl.h"
 
-Person::Person(Vector3 pos, const std::string& personName)
-    : Object(pos), name(personName) {
+Person::Person(Vector3 pos, const std::string& personName, float personHeight)
+    : Object(pos), inventory(), name(personName), height(personHeight) {
 }
 
 // Helper function to draw a cube using raw rlgl (no lighting)
@@ -96,6 +96,7 @@ static void DrawSpherePitchBlack(float radius, int rings, int slices) {
 void Person::Draw(Camera3D camera) {
     // Draw a pitch black humanoid figure (head, body, arms, legs)
     // This is rendered with pure BLACK color (0,0,0) and no lighting calculations
+    // Uses height attribute to scale the mesh vertically
     
     rlPushMatrix();
     rlTranslatef(position.x, position.y, position.z);
@@ -104,40 +105,63 @@ void Person::Draw(Camera3D camera) {
     rlRotatef(rotation.z, 0, 0, 1);
     rlScalef(scale.x, scale.y, scale.z);
     
-    // Draw HEAD (sphere at top)
+    // Draw BODY (tall torso)
     rlPushMatrix();
-    rlTranslatef(0.0f, 1.5f, 0.0f);
-    DrawSpherePitchBlack(0.25f, 8, 8);
+    rlTranslatef(0.0f, 1.0f * height, 0.0f);
+    DrawCubePitchBlack(0.55f, 1.4f * height, 0.35f);
     rlPopMatrix();
     
-    // Draw BODY (box for torso)
+    // Draw NECK (connects head to body, overlapping top of torso)
     rlPushMatrix();
-    rlTranslatef(0.0f, 0.7f, 0.0f);
-    DrawCubePitchBlack(0.5f, 0.8f, 0.3f);
+    rlTranslatef(0.0f, 1.75f * height, 0.0f);
+    DrawCubePitchBlack(0.15f, 0.25f * height, 0.15f);
     rlPopMatrix();
     
-    // Draw LEFT ARM
+    // Draw HEAD (sphere at top, overlapping neck)
     rlPushMatrix();
-    rlTranslatef(-0.35f, 0.9f, 0.0f);
-    DrawCubePitchBlack(0.15f, 0.7f, 0.15f);
+    rlTranslatef(0.0f, 2.1f * height, 0.0f);
+    DrawSpherePitchBlack(0.3f, 10, 10);
     rlPopMatrix();
     
-    // Draw RIGHT ARM
+    // Draw SHOULDER connectors (make arms feel attached)
     rlPushMatrix();
-    rlTranslatef(0.35f, 0.9f, 0.0f);
-    DrawCubePitchBlack(0.15f, 0.7f, 0.15f);
+    rlTranslatef(-0.35f, 1.55f * height, 0.0f);
+    DrawCubePitchBlack(0.22f, 0.22f, 0.22f);
     rlPopMatrix();
     
-    // Draw LEFT LEG
     rlPushMatrix();
-    rlTranslatef(-0.15f, -0.2f, 0.0f);
-    DrawCubePitchBlack(0.18f, 0.9f, 0.18f);
+    rlTranslatef(0.35f, 1.55f * height, 0.0f);
+    DrawCubePitchBlack(0.22f, 0.22f, 0.22f);
     rlPopMatrix();
     
-    // Draw RIGHT LEG
+    // Draw LEFT ARM (longer, overlapping shoulder)
     rlPushMatrix();
-    rlTranslatef(0.15f, -0.2f, 0.0f);
-    DrawCubePitchBlack(0.18f, 0.9f, 0.18f);
+    rlTranslatef(-0.35f, 1.05f * height, 0.0f);
+    DrawCubePitchBlack(0.17f, 1.1f * height, 0.17f);
+    rlPopMatrix();
+    
+    // Draw RIGHT ARM (longer, overlapping shoulder)
+    rlPushMatrix();
+    rlTranslatef(0.35f, 1.05f * height, 0.0f);
+    DrawCubePitchBlack(0.17f, 1.1f * height, 0.17f);
+    rlPopMatrix();
+    
+    // Draw HIP/PELVIS connector (connects body to legs, overlapping bottom of torso)
+    rlPushMatrix();
+    rlTranslatef(0.0f, 0.25f * height, 0.0f);
+    DrawCubePitchBlack(0.5f, 0.2f * height, 0.32f);
+    rlPopMatrix();
+    
+    // Draw LEFT LEG (much taller, overlapping pelvis)
+    rlPushMatrix();
+    rlTranslatef(-0.15f, -0.5f * height, 0.0f);
+    DrawCubePitchBlack(0.21f, 1.6f * height, 0.21f);
+    rlPopMatrix();
+    
+    // Draw RIGHT LEG (much taller, overlapping pelvis)
+    rlPushMatrix();
+    rlTranslatef(0.15f, -0.5f * height, 0.0f);
+    DrawCubePitchBlack(0.21f, 1.6f * height, 0.21f);
     rlPopMatrix();
     
     rlPopMatrix();

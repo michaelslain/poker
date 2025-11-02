@@ -13,7 +13,7 @@
 #include <ode/ode.h>
 
 Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName)
-    : Person(pos, playerName), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
+    : Person(pos, playerName, 1.0f), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
       lookYaw(0.0f), lookPitch(0.0f), body(nullptr), geom(nullptr), physics(physicsWorld),
       selectedItemIndex(-1), lastHeldItemIndex(-1)
 {
@@ -199,7 +199,7 @@ void Player::Update(float deltaTime) {
     };
     
     Vector3 eyePos = position;
-    eyePos.y += 1.7f;  // Eye level height
+    eyePos.y += 1.9f * height;  // Eye level height (scaled by height)
     eyePos.x += forwardDir.x * 0.3f;  // Offset forward slightly
     eyePos.z += forwardDir.z * 0.3f;
     
