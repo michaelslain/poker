@@ -3,7 +3,7 @@
 #include <cstdio>
 
 PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, PhysicsWorld* physicsWorld)
-    : Interactable(pos), playerCount(0), size(tableSize), color(tableColor), physics(physicsWorld), geom(nullptr)
+    : Interactable(pos), playerCount(0), size(tableSize), color(tableColor), geom(nullptr), physics(physicsWorld)
 {
     // Initialize players array
     for (int i = 0; i < MAX_PLAYERS; i++) {

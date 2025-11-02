@@ -3,6 +3,9 @@ CompileFlags:
     - -I/opt/homebrew/opt/raylib/include
     - -I/opt/homebrew/opt/ode/include
     - -I/Users/michaelslain/Documents/dev/poker/include
-    - -std=c99
+    - -std=c++17
     - -x
-    - c
+    - c++
+Diagnostics:
+  Suppress:
+    - -Wmissing-field-initializers

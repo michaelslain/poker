@@ -19,7 +19,7 @@ void Interactable::DrawPrompt(Camera3D camera) {
     
     // Draw a small white square background
     float squareSize = 0.3f;
-    DrawBillboard(camera, (Texture2D){0}, promptPos, squareSize, WHITE);
+    DrawBillboard(camera, (Texture2D){0, 0, 0, 0, 0}, promptPos, squareSize, WHITE);
     
     // Draw "E" text on top
     DrawTextBillboard(camera, "E", promptPos, 20, BLACK);

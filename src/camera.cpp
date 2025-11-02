@@ -17,17 +17,17 @@ void GameCamera::Update(Vector2 mouseDelta) {
     float sensitivity = 0.003f;
     angle.y += mouseDelta.x * sensitivity; // yaw
     angle.x += mouseDelta.y * sensitivity; // pitch
-    
+
     // Clamp pitch to prevent flipping
     if (angle.x > 89.0f * DEG2RAD) angle.x = 89.0f * DEG2RAD;
     if (angle.x < -89.0f * DEG2RAD) angle.x = -89.0f * DEG2RAD;
-    
+
     // Calculate forward direction from angles
     Vector3 forward;
     forward.x = cosf(angle.x) * sinf(angle.y);
     forward.y = sinf(angle.x);
     forward.z = cosf(angle.x) * cosf(angle.y);
-    
+
     // Update camera target
     camera.target = Vector3Add(camera.position, forward);
 }
