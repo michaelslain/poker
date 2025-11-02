@@ -114,7 +114,7 @@ int main(void)
             
             Camera3D* camera = player->GetCamera();
             
-            // Render main scene
+            // === 3D RENDERING PASS ===
             BeginMode3D(*camera);
                 // Draw ground plane
                 groundPlane->Draw(*camera);
@@ -143,9 +143,21 @@ int main(void)
             EndMode3D();
             rlEnableDepthTest();
             
-            // Draw UI on top
-            player->DrawInventoryUI();
+            // === 2D UI RENDERING PASS ===
+            // Flush 3D rendering and switch to pure 2D mode
+            rlDrawRenderBatchActive();
+            rlDisableDepthTest();
+            rlDisableBackfaceCulling();
+            
+            // Set 2D mode explicitly
+            BeginMode2D({{0, 0}, {0, 0}, 0, 1.0f});
+                player->DrawInventoryUI();
+            EndMode2D();
+            
+            // Draw FPS counter
             DrawFPS(10, screenHeight - 30);
+            
+            rlEnableDepthTest();
         EndDrawing();
     }
     
