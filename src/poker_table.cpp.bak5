@@ -152,9 +152,9 @@ bool PokerTable::HasPlayer(Player* player) {
 
 void PokerTable::InteractWithPlayer(Player* player) {
     // Check if player is already seated
-    if (IsPersonSeated(player)) {
+    if (IsPlayerSeated(player)) {
         printf("You are already seated at this table.\n");
-        UnseatPerson(player);
+        UnseatPlayer(player);
         RemovePlayer(player);
         return;
     }
@@ -167,7 +167,7 @@ void PokerTable::InteractWithPlayer(Player* player) {
     }
     
     // Seat the player
-    if (SeatPerson(player, seatIndex) && AddPlayer(player)) {
+    if (SeatPlayer(player, seatIndex) && AddPlayer(player)) {
         printf("You sat down at seat %d! Players at table: %d/%d\n", seatIndex, playerCount, MAX_PLAYERS);
         deck.Shuffle();
     }
@@ -200,7 +200,7 @@ bool PokerTable::SeatPerson(Person* person, int seatIndex) {
     }
     
     // Mark seat as occupied
-    seats[seatIndex].occupant = person;
+    seats[seatIndex].occupant = player;
     seats[seatIndex].isOccupied = true;
     
     // Move player to seat and lock their position

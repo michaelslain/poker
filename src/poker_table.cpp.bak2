@@ -152,9 +152,9 @@ bool PokerTable::HasPlayer(Player* player) {
 
 void PokerTable::InteractWithPlayer(Player* player) {
     // Check if player is already seated
-    if (IsPersonSeated(player)) {
+    if (IsPlayerSeated(player)) {
         printf("You are already seated at this table.\n");
-        UnseatPerson(player);
+        UnseatPlayer(player);
         RemovePlayer(player);
         return;
     }
@@ -167,19 +167,19 @@ void PokerTable::InteractWithPlayer(Player* player) {
     }
     
     // Seat the player
-    if (SeatPerson(player, seatIndex) && AddPlayer(player)) {
+    if (SeatPlayer(player, seatIndex) && AddPlayer(player)) {
         printf("You sat down at seat %d! Players at table: %d/%d\n", seatIndex, playerCount, MAX_PLAYERS);
         deck.Shuffle();
     }
 }
 
-int PokerTable::FindClosestOpenSeat(Vector3 personPos) {
+int PokerTable::FindClosestOpenSeat(Vector3 playerPos) {
     int closestSeat = -1;
     float closestDist = FLT_MAX;
     
     for (int i = 0; i < MAX_SEATS; i++) {
         if (!seats[i].isOccupied) {
-            float dist = Vector3Distance(personPos, seats[i].position);
+            float dist = Vector3Distance(playerPos, seats[i].position);
             if (dist < closestDist) {
                 closestDist = dist;
                 closestSeat = i;
@@ -190,7 +190,7 @@ int PokerTable::FindClosestOpenSeat(Vector3 personPos) {
     return closestSeat;
 }
 
-bool PokerTable::SeatPerson(Person* person, int seatIndex) {
+bool PokerTable::SeatPlayer(Player* player, int seatIndex) {
     if (seatIndex < 0 || seatIndex >= MAX_SEATS) {
         return false;
     }
@@ -200,30 +200,30 @@ bool PokerTable::SeatPerson(Person* person, int seatIndex) {
     }
     
     // Mark seat as occupied
-    seats[seatIndex].occupant = person;
+    seats[seatIndex].occupant = player;
     seats[seatIndex].isOccupied = true;
     
     // Move player to seat and lock their position
-    person->SitDown(seats[seatIndex].position);
+    player->SitDown(seats[seatIndex].position);
     
     return true;
 }
 
-void PokerTable::UnseatPerson(Person* person) {
+void PokerTable::UnseatPlayer(Player* player) {
     for (int i = 0; i < MAX_SEATS; i++) {
-        if (seats[i].occupant == person) {
+        if (seats[i].occupant == player) {
             seats[i].occupant = nullptr;
             seats[i].isOccupied = false;
-            person->StandUp();  // Allow person to move again
+            player->StandUp();  // Allow player to move again
             printf("You left your seat.\n");
             return;
         }
     }
 }
 
-bool PokerTable::IsPersonSeated(Person* person) {
+bool PokerTable::IsPlayerSeated(Player* player) {
     for (int i = 0; i < MAX_SEATS; i++) {
-        if (seats[i].occupant == person) {
+        if (seats[i].occupant == player) {
             return true;
         }
     }

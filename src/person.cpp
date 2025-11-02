@@ -3,7 +3,8 @@
 #include "rlgl.h"
 
 Person::Person(Vector3 pos, const std::string& personName, float personHeight)
-    : Object(pos), inventory(), name(personName), height(personHeight) {
+    : Object(pos), inventory(), name(personName), height(personHeight), 
+      isSeated(false), seatPosition({0, 0, 0}) {
 }
 
 // Helper function to draw a cube using raw rlgl (no lighting)
@@ -172,4 +173,15 @@ void Person::Draw(Camera3D camera) {
 
 const char* Person::GetType() const {
     return "person";
+}
+
+void Person::SitDown(Vector3 seatPos) {
+    isSeated = true;
+    seatPosition = seatPos;
+    position = seatPos;  // Move person to seat immediately
+}
+
+void Person::StandUp() {
+    isSeated = false;
+    // Position remains where the seat was, person can move freely from there
 }

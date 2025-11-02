@@ -82,6 +82,22 @@ int main(void)
     Enemy* enemy3 = new Enemy({-3.0f, 0.0f, -7.0f}, "Person 3");
     enemy3->isDynamicallyAllocated = true;
     dom.AddObject(enemy3);
+    
+    // Seat enemies at the poker table
+    int seat1 = pokerTable->FindClosestOpenSeat(enemy1->position);
+    if (seat1 != -1) {
+        pokerTable->SeatPerson(enemy1, seat1);
+    }
+    
+    int seat2 = pokerTable->FindClosestOpenSeat(enemy2->position);
+    if (seat2 != -1) {
+        pokerTable->SeatPerson(enemy2, seat2);
+    }
+    
+    int seat3 = pokerTable->FindClosestOpenSeat(enemy3->position);
+    if (seat3 != -1) {
+        pokerTable->SeatPerson(enemy3, seat3);
+    }
 
     // Create spawners inside the room
     Spawner cardSpawner({0.0f, 2.0f, 3.0f}, 2.0f);
@@ -107,7 +123,6 @@ int main(void)
     // Main game loop
     while (!WindowShouldClose())
     {
-        TraceLog(LOG_INFO, "=== FRAME START ===");
         float deltaTime = GetFrameTime();
 
         // Toggle cursor lock with U key
@@ -119,19 +134,14 @@ int main(void)
             }
         }
 
-        TraceLog(LOG_INFO, "About to update player");
         // Update player (handles input, camera, and FOV)
         player->Update(deltaTime);
-        TraceLog(LOG_INFO, "Player update complete");
 
         // Update camera position in lighting shader
-        TraceLog(LOG_INFO, "Getting camera");
         Camera3D* cam = player->GetCamera();
         LightSource::UpdateCameraPosition(cam->position);
-        TraceLog(LOG_INFO, "Camera updated");
 
         // Update all light sources in shader
-        TraceLog(LOG_INFO, "Updating light sources, DOM count: %d", dom.GetCount());
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
             // Check if object is a LightSource (use dynamic_cast or type check)
@@ -141,26 +151,17 @@ int main(void)
                 light->UpdateLight();
             }
         }
-        TraceLog(LOG_INFO, "Light sources updated");
 
         // Step physics simulation
-        TraceLog(LOG_INFO, "Stepping physics");
         physics.Step(deltaTime);
-        TraceLog(LOG_INFO, "Physics step complete");
 
         // Update all objects in DOM (except player - already updated above)
-        TraceLog(LOG_INFO, "Updating DOM objects");
         for (int i = 0; i < dom.GetCount(); i++) {
-            TraceLog(LOG_INFO, "Updating object %d of %d", i, dom.GetCount());
             Object* obj = dom.GetObject(i);
             if (obj != nullptr && obj != player) {  // Skip player - already updated
-                const char* type = obj->GetType();
-                TraceLog(LOG_INFO, "  Object type: %s", type);
                 obj->Update(deltaTime);
-                TraceLog(LOG_INFO, "  Object %d updated", i);
             }
         }
-        TraceLog(LOG_INFO, "All objects updated");
 
         // Remove inactive dynamically allocated objects from DOM
         for (int i = dom.GetCount() - 1; i >= 0; i--) {

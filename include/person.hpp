@@ -12,12 +12,21 @@ protected:
     std::string name;
     float height;  // Height multiplier for the mesh (1.0 = normal, >1.0 = taller)
 
+    // Seating
+    bool isSeated;          // Whether person is seated at a table
+    Vector3 seatPosition;   // Position where person is seated
+
 public:
     Person(Vector3 pos, const std::string& personName, float personHeight = 1.0f);
     virtual ~Person() = default;
 
     // Override Draw to render pitch black (unaffected by lighting)
     void Draw(Camera3D camera) override;
+
+    // Seating methods
+    virtual void SitDown(Vector3 seatPos);
+    virtual void StandUp();
+    bool IsSeated() const { return isSeated; }
 
     // Accessors
     Inventory* GetInventory() { return &inventory; }

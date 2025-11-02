@@ -10,12 +10,13 @@
 #define MAX_PLAYERS 8  // Maximum players at a poker table
 #define MAX_SEATS 8    // 8 seats around the table (2 per side)
 
-// Forward declaration
+// Forward declarations
 class Player;
+class Person;
 
 struct Seat {
     Vector3 position;     // World position of the seat
-    Player* occupant;     // Player sitting in this seat (nullptr if empty)
+    Person* occupant;     // Person sitting in this seat (nullptr if empty)
     bool isOccupied;      // Quick check for seat availability
 };
 
@@ -47,10 +48,10 @@ public:
     void InteractWithPlayer(Player* player);
     
     // Seat management
-    int FindClosestOpenSeat(Vector3 playerPos);
-    bool SeatPlayer(Player* player, int seatIndex);
-    void UnseatPlayer(Player* player);
-    bool IsPlayerSeated(Player* player);
+    int FindClosestOpenSeat(Vector3 personPos);
+    bool SeatPerson(Person* person, int seatIndex);
+    void UnseatPerson(Person* person);
+    bool IsPersonSeated(Person* person);
     
     // Accessors
     int GetPlayerCount() const { return playerCount; }

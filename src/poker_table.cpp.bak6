@@ -200,7 +200,7 @@ bool PokerTable::SeatPerson(Person* person, int seatIndex) {
     }
     
     // Mark seat as occupied
-    seats[seatIndex].occupant = person;
+    seats[seatIndex].occupant = player;
     seats[seatIndex].isOccupied = true;
     
     // Move player to seat and lock their position
