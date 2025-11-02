@@ -10,8 +10,8 @@ Chip::Chip(int chipValue, Vector3 pos, PhysicsWorld* physics)
 
     // Initialize physics
     if (physics) {
-        float radius = 0.3f;
-        float height = 0.1f;
+        float radius = 0.1f;  // Even smaller radius (was 0.3f originally)
+        float height = 0.03f;  // Even thinner height (was 0.1f originally)
         Vector3 chipSize = { radius * 2, height, radius * 2 };
         rigidBody = new RigidBody(pos);
         rigidBody->InitBox(physics, pos, chipSize, 0.02f);
@@ -59,8 +59,8 @@ void Chip::Draw(Camera3D camera) {
     (void)camera;
     if (!isActive) return;
     
-    float radius = 0.3f;
-    float height = 0.1f;
+    float radius = 0.1f;  // Even smaller radius (was 0.3f originally)
+    float height = 0.03f;  // Even thinner height (was 0.1f originally)
     
     // Ensure color is correct (recalculate from value)
     Color baseColor = GetColorFromValue(value);

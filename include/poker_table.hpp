@@ -5,6 +5,7 @@
 #include "deck.hpp"
 #include "card.hpp"
 #include "chip.hpp"
+#include "chip_stack.hpp"
 #include "person.hpp"
 #include "physics.hpp"
 #include <ode/ode.h>
@@ -64,7 +65,7 @@ private:
     // Game objects (dual-reference: attributes for logic, children for rendering)
     Dealer* dealer;
     Deck* deck;
-    std::vector<Chip*> pot;              // Chips in the pot (also in children)
+    ChipStack* potStack;                 // Chip stack for pot (also in children)
     std::vector<Card*> communityCards;   // Community cards (also in children)
     
     // Seating - fixed size array
@@ -86,7 +87,6 @@ private:
     
     // Helper functions - Chip management
     int CountChips(Person* p);
-    int CountChips(std::vector<Chip*>& chips);
     void TakeChips(Person* p, int amount);
     void GiveChips(Person* p, int amount);
     std::vector<Chip*> CalculateChipCombination(int amount);

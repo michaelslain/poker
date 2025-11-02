@@ -9,7 +9,7 @@
 
 PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, PhysicsWorld* physicsWorld)
     : Interactable(pos), size(tableSize), color(tableColor), geom(nullptr), physics(physicsWorld),
-      dealer(nullptr), deck(nullptr), 
+      dealer(nullptr), deck(nullptr), potStack(nullptr),
       smallBlindSeat(-1), bigBlindSeat(-1), currentPlayerSeat(-1),
       currentBet(0), potValue(0), handActive(false), bettingActive(false),
       lastLoggedPlayerSeat(-1)
@@ -42,12 +42,18 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
     dealer->isDynamicallyAllocated = true;
     AddChild(dealer);
     
-    // Create deck
+    // Create deck (not added as child - won't render)
     Vector3 deckPos = {pos.x - hw * 0.5f, pos.y + size.y / 2.0f + 0.05f, pos.z};
     deck = new Deck(deckPos);
     deck->Shuffle();
     deck->isDynamicallyAllocated = true;
-    AddChild(deck);
+    // Don't add as child - deck is internal only, not rendered
+    
+    // Create pot stack (deck side of table)
+    Vector3 potPos = {pos.x - hw * 0.5f, pos.y + size.y / 2.0f + 0.05f, pos.z - 0.5f};
+    potStack = new ChipStack(potPos);
+    potStack->isDynamicallyAllocated = true;
+    AddChild(potStack);
     
     // Create collision geometry
     if (physics) {
@@ -214,13 +220,7 @@ int PokerTable::CountChips(Person* p) {
     return total;
 }
 
-int PokerTable::CountChips(std::vector<Chip*>& chips) {
-    int total = 0;
-    for (Chip* chip : chips) {
-        if (chip) total += chip->value;
-    }
-    return total;
-}
+
 
 std::vector<Chip*> PokerTable::CalculateChipCombination(int amount) {
     std::vector<Chip*> result;
@@ -285,12 +285,7 @@ void PokerTable::TakeChips(Person* p, int amount) {
     
     // Add bet to pot
     std::vector<Chip*> betChips = CalculateChipCombination(amount);
-    for (Chip* chip : betChips) {
-        chip->position = {position.x, position.y + size.y/2.0f + 0.1f, position.z};
-        chip->isActive = true;
-        AddChild(chip);
-        pot.push_back(chip);
-    }
+    potStack->AddChips(betChips);
     potValue += amount;
     
     POKER_LOG(LOG_INFO, "%s bets %d chips (pot now: %d)", p->GetName().c_str(), amount, potValue);
@@ -473,10 +468,10 @@ void PokerTable::StartHand() {
     communityCards.clear();
     
     // Clear pot
-    for (Chip* chip : pot) {
-        delete chip;  // Destructor will handle child relationship cleanup
+    std::vector<Chip*> oldChips = potStack->RemoveAll();
+    for (Chip* chip : oldChips) {
+        delete chip;  // Delete the chips from previous hand
     }
-    pot.clear();
     
     // Reset status list for all seats
     for (int i = 0; i < MAX_SEATS; i++) {
@@ -559,8 +554,8 @@ void PokerTable::DealFlop() {
     // Position cards in a row on the table
     float cardSpacing = 0.65f;  // Spacing between cards
     float startX = position.x - 1.0f;  // Start left of center
-    float cardY = position.y + size.y/2.0f + 0.12f;  // Just above table surface
-    float cardZ = position.z;  // Center of table
+    float cardY = position.y + size.y/2.0f + 0.02f;  // Flush on table surface
+    float cardZ = position.z + 0.5f;  // Offset to opposite side from deck/pot
     
     POKER_LOG(LOG_INFO, "Dealing flop - cardY=%.2f, cardZ=%.2f", cardY, cardZ);
     
@@ -594,8 +589,8 @@ void PokerTable::DealTurn() {
     // Continue the line of community cards (4th card)
     float cardSpacing = 0.65f;
     float startX = position.x - 1.0f;
-    float cardY = position.y + size.y/2.0f + 0.12f;
-    float cardZ = position.z;
+    float cardY = position.y + size.y/2.0f + 0.02f;  // Flush on table surface
+    float cardZ = position.z + 0.5f;  // Offset to opposite side from deck/pot
     
     card->position = {startX + (3 * cardSpacing), cardY, cardZ};
     card->rotation = {-90, 0, 0};  // Lay flat on table, face up
@@ -616,8 +611,8 @@ void PokerTable::DealRiver() {
     // Continue the line of community cards (5th card)
     float cardSpacing = 0.65f;
     float startX = position.x - 1.0f;
-    float cardY = position.y + size.y/2.0f + 0.12f;
-    float cardZ = position.z;
+    float cardY = position.y + size.y/2.0f + 0.02f;  // Flush on table surface
+    float cardZ = position.z + 0.5f;  // Offset to opposite side from deck/pot
     
     card->position = {startX + (4 * cardSpacing), cardY, cardZ};
     card->rotation = {-90, 0, 0};  // Lay flat on table, face up
@@ -689,11 +684,11 @@ void PokerTable::EndHand() {
     }
     communityCards.clear();
     
-    // Clear pot chips (they are children of PokerTable)
-    for (Chip* chip : pot) {
+    // Clear pot chips (they are children of ChipStack)
+    std::vector<Chip*> potChips = potStack->RemoveAll();
+    for (Chip* chip : potChips) {
         chip->isActive = false;  // Mark inactive so main loop will clean up
     }
-    pot.clear();
     
     // Blinds will rotate on next hand (handled in PostBlinds)
     
