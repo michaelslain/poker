@@ -47,11 +47,4 @@ make clean  # Clean build artifacts
 - **Left/Right Arrow** - Navigate inventory selection
 - **[ ]** - Adjust FOV
 
-## Architecture
 
-Built with OOP principles:
-- **Virtual functions** for polymorphic behavior
-- **Inheritance hierarchy**: Object → Interactable → Item → Card/Chip
-- **RAII** pattern with constructors/destructors
-- **std::vector** and **std::array** for dynamic collections
-- **Physics integration** with ODE for realistic interactions
