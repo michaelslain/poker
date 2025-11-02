@@ -1,21 +1,22 @@
-#ifndef PLANE_HPP
-#define PLANE_HPP
+#ifndef CEILING_HPP
+#define CEILING_HPP
 
 #include "object.hpp"
 #include "physics.hpp"
 #include "raylib.h"
 #include <ode/ode.h>
 
-class Plane : public Object {
+class Ceiling : public Object {
 private:
     Vector2 size;
     Color color;
     dGeomID geom;
     PhysicsWorld* physics;
+    Model model;
 
 public:
-    Plane(Vector3 position, Vector2 planeSize, Color planeColor, PhysicsWorld* physicsWorld);
-    virtual ~Plane();
+    Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor, PhysicsWorld* physicsWorld);
+    virtual ~Ceiling();
 
     // Override virtual functions
     void Draw(Camera3D camera) override;

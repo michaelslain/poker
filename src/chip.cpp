@@ -70,7 +70,6 @@ void Chip::Draw(Camera3D camera) {
         rlMultMatrixf(MatrixToFloat(transform));
 
         DrawCylinder({0, 0, 0}, radius, radius, height, 16, color);
-        DrawCylinderWires({0, 0, 0}, radius, radius, height, 16, DARKGRAY);
     rlPopMatrix();
 }
 

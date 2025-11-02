@@ -17,7 +17,7 @@ void Bullet::Update(float deltaTime) {
 
     // Check if bullet has expired
     if (lifetime >= maxLifetime) {
-        isActive = false;
+        DeleteSelf();
         return;
     }
 

@@ -2,6 +2,7 @@
 #include "item.hpp"
 #include "interactable.hpp"
 #include "poker_table.hpp"
+#include "wall.hpp"
 #include "pistol.hpp"
 #include "bullet.hpp"
 #include "dom.hpp"
@@ -30,9 +31,9 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld)
         geom = dCreateCapsule(physics->space, radius, cylinderLength);
         dGeomSetBody(geom, body);
 
-        // Set collision category and mask
+        // Set collision category and mask (collide with everything)
         dGeomSetCategoryBits(geom, COLLISION_CATEGORY_PLAYER);
-        dGeomSetCollideBits(geom, COLLISION_CATEGORY_TABLE);
+        dGeomSetCollideBits(geom, ~0);  // Collide with all objects
 
         dGeomSetData(geom, this);
     }
@@ -136,7 +137,7 @@ void Player::Update(float deltaTime) {
         if (body != nullptr && geom != nullptr) {
             dGeomSetPosition(geom, newPos.x, newPos.y + 0.85f, newPos.z);
 
-            // Check for collisions with the poker table using ODE
+            // Check for collisions with objects using ODE
             bool collided = false;
             DOM* dom = DOM::GetGlobal();
             if (dom) {
@@ -144,18 +145,24 @@ void Player::Update(float deltaTime) {
                     Object* obj = dom->GetObject(i);
                     const char* typeStr = obj->GetType();
 
+                    dGeomID otherGeom = nullptr;
+                    
                     if (strcmp(typeStr, "poker_table") == 0) {
                         PokerTable* table = static_cast<PokerTable*>(obj);
+                        otherGeom = table->GetGeom();
+                    } else if (strcmp(typeStr, "wall") == 0) {
+                        Wall* wall = static_cast<Wall*>(obj);
+                        otherGeom = wall->GetGeom();
+                    }
 
-                        if (table->GetGeom() != nullptr) {
-                            // Use ODE collision detection
-                            dContactGeom contacts[4];
-                            int numContacts = dCollide(geom, table->GetGeom(), 4, contacts, sizeof(dContactGeom));
+                    if (otherGeom != nullptr) {
+                        // Use ODE collision detection
+                        dContactGeom contacts[4];
+                        int numContacts = dCollide(geom, otherGeom, 4, contacts, sizeof(dContactGeom));
 
-                            if (numContacts > 0) {
-                                collided = true;
-                                break;
-                            }
+                        if (numContacts > 0) {
+                            collided = true;
+                            break;
                         }
                     }
                 }

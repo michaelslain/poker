@@ -17,6 +17,9 @@ public:
     virtual void Update(float deltaTime);
     virtual void Draw(Camera3D camera);
     virtual const char* GetType() const;
+    
+    // Mark object for deletion (will be cleaned up by DOM on next frame)
+    void DeleteSelf() { isActive = false; }
 };
 
 #endif

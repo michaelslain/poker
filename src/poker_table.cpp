@@ -53,7 +53,6 @@ void PokerTable::Draw(Camera3D camera) {
     
     // Draw the table as a brown slab
     DrawCube(position, size.x, size.y, size.z, color);
-    DrawCubeWires(position, size.x, size.y, size.z, DARKBROWN);
     
     // Draw a green felt top (slightly above the table surface)
     Vector3 feltPos = position;
