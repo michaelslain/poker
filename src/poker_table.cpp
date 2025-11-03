@@ -577,9 +577,13 @@ void PokerTable::StartHand() {
 }
 
 void PokerTable::DealHoleCards() {
+    POKER_LOG(LOG_INFO, "DealHoleCards: Starting to deal cards");
     for (int round = 0; round < 2; round++) {
+        POKER_LOG(LOG_INFO, "DealHoleCards: Round %d", round);
         for (int i = 0; i < MAX_SEATS; i++) {
             if (!seats[i].isOccupied) continue;  // Skip empty seats
+            
+            POKER_LOG(LOG_INFO, "DealHoleCards: Checking seat %d (occupied)", i);
             
             // Safety check - verify occupant pointer is valid
             if (!seats[i].occupant) {
@@ -588,8 +592,15 @@ void PokerTable::DealHoleCards() {
                 continue;
             }
             
+            POKER_LOG(LOG_INFO, "DealHoleCards: Seat %d occupant ptr=%p, getting name", i, (void*)seats[i].occupant);
+            const char* name = seats[i].occupant->GetName().c_str();
+            POKER_LOG(LOG_INFO, "DealHoleCards: Dealing to %s at seat %d", name, i);
+            
             Card* card = deck->DrawCard();
-            if (!card) continue;
+            if (!card) {
+                POKER_LOG(LOG_INFO, "DealHoleCards: No card available from deck");
+                continue;
+            }
             
             card->canInteract = false;  // Disable interaction for hole cards
             
@@ -600,9 +611,12 @@ void PokerTable::DealHoleCards() {
                 continue;
             }
             
+            POKER_LOG(LOG_INFO, "DealHoleCards: About to add card to %s's inventory", name);
             inv->AddItem(card);
+            POKER_LOG(LOG_INFO, "DealHoleCards: Card added successfully");
         }
     }
+    POKER_LOG(LOG_INFO, "DealHoleCards: Finished dealing all cards");
 }
 
 void PokerTable::PostBlinds() {

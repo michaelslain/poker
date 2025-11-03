@@ -217,6 +217,8 @@ int main(void)
                         Object* obj = dom.GetObject(i);
                         if (obj != nullptr) {
                             const char* type = obj->GetType();
+                            if (!type) continue;  // Safety check
+                            
                             // Skip light sources and chips - they don't have proper normals for lighting
                             if (strcmp(type, "light_bulb") == 0) continue;
                             if (strncmp(type, "chip_", 5) == 0) continue;
@@ -237,6 +239,8 @@ int main(void)
                     Object* obj = dom.GetObject(i);
                     if (obj != nullptr && obj != closestInteractable) {
                         const char* type = obj->GetType();
+                        if (!type) continue;  // Safety check
+                        
                         if (strcmp(type, "light_bulb") == 0 || strncmp(type, "chip_", 5) == 0 || 
                             strcmp(type, "enemy") == 0 || strcmp(type, "person") == 0 || strcmp(type, "player") == 0) {
                             obj->Draw(*camera);

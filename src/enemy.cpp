@@ -51,6 +51,13 @@ int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise,
         
         // Count total chip value in inventory
         Inventory* inv = GetInventory();
+        if (!inv) {
+            TraceLog(LOG_INFO, "Enemy %s: ERROR - Null inventory, folding", name.c_str());
+            pendingAction = 0;  // Fold if no inventory
+            isThinking = false;
+            return 0;
+        }
+        
         int totalChipValue = 0;
         for (int i = 0; i < inv->GetStackCount(); i++) {
             ItemStack* stack = inv->GetStack(i);
