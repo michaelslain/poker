@@ -367,6 +367,14 @@ void PokerTable::ProcessBetting(float dt) {
         return;
     }
     
+    // Re-check seat is still occupied (person might have been killed/removed mid-frame)
+    if (!seats[currentPlayerSeat].isOccupied || seats[currentPlayerSeat].occupant != p) {
+        POKER_LOG(LOG_INFO, "Seat %d person was removed during betting!", currentPlayerSeat);
+        statusList[currentPlayerSeat] = -1;  // Mark as folded
+        currentPlayerSeat = NextActiveSeat(currentPlayerSeat);
+        return;
+    }
+    
     // Calculate call amount
     int callAmount = currentBet - statusList[currentPlayerSeat];
     int chips = CountChips(p);
@@ -389,7 +397,6 @@ void PokerTable::ProcessBetting(float dt) {
         minRaise = maxRaise + 1;  // Make raise impossible
     }
     
-    // Prompt bet
     int action = p->PromptBet(currentBet, callAmount, minRaise, maxRaise, raiseAmount);
     
     if (action == -1) return;  // Still thinking
@@ -465,6 +472,8 @@ void PokerTable::ProcessBetting(float dt) {
 void PokerTable::StartHand() {
     if (GetOccupiedSeatCount() < 2) return;
     
+    POKER_LOG(LOG_INFO, "StartHand: Beginning new hand");
+    
     handActive = true;
     potValue = 0;
     currentBet = 0;
@@ -472,6 +481,8 @@ void PokerTable::StartHand() {
     // Community cards should already be cleared by EndHand()
     // Just ensure the vector is empty (don't delete again)
     communityCards.clear();
+    
+    POKER_LOG(LOG_INFO, "StartHand: Cleared community cards");
     
     // Clear pot
     std::vector<Chip*> oldChips = potStack->RemoveAll();
@@ -485,14 +496,19 @@ void PokerTable::StartHand() {
     }
     
     // Reset deck
+    POKER_LOG(LOG_INFO, "StartHand: Resetting deck");
     deck->Reset();
     deck->Shuffle();
     
     // Deal hole cards
+    POKER_LOG(LOG_INFO, "StartHand: About to deal hole cards");
     DealHoleCards();
+    POKER_LOG(LOG_INFO, "StartHand: Hole cards dealt");
     
     // Post blinds (this sets smallBlindSeat and bigBlindSeat)
+    POKER_LOG(LOG_INFO, "StartHand: About to post blinds");
     PostBlinds();
+    POKER_LOG(LOG_INFO, "StartHand: Blinds posted");
     
     // Start betting (left of big blind) - don't reset bets, blinds are already posted
     currentPlayerSeat = NextOccupiedSeat(bigBlindSeat);

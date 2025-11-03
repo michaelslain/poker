@@ -440,6 +440,9 @@ void Player::HandleShooting() {
                 
                 Person* person = static_cast<Person*>(obj);
                 
+                // Don't shoot yourself!
+                if (person == this) continue;
+                
                 // Cylinder collision: check if ray intersects the person's hitbox
                 float personHeight = person->GetHeight();
                 float personTopY = person->position.y + 2.4f * personHeight;
@@ -543,10 +546,16 @@ void Player::DrawHeldItem() {
 
     // Check if it's a pistol
     const char* itemType = stack->item->GetType();
+    if (!itemType) {
+        return;  // Safety check - GetType() returned null
+    }
+    
     if (strcmp(itemType, "pistol") == 0) {
         Pistol* pistol = static_cast<Pistol*>(stack->item);
+        if (!pistol) {
+            return;  // Safety check - cast failed
+        }
         Camera3D* cam = GetCamera();
-        GAME_LOG(LOG_INFO, "Drawing held pistol at selected index %d", selectedItemIndex);
         pistol->DrawHeld(*cam);
     }
 }
