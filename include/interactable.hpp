@@ -8,13 +8,15 @@
 class Interactable : public Object {
 public:
     float interactRange;
+    bool canInteract;  // Whether this object can be interacted with
     std::function<void(Interactable*)> onInteract;
-
+    
     Interactable(Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Interactable() = default;
-
+    
     virtual void Interact();
     void DrawPrompt(Camera3D camera);
+    
     const char* GetType() const override;
 };
 

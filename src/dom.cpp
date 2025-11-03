@@ -30,6 +30,20 @@ void DOM::RemoveObject(Object* obj) {
     }
 }
 
+void DOM::RemoveAndDelete(Object* obj) {
+    RemoveObject(obj);
+    delete obj;
+}
+
+Object* DOM::FindObjectByID(int id) {
+    for (Object* obj : objects) {
+        if (obj && obj->GetID() == id) {
+            return obj;
+        }
+    }
+    return nullptr;
+}
+
 void DOM::Cleanup() {
     objects.clear();
 }

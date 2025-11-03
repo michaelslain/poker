@@ -22,7 +22,6 @@ Pistol::~Pistol() {
 
 void Pistol::Update(float deltaTime) {
     (void)deltaTime;
-    if (!isActive) return;
     
     // Only sync if physics is attached
     if (rigidBody && rigidBody->body) {
@@ -34,7 +33,6 @@ void Pistol::Update(float deltaTime) {
 
 void Pistol::Draw(Camera3D camera) {
     (void)camera;
-    if (!isActive) return;
     
     // Get rotation matrix from physics body
     Matrix rotMatrix = rigidBody ? rigidBody->GetRotationMatrix() : MatrixIdentity();

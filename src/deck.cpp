@@ -12,16 +12,12 @@ Deck::Deck(Vector3 pos) : Object(pos) {
         for (int rank = RANK_ACE; rank <= RANK_KING; rank++) {
             // Create card at origin with no physics (cards are part of the deck, not individual objects)
             Card* card = new Card(static_cast<Suit>(suit), static_cast<Rank>(rank), {0, 0, 0}, nullptr);
-            card->isDynamicallyAllocated = true;
             
             // Add to allCards for cleanup tracking
             allCards.push_back(card);
             
             // Push onto stack
             cards.push_back(card);
-            
-            // Add as child of deck for rendering
-            AddChild(card);
         }
     }
     
@@ -43,7 +39,6 @@ void Deck::Update(float deltaTime) {
     for (size_t i = 0; i < cards.size(); i++) {
         Card* card = cards[i];
         if (card != nullptr) {
-            card->isActive = true;
             card->position = {
                 position.x,
                 position.y + i * cardThickness,
@@ -57,9 +52,12 @@ void Deck::Update(float deltaTime) {
 }
 
 void Deck::Draw(Camera3D camera) {
-    (void)camera;
-    // Cards are rendered automatically by DrawWithChildren()
-    // No need to manually draw them here
+    // Draw all cards in the stack manually (they're not in DOM)
+    for (Card* card : cards) {
+        if (card) {
+            card->Draw(camera);
+        }
+    }
 }
 
 const char* Deck::GetType() const {
@@ -84,11 +82,6 @@ Card* Deck::DrawCard() {
     Card* drawnCard = cards.back();
     cards.pop_back();
     
-    // Remove the card from this deck's children since it's being dealt elsewhere
-    if (drawnCard) {
-        RemoveChild(drawnCard);
-    }
-    
     return drawnCard;
 }
 
@@ -108,8 +101,6 @@ void Deck::Reset() {
     for (Card* card : allCards) {
         if (card != nullptr) {
             cards.push_back(card);
-            // Re-add as child for rendering
-            AddChild(card);
         }
     }
     

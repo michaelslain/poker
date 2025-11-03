@@ -55,7 +55,6 @@ void Card::AttachPhysics(Vector3 pos, PhysicsWorld* physics) {
 
 void Card::Update(float deltaTime) {
     (void)deltaTime;
-    if (!isActive) return;
     
     // Only sync if physics is attached
     if (rigidBody && rigidBody->body) {
@@ -67,7 +66,6 @@ void Card::Update(float deltaTime) {
 
 void Card::Draw(Camera3D camera) {
     (void)camera;
-    if (!isActive) return;
     
     // Card dimensions
     float cardWidth = 0.5f;

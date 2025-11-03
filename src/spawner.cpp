@@ -27,7 +27,6 @@ void Spawner::SpawnCards(Suit suit, Rank rank, int count, PhysicsWorld* physics,
         
         // Create new card with C++ new
         Card* card = new Card(suit, rank, spawnPos, physics);
-        card->isDynamicallyAllocated = true;
         
         // Add to DOM
         dom->AddObject(card);
@@ -49,7 +48,6 @@ void Spawner::SpawnChips(int value, int count, PhysicsWorld* physics, DOM* dom) 
         
         // Create new chip with C++ new
         Chip* chip = new Chip(value, spawnPos, physics);
-        chip->isDynamicallyAllocated = true;
         
         // Add to DOM
         dom->AddObject(chip);
@@ -71,7 +69,6 @@ void Spawner::SpawnPistols(int count, PhysicsWorld* physics, DOM* dom) {
         
         // Create new pistol with C++ new
         Pistol* pistol = new Pistol(spawnPos, physics);
-        pistol->isDynamicallyAllocated = true;
         
         // Add to DOM
         dom->AddObject(pistol);

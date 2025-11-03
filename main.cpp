@@ -56,7 +56,6 @@ int main(void)
     Inventory* playerInv = player->GetInventory();
     for (int i = 0; i < 5; i++) {  // 5x 100 chips
         Chip* chip = new Chip(100, {0, 0, 0}, nullptr);  // No physics, just in inventory
-        chip->isDynamicallyAllocated = true;
         playerInv->AddItem(chip);
     }
     TraceLog(LOG_INFO, "Player initialized with 500 chips in inventory");
@@ -85,40 +84,33 @@ int main(void)
 
     // Create poker table inside the room
     PokerTable* pokerTable = new PokerTable({5.0f, 1.0f, 0.0f}, {4.0f, 0.2f, 2.5f}, BROWN, &physics);
-    pokerTable->isDynamicallyAllocated = true;
     dom.AddObject(pokerTable);
 
     // Create 3 enemies at different positions in the room
     Enemy* enemy1 = new Enemy({-5.0f, 0.0f, 5.0f}, "Person 1");
-    enemy1->isDynamicallyAllocated = true;
     dom.AddObject(enemy1);
     // Give enemy1 starting chips (500 chips)
     Inventory* enemy1Inv = enemy1->GetInventory();
     for (int i = 0; i < 5; i++) {
         Chip* chip = new Chip(100, {0, 0, 0}, nullptr);
-        chip->isDynamicallyAllocated = true;
         enemy1Inv->AddItem(chip);
     }
 
     Enemy* enemy2 = new Enemy({5.0f, 0.0f, -5.0f}, "Person 2");
-    enemy2->isDynamicallyAllocated = true;
     dom.AddObject(enemy2);
     // Give enemy2 starting chips (500 chips)
     Inventory* enemy2Inv = enemy2->GetInventory();
     for (int i = 0; i < 5; i++) {
         Chip* chip = new Chip(100, {0, 0, 0}, nullptr);
-        chip->isDynamicallyAllocated = true;
         enemy2Inv->AddItem(chip);
     }
 
     Enemy* enemy3 = new Enemy({-3.0f, 0.0f, -7.0f}, "Person 3");
-    enemy3->isDynamicallyAllocated = true;
     dom.AddObject(enemy3);
     // Give enemy3 starting chips (500 chips)
     Inventory* enemy3Inv = enemy3->GetInventory();
     for (int i = 0; i < 5; i++) {
         Chip* chip = new Chip(100, {0, 0, 0}, nullptr);
-        chip->isDynamicallyAllocated = true;
         enemy3Inv->AddItem(chip);
     }
     
@@ -158,6 +150,12 @@ int main(void)
     pistolSpawner.SpawnPistols(1, &physics, &dom);
 
     SetTargetFPS(60);
+    
+    GAME_LOG(LOG_INFO, "About to start game loop. DOM has %d objects:", dom.GetCount());
+    for (int i = 0; i < dom.GetCount(); i++) {
+        Object* obj = dom.GetObject(i);
+        GAME_LOG(LOG_INFO, "  [%d] %s at %p", i, obj ? obj->GetType() : "null", (void*)obj);
+    }
 
     // Main game loop
     while (!WindowShouldClose())
@@ -201,30 +199,22 @@ int main(void)
         physics.Step(deltaTime);
 
         // Update all objects in DOM (except player - already updated above)
-        // Only update root objects (those without parents) - they will recursively update their children
+        static int frameCount = 0;
+        frameCount++;
+        if (frameCount == 1) {
+            GAME_LOG(LOG_INFO, "DOM has %d objects", dom.GetCount());
+            for (int i = 0; i < dom.GetCount(); i++) {
+                Object* obj = dom.GetObject(i);
+                GAME_LOG(LOG_INFO, "  Object %d: %s", i, obj ? obj->GetType() : "null");
+            }
+        }
+        
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
-            
-            // Debug: Check for bullets
-            if (obj != nullptr && strcmp(obj->GetType(), "bullet") == 0) {
-                TraceLog(LOG_INFO, "Found bullet in DOM at index %d, parent: %p, isActive: %d", 
-                         i, (void*)obj->GetParent(), obj->isActive);
-            }
-            
-            if (obj != nullptr && obj != player && obj->GetParent() == nullptr) {  // Skip player and non-root objects
-                obj->UpdateWithChildren(deltaTime);
+            if (obj != nullptr && obj != player) {
+                obj->Update(deltaTime);
             }
         }
-
-        // Remove inactive dynamically allocated objects from DOM
-        for (int i = dom.GetCount() - 1; i >= 0; i--) {
-            Object* obj = dom.GetObject(i);
-            if (obj != nullptr && !obj->isActive && obj->isDynamicallyAllocated) {
-                dom.RemoveObject(obj);
-                delete obj;
-            }
-        }
-
         // Get closest interactable for E prompt
         Interactable* closestInteractable = player->GetClosestInteractable();
 
@@ -241,7 +231,7 @@ int main(void)
                     // Draw all root objects (and their children recursively) except light sources, chips, enemies, persons, players, and closest interactable
                     for (int i = 0; i < dom.GetCount(); i++) {
                         Object* obj = dom.GetObject(i);
-                        if (obj != nullptr && obj->GetParent() == nullptr) {  // Only draw root objects
+                        if (obj != nullptr) {
                             const char* type = obj->GetType();
                             // Skip light sources and chips - they don't have proper normals for lighting
                             if (strcmp(type, "light_bulb") == 0) continue;
@@ -253,19 +243,19 @@ int main(void)
                             // Skip closest interactable only if it exists and matches
                             if (closestInteractable != nullptr && obj == closestInteractable) continue;
                             
-                            obj->DrawWithChildren(*camera);
+                            obj->Draw(*camera);
                         }
                     }
                 EndShaderMode();
                 
-                // Draw root objects without shader (light sources, chips, enemies, persons, and players)
+                // Draw objects without shader (light sources, chips, enemies, persons, and players)
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
-                    if (obj != nullptr && obj != closestInteractable && obj->GetParent() == nullptr) {  // Only draw root objects
+                    if (obj != nullptr && obj != closestInteractable) {
                         const char* type = obj->GetType();
                         if (strcmp(type, "light_bulb") == 0 || strncmp(type, "chip_", 5) == 0 || 
                             strcmp(type, "enemy") == 0 || strcmp(type, "person") == 0 || strcmp(type, "player") == 0) {
-                            obj->DrawWithChildren(*camera);
+                            obj->Draw(*camera);
                         }
                     }
                 }
@@ -275,8 +265,8 @@ int main(void)
             if (closestInteractable != nullptr) {
                 BeginMode3D(*camera);
                     // Draw the closest interactable without lighting shader (unaffected, fully bright)
-                    // Use DrawWithChildren to also draw any children (e.g., Deck and Dealer for PokerTable)
-                    closestInteractable->DrawWithChildren(*camera);
+                    // Use Draw to also draw any children (e.g., Deck and Dealer for PokerTable)
+                    closestInteractable->Draw(*camera);
                     
                     // Draw E prompt
                     closestInteractable->DrawPrompt(*camera);
@@ -316,24 +306,17 @@ int main(void)
     }
 
     // De-Initialization
-    // Clean up all dynamically allocated objects in DOM
+    GAME_LOG(LOG_INFO, "Starting cleanup - %d objects in DOM", dom.GetCount());
+    
+    // Clean up all objects in DOM
     for (int i = 0; i < dom.GetCount(); i++) {
         Object* obj = dom.GetObject(i);
-        // Only delete if it was dynamically allocated
-        if (obj->isDynamicallyAllocated) {
-            delete obj;
-        }
+        GAME_LOG(LOG_INFO, "Deleting object %d: %s", i, obj->GetType());
+        delete obj;
+        GAME_LOG(LOG_INFO, "Object %d deleted", i);
     }
-
-    // Delete stack-allocated objects that were added to DOM
-    delete player;
-    delete groundFloor;
-    delete ceiling;
-    delete wallNorth;
-    delete wallSouth;
-    delete wallEast;
-    delete wallWest;
-    delete lightBulb;
+    
+    GAME_LOG(LOG_INFO, "All DOM objects deleted");
 
     // Cleanup lighting system
     LightSource::CleanupLightingSystem();

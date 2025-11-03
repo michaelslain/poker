@@ -47,7 +47,6 @@ Chip::~Chip() {
 
 void Chip::Update(float deltaTime) {
     (void)deltaTime;
-    if (!isActive) return;
     if (!rigidBody || !rigidBody->body) return;
 
     rigidBody->Update(deltaTime);
@@ -57,7 +56,6 @@ void Chip::Update(float deltaTime) {
 
 void Chip::Draw(Camera3D camera) {
     (void)camera;
-    if (!isActive) return;
     
     float radius = 0.1f;  // Even smaller radius (was 0.3f originally)
     float height = 0.03f;  // Even thinner height (was 0.1f originally)

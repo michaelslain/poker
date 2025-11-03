@@ -13,7 +13,6 @@ ChipStack::~ChipStack() {
 
 void ChipStack::Update(float deltaTime) {
     (void)deltaTime;
-    if (!isActive) return;
     
     // Update all chips
     for (Chip* chip : chips) {
@@ -24,11 +23,12 @@ void ChipStack::Update(float deltaTime) {
 }
 
 void ChipStack::Draw(Camera3D camera) {
-    (void)camera;
-    if (!isActive) return;
-    
-    // Chips are drawn as children via DrawWithChildren()
-    // No need to manually draw them here
+    // Draw all chips manually (they're not in DOM)
+    for (Chip* chip : chips) {
+        if (chip) {
+            chip->Draw(camera);
+        }
+    }
 }
 
 const char* ChipStack::GetType() const {
@@ -41,9 +41,6 @@ void ChipStack::AddChip(Chip* chip) {
     chips.push_back(chip);
     chipsByValue[chip->value].push_back(chip);
     
-    // Add as child for rendering
-    AddChild(chip);
-    
     // Reorganize positions
     OrganizeChips();
 }
@@ -53,7 +50,6 @@ void ChipStack::AddChips(const std::vector<Chip*>& newChips) {
         if (chip) {
             chips.push_back(chip);
             chipsByValue[chip->value].push_back(chip);
-            AddChild(chip);
         }
     }
     
@@ -62,25 +58,11 @@ void ChipStack::AddChips(const std::vector<Chip*>& newChips) {
 }
 
 void ChipStack::Clear() {
-    // Remove all chips as children
-    for (Chip* chip : chips) {
-        if (chip) {
-            RemoveChild(chip);
-        }
-    }
-    
     chips.clear();
     chipsByValue.clear();
 }
 
 std::vector<Chip*> ChipStack::RemoveAll() {
-    // Remove all chips as children
-    for (Chip* chip : chips) {
-        if (chip) {
-            RemoveChild(chip);
-        }
-    }
-    
     std::vector<Chip*> result = chips;
     chips.clear();
     chipsByValue.clear();
@@ -125,7 +107,6 @@ void ChipStack::OrganizeChips() {
                     position.z
                 };
                 chip->rotation = {0, 0, 0};  // Chips lie flat
-                chip->isActive = true;
             }
         }
         

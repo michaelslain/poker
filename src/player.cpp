@@ -352,7 +352,7 @@ Interactable* Player::GetClosestInteractable() {
             interactable = static_cast<Interactable*>(obj);
         }
 
-        if (!interactable->isActive) continue;
+
 
         Vector3 objPos = interactable->position;
         Vector3 toObj = Vector3Subtract(objPos, rayOrigin);
@@ -366,7 +366,8 @@ Interactable* Player::GetClosestInteractable() {
 
         float crosshairThreshold = 1.0f;
 
-        if (distanceToRay < crosshairThreshold && projection < closestDistance) {
+        // Only consider interactables that have canInteract enabled
+        if (distanceToRay < crosshairThreshold && projection < closestDistance && interactable->canInteract) {
             closestDistance = projection;
             closestInteractable = interactable;
         }
@@ -376,9 +377,6 @@ Interactable* Player::GetClosestInteractable() {
 }
 
 void Player::HandleShooting() {
-    GAME_LOG(LOG_INFO, "HandleShooting() ENTRY - selectedIndex: %d, stackCount: %d", 
-             selectedItemIndex, inventory.GetStackCount());
-    
     // Only shoot if left mouse button is pressed and we have an item selected
     if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;
@@ -433,7 +431,7 @@ void Player::HandleShooting() {
         
         for (int i = 0; i < dom->GetCount(); i++) {
             Object* obj = dom->GetObject(i);
-            if (!obj || !obj->isActive) continue;
+            if (!obj) continue;
             
             const char* type = obj->GetType();
             if (strncmp(type, "player", 6) == 0 || 
@@ -481,7 +479,7 @@ void Player::HandleShooting() {
             if (hitPerson->IsSeated()) {
                 for (int j = 0; j < dom->GetCount(); j++) {
                     Object* tableObj = dom->GetObject(j);
-                    if (tableObj && tableObj->isActive) {
+                    if (tableObj) {
                         const char* tableType = tableObj->GetType();
                         if (strcmp(tableType, "poker_table") == 0) {
                             PokerTable* table = static_cast<PokerTable*>(tableObj);
@@ -491,7 +489,8 @@ void Player::HandleShooting() {
                 }
             }
             
-            hitPerson->isActive = false;
+            // Remove person from DOM and delete
+            DOM::GetGlobal()->RemoveAndDelete(hitPerson);
         } else {
             GAME_LOG(LOG_INFO, "Shot missed!");
         }

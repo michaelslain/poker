@@ -2,6 +2,7 @@
 #include "dealer.hpp"
 #include "chip.hpp"
 #include "debug.hpp"
+#include "dom.hpp"
 #include "raymath.h"
 #include <cstring>
 #include <algorithm>
@@ -38,23 +39,19 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
         hasRaised[i] = false;
     }
     
-    // Create dealer
+    // Create dealer and add to DOM
     dealer = new Dealer({pos.x, ground, pos.z - hd - dist}, "Dealer");
-    dealer->isDynamicallyAllocated = true;
-    AddChild(dealer);
+    DOM::GetGlobal()->AddObject(dealer);
     
-    // Create deck (not added as child - won't render)
+    // Create deck (don't add to DOM - we don't want to render it)
     Vector3 deckPos = {pos.x - hw * 0.5f, pos.y + size.y / 2.0f + 0.05f, pos.z};
     deck = new Deck(deckPos);
     deck->Shuffle();
-    deck->isDynamicallyAllocated = true;
-    // Don't add as child - deck is internal only, not rendered
     
-    // Create pot stack (deck side of table)
+    // Create pot stack and add to DOM
     Vector3 potPos = {pos.x - hw * 0.5f, pos.y + size.y / 2.0f + 0.05f, pos.z - 0.5f};
     potStack = new ChipStack(potPos);
-    potStack->isDynamicallyAllocated = true;
-    AddChild(potStack);
+    DOM::GetGlobal()->AddObject(potStack);
     
     // Create collision geometry
     if (physics) {
@@ -67,15 +64,24 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
 }
 
 PokerTable::~PokerTable() {
+    POKER_LOG(LOG_INFO, "PokerTable destructor called");
+    
+    // Clean up deck (not in DOM, so we manage it)
+    if (deck) {
+        POKER_LOG(LOG_INFO, "Deleting deck");
+        delete deck;
+        POKER_LOG(LOG_INFO, "Deck deleted");
+    }
+    
     if (geom) {
         dGeomSetData(geom, nullptr);
         dGeomDestroy(geom);
     }
+    
+    POKER_LOG(LOG_INFO, "PokerTable destructor finished");
 }
 
 void PokerTable::Update(float deltaTime) {
-    if (!isActive) return;
-    
     // Start hand if we have 2+ players and no active hand
     if (!handActive && GetOccupiedSeatCount() >= 2) {
         StartHand();
@@ -89,7 +95,6 @@ void PokerTable::Update(float deltaTime) {
 
 void PokerTable::Draw(Camera3D camera) {
     (void)camera;
-    if (!isActive) return;
     
     // Draw table body
     DrawCube(position, size.x, size.y, size.z, color);
@@ -101,6 +106,18 @@ void PokerTable::Draw(Camera3D camera) {
     // Draw collision box wireframe if debug mode is on
     if (g_showCollisionDebug) {
         DrawCubeWires(position, size.x, size.y, size.z, LIME);
+    }
+    
+    // Draw community cards
+    for (Card* card : communityCards) {
+        if (card) {
+            card->Draw(camera);
+        }
+    }
+    
+    // Draw deck
+    if (deck) {
+        deck->Draw(camera);
     }
 }
 
@@ -242,7 +259,6 @@ std::vector<Chip*> PokerTable::CalculateChipCombination(int amount) {
         int count = 0;
         while (amount >= denom) {
             Chip* chip = new Chip(denom, {0, 0, 0}, nullptr);
-            chip->isDynamicallyAllocated = true;
             result.push_back(chip);
             amount -= denom;
             count++;
@@ -333,15 +349,6 @@ bool PokerTable::IsBettingRoundComplete() {
 void PokerTable::ProcessBetting(float dt) {
     (void)dt;
     
-    // DEBUG: Log statusList at start of ProcessBetting
-    static bool firstCall = true;
-    if (firstCall) {
-        // POKER_LOG(LOG_INFO, "ProcessBetting FIRST CALL - statusList: [0]=%d [1]=%d [2]=%d [3]=%d [4]=%d [5]=%d [6]=%d [7]=%d", 
-    //                   statusList[0], statusList[1], statusList[2], statusList[3], 
-    //                   statusList[4], statusList[5], statusList[6], statusList[7]);
-        firstCall = false;
-    }
-    
     if (currentPlayerSeat < 0 || currentPlayerSeat >= MAX_SEATS) {
         bettingActive = false;
         return;
@@ -354,7 +361,8 @@ void PokerTable::ProcessBetting(float dt) {
     }
     
     Person* p = seats[currentPlayerSeat].occupant;
-    if (!p || !p->isActive) {
+    if (!p) {
+        POKER_LOG(LOG_INFO, "Seat %d has null occupant!", currentPlayerSeat);
         currentPlayerSeat = NextActiveSeat(currentPlayerSeat);
         return;
     }
@@ -377,8 +385,8 @@ void PokerTable::ProcessBetting(float dt) {
     
     // Only log when we first move to this player (prevent spamming while they think)
     if (lastLoggedPlayerSeat != currentPlayerSeat) {
-        // POKER_LOG(LOG_INFO, "%s to act: currentBet=%d, statusList[%d]=%d, callAmount=%d, canRaise=%d", 
-    //                   p->GetName().c_str(), currentBet, currentPlayerSeat, statusList[currentPlayerSeat], callAmount, canRaise);
+        POKER_LOG(LOG_INFO, "%s to act: currentBet=%d, statusList[%d]=%d, callAmount=%d, canRaise=%d", 
+                          p->GetName().c_str(), currentBet, currentPlayerSeat, statusList[currentPlayerSeat], callAmount, canRaise);
         lastLoggedPlayerSeat = currentPlayerSeat;
     }
     
@@ -387,21 +395,26 @@ void PokerTable::ProcessBetting(float dt) {
         minRaise = maxRaise + 1;  // Make raise impossible
     }
     
-    // Prompt bet
+    // Prompt bet - check type first to avoid vtable issues
+    const char* personType = p->GetType();
+    POKER_LOG(LOG_INFO, "Calling PromptBet on %s (type: %s)", p->GetName().c_str(), personType);
+    
     int action = p->PromptBet(currentBet, callAmount, minRaise, maxRaise, raiseAmount);
+    
+    POKER_LOG(LOG_INFO, "PromptBet returned %d", action);
     
     if (action == -1) return;  // Still thinking
     
     // Process action
     if (action == 0) {
         // Fold
+        POKER_LOG(LOG_INFO, "%s folds", p->GetName().c_str());
         statusList[currentPlayerSeat] = -1;
-        // POKER_LOG(LOG_INFO, "%s folds", p->GetName().c_str());
     } else if (action == 1) {
         // Call
+        POKER_LOG(LOG_INFO, "%s calls %d", p->GetName().c_str(), callAmount);
         TakeChips(p, callAmount);
         statusList[currentPlayerSeat] += callAmount;
-        // POKER_LOG(LOG_INFO, "%s calls %d", p->GetName().c_str(), callAmount);
     } else if (action == 2) {
         // Raise (only if they haven't raised yet)
         if (canRaise) {
@@ -467,10 +480,8 @@ void PokerTable::StartHand() {
     potValue = 0;
     currentBet = 0;
     
-    // Clear community cards
-    for (Card* card : communityCards) {
-        delete card;  // Destructor will handle child relationship cleanup
-    }
+    // Community cards should already be cleared by EndHand()
+    // Just ensure the vector is empty (don't delete again)
     communityCards.clear();
     
     // Clear pot
@@ -498,7 +509,7 @@ void PokerTable::StartHand() {
     currentPlayerSeat = NextOccupiedSeat(bigBlindSeat);
     bettingActive = true;
     
-    // POKER_LOG(LOG_INFO, "=== Hand started ===");
+    POKER_LOG(LOG_INFO, "=== Hand started ===");
 }
 
 void PokerTable::DealHoleCards() {
@@ -508,12 +519,11 @@ void PokerTable::DealHoleCards() {
             
             Card* card = deck->DrawCard();
             if (!card) continue;
-            card->isActive = false;
-            card->isDynamicallyAllocated = true;
+            
+            card->canInteract = false;  // Disable interaction for hole cards
             seats[i].occupant->GetInventory()->AddItem(card);
         }
     }
-    // POKER_LOG(LOG_INFO, "Dealt hole cards to %d players", GetOccupiedSeatCount());
 }
 
 void PokerTable::PostBlinds() {
@@ -574,11 +584,10 @@ void PokerTable::DealFlop() {
         
         card->position = {startX + (i * cardSpacing), cardY, cardZ};
         card->rotation = {-90, 0, 0};  // Lay flat on table, face up
-        card->isActive = true;
-        card->isDynamicallyAllocated = true;
+        card->canInteract = false;  // Disable interaction for community cards
         
-        AddChild(card);  // Dual-reference: in children for rendering
-        communityCards.push_back(card);  // And in vector for game logic
+        // Don't add to DOM - PokerTable will render community cards itself
+        communityCards.push_back(card);
         
         // POKER_LOG(LOG_INFO, "Flop card %d: %s at (%.2f, %.2f, %.2f)", 
     //                   i, card->GetType(), card->position.x, card->position.y, card->position.z);
@@ -600,11 +609,10 @@ void PokerTable::DealTurn() {
     
     card->position = {startX + (3 * cardSpacing), cardY, cardZ};
     card->rotation = {-90, 0, 0};  // Lay flat on table, face up
-    card->isActive = true;
-    card->isDynamicallyAllocated = true;
+    card->canInteract = false;  // Disable interaction for community cards
     
-    AddChild(card);  // Dual-reference: in children for rendering
-    communityCards.push_back(card);  // And in vector for game logic
+    // Don't add to DOM - PokerTable will render community cards itself
+    communityCards.push_back(card);
     
     // POKER_LOG(LOG_INFO, "Dealt turn");
     StartBettingRound(NextOccupiedSeat(smallBlindSeat));  // Start from first seat after rotation
@@ -622,11 +630,10 @@ void PokerTable::DealRiver() {
     
     card->position = {startX + (4 * cardSpacing), cardY, cardZ};
     card->rotation = {-90, 0, 0};  // Lay flat on table, face up
-    card->isActive = true;
-    card->isDynamicallyAllocated = true;
+    card->canInteract = false;  // Disable interaction for community cards
     
-    AddChild(card);  // Dual-reference: in children for rendering
-    communityCards.push_back(card);  // And in vector for game logic
+    // Don't add to DOM - PokerTable will render community cards itself
+    communityCards.push_back(card);
     
     TraceLog(LOG_INFO, "Dealt river");
     StartBettingRound(NextOccupiedSeat(smallBlindSeat));  // Start from first seat after rotation
@@ -679,21 +686,23 @@ void PokerTable::EndHand() {
         for (int j = inv->GetStackCount() - 1; j >= 0; j--) {
             ItemStack* stack = inv->GetStack(j);
             if (stack && stack->item && strncmp(stack->item->GetType(), "card_", 5) == 0) {
-                inv->RemoveItem(j);  // RemoveItem handles deletion
+                // DON'T delete the card - the Deck owns it and will reuse it
+                // Just remove from inventory
+                inv->RemoveItem(j);
             }
         }
     }
     
-    // Clear community cards (they are children of PokerTable)
+    // Clear community cards
     for (Card* card : communityCards) {
-        card->isActive = false;  // Mark inactive so main loop will clean up
+        DOM::GetGlobal()->RemoveAndDelete(card);
     }
     communityCards.clear();
     
-    // Clear pot chips (they are children of ChipStack)
+    // Clear pot chips
     std::vector<Chip*> potChips = potStack->RemoveAll();
     for (Chip* chip : potChips) {
-        chip->isActive = false;  // Mark inactive so main loop will clean up
+        delete chip;  // Just delete - they were never in DOM (managed by ChipStack)
     }
     
     // Blinds will rotate on next hand (handled in PostBlinds)
