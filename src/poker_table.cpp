@@ -76,8 +76,42 @@ PokerTable::~PokerTable() {
 }
 
 void PokerTable::Update(float deltaTime) {
-    // Start hand if we have 2+ players and no active hand
-    if (!handActive && GetOccupiedSeatCount() >= 2) {
+    // Check if dealer is still alive (if they were shot, stop the game)
+    if (dealer) {
+        DOM* dom = DOM::GetGlobal();
+        bool dealerExists = false;
+        
+        if (dom) {
+            // Check if dealer is still in the DOM
+            for (int i = 0; i < dom->GetCount(); i++) {
+                if (dom->GetObject(i) == dealer) {
+                    dealerExists = true;
+                    break;
+                }
+            }
+        }
+        
+        // If dealer was removed (shot), stop the game
+        if (!dealerExists) {
+            POKER_LOG(LOG_INFO, "*** DEALER WAS KILLED - POKER GAME STOPPED ***");
+            dealer = nullptr;
+            handActive = false;
+            bettingActive = false;
+            
+            // Clear all seats
+            for (int i = 0; i < MAX_SEATS; i++) {
+                if (seats[i].isOccupied && seats[i].occupant) {
+                    seats[i].occupant->StandUp();
+                    seats[i].occupant = nullptr;
+                    seats[i].isOccupied = false;
+                }
+            }
+            return;
+        }
+    }
+    
+    // Start hand if we have 2+ players and no active hand and dealer is alive
+    if (!handActive && GetOccupiedSeatCount() >= 2 && dealer) {
         StartHand();
     }
     
@@ -146,6 +180,12 @@ bool PokerTable::SeatPerson(Person* p, int seatIndex) {
     if (seatIndex < 0 || seatIndex >= MAX_SEATS) return false;
     if (!p) return false;
     if (seats[seatIndex].isOccupied) return false;
+    
+    // Can't sit down if dealer is dead
+    if (!dealer) {
+        POKER_LOG(LOG_INFO, "Cannot sit down - dealer has been killed!");
+        return false;
+    }
     
     // Seat the person
     p->SitDownFacingPoint(seats[seatIndex].position, position);
@@ -226,6 +266,7 @@ int PokerTable::GetOccupiedSeatCount() {
 int PokerTable::CountChips(Person* p) {
     if (!p) return 0;
     Inventory* inv = p->GetInventory();
+    if (!inv) return 0;
     int total = 0;
     for (int i = 0; i < inv->GetStackCount(); i++) {
         ItemStack* stack = inv->GetStack(i);
@@ -279,6 +320,7 @@ void PokerTable::TakeChips(Person* p, int amount) {
     if (!p || amount <= 0) return;
     
     Inventory* inv = p->GetInventory();
+    if (!inv) return;
     int totalChips = CountChips(p);
     
     if (amount > totalChips) amount = totalChips;  // All-in
@@ -312,6 +354,13 @@ void PokerTable::GiveChips(Person* p, int amount) {
     
     std::vector<Chip*> chips = CalculateChipCombination(amount);
     Inventory* inv = p->GetInventory();
+    if (!inv) {
+        // Clean up chips if we can't give them
+        for (Chip* chip : chips) {
+            delete chip;
+        }
+        return;
+    }
     
     for (Chip* chip : chips) {
         inv->AddItem(chip);
@@ -397,7 +446,17 @@ void PokerTable::ProcessBetting(float dt) {
         minRaise = maxRaise + 1;  // Make raise impossible
     }
     
+    // Re-verify person pointer is still valid before calling PromptBet
+    if (!seats[currentPlayerSeat].isOccupied || seats[currentPlayerSeat].occupant != p) {
+        POKER_LOG(LOG_INFO, "ERROR: Person became invalid before PromptBet!");
+        statusList[currentPlayerSeat] = -1;
+        currentPlayerSeat = NextActiveSeat(currentPlayerSeat);
+        return;
+    }
+    
+    POKER_LOG(LOG_INFO, "About to call PromptBet on %s (ptr=%p)", p->GetName().c_str(), (void*)p);
     int action = p->PromptBet(currentBet, callAmount, minRaise, maxRaise, raiseAmount);
+    POKER_LOG(LOG_INFO, "PromptBet returned %d", action);
     
     if (action == -1) return;  // Still thinking
     
@@ -522,11 +581,26 @@ void PokerTable::DealHoleCards() {
         for (int i = 0; i < MAX_SEATS; i++) {
             if (!seats[i].isOccupied) continue;  // Skip empty seats
             
+            // Safety check - verify occupant pointer is valid
+            if (!seats[i].occupant) {
+                POKER_LOG(LOG_INFO, "ERROR: Seat %d marked occupied but has null occupant!", i);
+                seats[i].isOccupied = false;
+                continue;
+            }
+            
             Card* card = deck->DrawCard();
             if (!card) continue;
             
             card->canInteract = false;  // Disable interaction for hole cards
-            seats[i].occupant->GetInventory()->AddItem(card);
+            
+            // Safety check - verify inventory exists
+            Inventory* inv = seats[i].occupant->GetInventory();
+            if (!inv) {
+                POKER_LOG(LOG_INFO, "ERROR: Seat %d occupant has null inventory!", i);
+                continue;
+            }
+            
+            inv->AddItem(card);
         }
     }
 }
@@ -653,6 +727,13 @@ void PokerTable::Showdown() {
     for (int i = 0; i < MAX_SEATS; i++) {
         if (!seats[i].isOccupied || statusList[i] == -1) continue;  // Skip empty or folded
         
+        // Safety check - verify occupant pointer is valid
+        if (!seats[i].occupant) {
+            POKER_LOG(LOG_INFO, "ERROR: Seat %d marked occupied but has null occupant in Showdown!", i);
+            seats[i].isOccupied = false;
+            continue;
+        }
+        
         HandEvaluation hand = EvaluateHand(seats[i].occupant);
         
         if (winnerIndex == -1 || CompareHands(hand, bestHand) > 0) {
@@ -661,7 +742,7 @@ void PokerTable::Showdown() {
         }
     }
     
-    if (winnerIndex != -1) {
+    if (winnerIndex != -1 && seats[winnerIndex].occupant) {
         TraceLog(LOG_INFO, "*** %s wins with hand rank %d! ***", seats[winnerIndex].occupant->GetName().c_str(), bestHand.rank);
         GiveChips(seats[winnerIndex].occupant, potValue);
     }
@@ -676,6 +757,12 @@ void PokerTable::EndHand() {
     if (bettingActive) {
         for (int i = 0; i < MAX_SEATS; i++) {
             if (seats[i].isOccupied && statusList[i] != -1) {
+                // Safety check - verify occupant pointer is valid
+                if (!seats[i].occupant) {
+                    POKER_LOG(LOG_INFO, "ERROR: Seat %d marked occupied but has null occupant when awarding pot!", i);
+                    seats[i].isOccupied = false;
+                    continue;
+                }
                 TraceLog(LOG_INFO, "*** %s wins (others folded)! ***", seats[i].occupant->GetName().c_str());
                 GiveChips(seats[i].occupant, potValue);
                 break;
@@ -687,7 +774,19 @@ void PokerTable::EndHand() {
     for (int i = 0; i < MAX_SEATS; i++) {
         if (!seats[i].isOccupied) continue;
         
+        // Safety check - verify occupant pointer is valid
+        if (!seats[i].occupant) {
+            POKER_LOG(LOG_INFO, "ERROR: Seat %d marked occupied but has null occupant in EndHand!", i);
+            seats[i].isOccupied = false;
+            continue;
+        }
+        
         Inventory* inv = seats[i].occupant->GetInventory();
+        if (!inv) {
+            POKER_LOG(LOG_INFO, "ERROR: Seat %d occupant has null inventory in EndHand!", i);
+            continue;
+        }
+        
         for (int j = inv->GetStackCount() - 1; j >= 0; j--) {
             ItemStack* stack = inv->GetStack(j);
             if (stack && stack->item && strncmp(stack->item->GetType(), "card_", 5) == 0) {
@@ -723,7 +822,15 @@ void PokerTable::EndHand() {
 HandEvaluation PokerTable::EvaluateHand(Person* p) {
     // Get player's hole cards
     std::vector<Card*> allCards;
+    
+    if (!p) {
+        return {HIGH_CARD, {}};
+    }
+    
     Inventory* inv = p->GetInventory();
+    if (!inv) {
+        return {HIGH_CARD, {}};
+    }
     
     for (int i = 0; i < inv->GetStackCount(); i++) {
         ItemStack* stack = inv->GetStack(i);

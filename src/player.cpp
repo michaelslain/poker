@@ -579,6 +579,8 @@ void Player::StandUp() {
 }
 
 int Player::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) {
+    GAME_LOG(LOG_INFO, "Player::PromptBet called - bettingUIActive=%d, bettingChoice=%d", bettingUIActive, bettingChoice);
+    
     // First call: Initialize UI
     if (!bettingUIActive) {
         bettingUIActive = true;
@@ -588,6 +590,7 @@ int Player::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise
         raiseSliderValue = minRaise;  // Default to minimum raise
         storedCurrentBet = currentBet;
         storedCallAmount = callAmount;
+        GAME_LOG(LOG_INFO, "Initialized betting UI");
     }
     
     // Wait for player to make a choice (poker table will call this repeatedly each frame)
@@ -679,8 +682,11 @@ void Player::DrawBettingUI() {
             if (raiseSliderValue > raiseMax) raiseSliderValue = raiseMax;
         }
         
-        // Calculate slider position
-        float sliderPercent = (float)(raiseSliderValue - raiseMin) / (float)(raiseMax - raiseMin);
+        // Calculate slider position (avoid division by zero)
+        float sliderPercent = 0.0f;
+        if (raiseMax > raiseMin) {
+            sliderPercent = (float)(raiseSliderValue - raiseMin) / (float)(raiseMax - raiseMin);
+        }
         int sliderPos = sliderX + (int)(sliderPercent * sliderWidth);
         
         // Draw slider
