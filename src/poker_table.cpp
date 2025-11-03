@@ -64,21 +64,15 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
 }
 
 PokerTable::~PokerTable() {
-    POKER_LOG(LOG_INFO, "PokerTable destructor called");
-    
     // Clean up deck (not in DOM, so we manage it)
     if (deck) {
-        POKER_LOG(LOG_INFO, "Deleting deck");
         delete deck;
-        POKER_LOG(LOG_INFO, "Deck deleted");
     }
     
     if (geom) {
         dGeomSetData(geom, nullptr);
         dGeomDestroy(geom);
     }
-    
-    POKER_LOG(LOG_INFO, "PokerTable destructor finished");
 }
 
 void PokerTable::Update(float deltaTime) {
@@ -395,13 +389,8 @@ void PokerTable::ProcessBetting(float dt) {
         minRaise = maxRaise + 1;  // Make raise impossible
     }
     
-    // Prompt bet - check type first to avoid vtable issues
-    const char* personType = p->GetType();
-    POKER_LOG(LOG_INFO, "Calling PromptBet on %s (type: %s)", p->GetName().c_str(), personType);
-    
+    // Prompt bet
     int action = p->PromptBet(currentBet, callAmount, minRaise, maxRaise, raiseAmount);
-    
-    POKER_LOG(LOG_INFO, "PromptBet returned %d", action);
     
     if (action == -1) return;  // Still thinking
     

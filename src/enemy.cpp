@@ -21,15 +21,6 @@ void Enemy::Update(float deltaTime) {
     // Update thinking timer if currently thinking
     if (isThinking) {
         thinkingTimer += deltaTime;
-        static int updateCount = 0;
-        updateCount++;
-        if (updateCount == 1) {
-            TraceLog(LOG_INFO, "Enemy %s: Update() called - thinking timer will increment", name.c_str());
-        }
-        if (updateCount % 60 == 0) {  // Log every 60 frames (once per second)
-            TraceLog(LOG_INFO, "Enemy %s: thinking... %.2f / %.2f seconds (update #%d)", 
-                     name.c_str(), thinkingTimer, thinkingDuration, updateCount);
-        }
     }
 }
 

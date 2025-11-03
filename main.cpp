@@ -150,12 +150,6 @@ int main(void)
     pistolSpawner.SpawnPistols(1, &physics, &dom);
 
     SetTargetFPS(60);
-    
-    GAME_LOG(LOG_INFO, "About to start game loop. DOM has %d objects:", dom.GetCount());
-    for (int i = 0; i < dom.GetCount(); i++) {
-        Object* obj = dom.GetObject(i);
-        GAME_LOG(LOG_INFO, "  [%d] %s at %p", i, obj ? obj->GetType() : "null", (void*)obj);
-    }
 
     // Main game loop
     while (!WindowShouldClose())
@@ -199,16 +193,6 @@ int main(void)
         physics.Step(deltaTime);
 
         // Update all objects in DOM (except player - already updated above)
-        static int frameCount = 0;
-        frameCount++;
-        if (frameCount == 1) {
-            GAME_LOG(LOG_INFO, "DOM has %d objects", dom.GetCount());
-            for (int i = 0; i < dom.GetCount(); i++) {
-                Object* obj = dom.GetObject(i);
-                GAME_LOG(LOG_INFO, "  Object %d: %s", i, obj ? obj->GetType() : "null");
-            }
-        }
-        
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
             if (obj != nullptr && obj != player) {
@@ -306,17 +290,11 @@ int main(void)
     }
 
     // De-Initialization
-    GAME_LOG(LOG_INFO, "Starting cleanup - %d objects in DOM", dom.GetCount());
-    
     // Clean up all objects in DOM
     for (int i = 0; i < dom.GetCount(); i++) {
         Object* obj = dom.GetObject(i);
-        GAME_LOG(LOG_INFO, "Deleting object %d: %s", i, obj->GetType());
         delete obj;
-        GAME_LOG(LOG_INFO, "Object %d deleted", i);
     }
-    
-    GAME_LOG(LOG_INFO, "All DOM objects deleted");
 
     // Cleanup lighting system
     LightSource::CleanupLightingSystem();
