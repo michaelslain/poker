@@ -16,9 +16,11 @@
 #define SMALL_BLIND_AMOUNT 5
 #define BIG_BLIND_AMOUNT 10
 
-// Poker logging control - bypasses raylib's SetTraceLogLevel
-#define POKER_LOG_ENABLED true
-#define POKER_LOG(level, ...) do { if (POKER_LOG_ENABLED) { printf("[POKER] "); printf(__VA_ARGS__); printf("\n"); } } while(0)
+// Game logging control - bypasses raylib's SetTraceLogLevel
+#define GAME_LOG_ENABLED true
+#define GAME_LOG(level, ...) do { if (GAME_LOG_ENABLED) { printf("[GAME] "); printf(__VA_ARGS__); printf("\n"); } } while(0)
+// Legacy alias for poker table code
+#define POKER_LOG GAME_LOG
 
 // Collision categories
 #ifndef COLLISION_CATEGORY_PLAYER

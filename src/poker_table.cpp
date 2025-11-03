@@ -1,6 +1,7 @@
 #include "poker_table.hpp"
 #include "dealer.hpp"
 #include "chip.hpp"
+#include "debug.hpp"
 #include "raymath.h"
 #include <cstring>
 #include <algorithm>
@@ -96,10 +97,15 @@ void PokerTable::Draw(Camera3D camera) {
     // Draw felt top
     DrawCube({position.x, position.y + size.y/2.0f, position.z},
              size.x * 0.9f, 0.01f, size.z * 0.8f, GREEN);
+    
+    // Draw collision box wireframe if debug mode is on
+    if (g_showCollisionDebug) {
+        DrawCubeWires(position, size.x, size.y, size.z, LIME);
+    }
 }
 
 void PokerTable::Interact() {
-    POKER_LOG(LOG_INFO, "Table interaction");
+    // POKER_LOG(LOG_INFO, "Table interaction");
 }
 
 const char* PokerTable::GetType() const {
@@ -138,10 +144,10 @@ bool PokerTable::SeatPerson(Person* p, int seatIndex) {
     // If joining mid-hand, mark as folded
     if (handActive) {
         statusList[seatIndex] = -1;
-        POKER_LOG(LOG_INFO, "Seated %s at seat %d (folded - mid-hand)", p->GetName().c_str(), seatIndex);
+        // POKER_LOG(LOG_INFO, "Seated %s at seat %d (folded - mid-hand)", p->GetName().c_str(), seatIndex);
     } else {
         statusList[seatIndex] = 0;
-        POKER_LOG(LOG_INFO, "Seated %s at seat %d", p->GetName().c_str(), seatIndex);
+        // POKER_LOG(LOG_INFO, "Seated %s at seat %d", p->GetName().c_str(), seatIndex);
     }
     
     return true;
@@ -156,7 +162,7 @@ void PokerTable::UnseatPerson(Person* p) {
             seats[i].isOccupied = false;
             statusList[i] = 0;
             p->StandUp();
-            POKER_LOG(LOG_INFO, "Unseated %s from seat %d", p->GetName().c_str(), i);
+            // POKER_LOG(LOG_INFO, "Unseated %s from seat %d", p->GetName().c_str(), i);
             return;
         }
     }
@@ -252,8 +258,8 @@ std::vector<Chip*> PokerTable::CalculateChipCombination(int amount) {
         for (auto& pair : chipCounts) {
             breakdown += std::to_string(pair.second) + "x" + std::to_string(pair.first) + " ";
         }
-        POKER_LOG(LOG_INFO, "Chip combination for %d: %s(total: %zu chips)", 
-                  originalAmount, breakdown.c_str(), result.size());
+        // POKER_LOG(LOG_INFO, "Chip combination for %d: %s(total: %zu chips)", 
+    //                   originalAmount, breakdown.c_str(), result.size());
     }
     
     return result;
@@ -288,7 +294,7 @@ void PokerTable::TakeChips(Person* p, int amount) {
     potStack->AddChips(betChips);
     potValue += amount;
     
-    POKER_LOG(LOG_INFO, "%s bets %d chips (pot now: %d)", p->GetName().c_str(), amount, potValue);
+    // POKER_LOG(LOG_INFO, "%s bets %d chips (pot now: %d)", p->GetName().c_str(), amount, potValue);
 }
 
 void PokerTable::GiveChips(Person* p, int amount) {
@@ -301,7 +307,7 @@ void PokerTable::GiveChips(Person* p, int amount) {
         inv->AddItem(chip);
     }
     
-    POKER_LOG(LOG_INFO, "Gave %d chips to %s", amount, p->GetName().c_str());
+    // POKER_LOG(LOG_INFO, "Gave %d chips to %s", amount, p->GetName().c_str());
 }
 
 // ========== BETTING HELPERS ==========
@@ -330,9 +336,9 @@ void PokerTable::ProcessBetting(float dt) {
     // DEBUG: Log statusList at start of ProcessBetting
     static bool firstCall = true;
     if (firstCall) {
-        POKER_LOG(LOG_INFO, "ProcessBetting FIRST CALL - statusList: [0]=%d [1]=%d [2]=%d [3]=%d [4]=%d [5]=%d [6]=%d [7]=%d", 
-                  statusList[0], statusList[1], statusList[2], statusList[3], 
-                  statusList[4], statusList[5], statusList[6], statusList[7]);
+        // POKER_LOG(LOG_INFO, "ProcessBetting FIRST CALL - statusList: [0]=%d [1]=%d [2]=%d [3]=%d [4]=%d [5]=%d [6]=%d [7]=%d", 
+    //                   statusList[0], statusList[1], statusList[2], statusList[3], 
+    //                   statusList[4], statusList[5], statusList[6], statusList[7]);
         firstCall = false;
     }
     
@@ -348,7 +354,7 @@ void PokerTable::ProcessBetting(float dt) {
     }
     
     Person* p = seats[currentPlayerSeat].occupant;
-    if (!p) {
+    if (!p || !p->isActive) {
         currentPlayerSeat = NextActiveSeat(currentPlayerSeat);
         return;
     }
@@ -371,8 +377,8 @@ void PokerTable::ProcessBetting(float dt) {
     
     // Only log when we first move to this player (prevent spamming while they think)
     if (lastLoggedPlayerSeat != currentPlayerSeat) {
-        POKER_LOG(LOG_INFO, "%s to act: currentBet=%d, statusList[%d]=%d, callAmount=%d, canRaise=%d", 
-                  p->GetName().c_str(), currentBet, currentPlayerSeat, statusList[currentPlayerSeat], callAmount, canRaise);
+        // POKER_LOG(LOG_INFO, "%s to act: currentBet=%d, statusList[%d]=%d, callAmount=%d, canRaise=%d", 
+    //                   p->GetName().c_str(), currentBet, currentPlayerSeat, statusList[currentPlayerSeat], callAmount, canRaise);
         lastLoggedPlayerSeat = currentPlayerSeat;
     }
     
@@ -390,12 +396,12 @@ void PokerTable::ProcessBetting(float dt) {
     if (action == 0) {
         // Fold
         statusList[currentPlayerSeat] = -1;
-        POKER_LOG(LOG_INFO, "%s folds", p->GetName().c_str());
+        // POKER_LOG(LOG_INFO, "%s folds", p->GetName().c_str());
     } else if (action == 1) {
         // Call
         TakeChips(p, callAmount);
         statusList[currentPlayerSeat] += callAmount;
-        POKER_LOG(LOG_INFO, "%s calls %d", p->GetName().c_str(), callAmount);
+        // POKER_LOG(LOG_INFO, "%s calls %d", p->GetName().c_str(), callAmount);
     } else if (action == 2) {
         // Raise (only if they haven't raised yet)
         if (canRaise) {
@@ -404,10 +410,10 @@ void PokerTable::ProcessBetting(float dt) {
             statusList[currentPlayerSeat] = raiseAmount;
             currentBet = raiseAmount;
             hasRaised[currentPlayerSeat] = true;  // Mark that they've raised
-            POKER_LOG(LOG_INFO, "%s raises to %d", p->GetName().c_str(), raiseAmount);
+            // POKER_LOG(LOG_INFO, "%s raises to %d", p->GetName().c_str(), raiseAmount);
         } else {
             // Shouldn't happen, but if it does, treat as call
-            POKER_LOG(LOG_INFO, "%s tried to raise but already raised, calling instead", p->GetName().c_str());
+            // POKER_LOG(LOG_INFO, "%s tried to raise but already raised, calling instead", p->GetName().c_str());
             TakeChips(p, callAmount);
             statusList[currentPlayerSeat] += callAmount;
         }
@@ -415,7 +421,7 @@ void PokerTable::ProcessBetting(float dt) {
     
     // Check if betting round is complete
     if (IsBettingRoundComplete()) {
-        POKER_LOG(LOG_INFO, "Betting round complete! communityCards.size()=%zu", communityCards.size());
+        // POKER_LOG(LOG_INFO, "Betting round complete! communityCards.size()=%zu", communityCards.size());
         bettingActive = false;
         lastLoggedPlayerSeat = -1;  // Reset for next betting round
         
@@ -425,7 +431,7 @@ void PokerTable::ProcessBetting(float dt) {
             if (seats[i].isOccupied && statusList[i] != -1) activePlayers++;
         }
         
-        POKER_LOG(LOG_INFO, "Active players: %d", activePlayers);
+        // POKER_LOG(LOG_INFO, "Active players: %d", activePlayers);
         
         if (activePlayers <= 1) {
             // Everyone folded, end hand
@@ -433,13 +439,13 @@ void PokerTable::ProcessBetting(float dt) {
         } else {
             // Progress to next street
             if (communityCards.size() == 0) {
-                POKER_LOG(LOG_INFO, "About to deal flop...");
+                // POKER_LOG(LOG_INFO, "About to deal flop...");
                 DealFlop();
             } else if (communityCards.size() == 3) {
-                POKER_LOG(LOG_INFO, "About to deal turn...");
+                // POKER_LOG(LOG_INFO, "About to deal turn...");
                 DealTurn();
             } else if (communityCards.size() == 4) {
-                POKER_LOG(LOG_INFO, "About to deal river...");
+                // POKER_LOG(LOG_INFO, "About to deal river...");
                 DealRiver();
             } else {
                 // Showdown
@@ -492,7 +498,7 @@ void PokerTable::StartHand() {
     currentPlayerSeat = NextOccupiedSeat(bigBlindSeat);
     bettingActive = true;
     
-    POKER_LOG(LOG_INFO, "=== Hand started ===");
+    // POKER_LOG(LOG_INFO, "=== Hand started ===");
 }
 
 void PokerTable::DealHoleCards() {
@@ -507,7 +513,7 @@ void PokerTable::DealHoleCards() {
             seats[i].occupant->GetInventory()->AddItem(card);
         }
     }
-    POKER_LOG(LOG_INFO, "Dealt hole cards to %d players", GetOccupiedSeatCount());
+    // POKER_LOG(LOG_INFO, "Dealt hole cards to %d players", GetOccupiedSeatCount());
 }
 
 void PokerTable::PostBlinds() {
@@ -519,7 +525,7 @@ void PokerTable::PostBlinds() {
     }
     bigBlindSeat = NextOccupiedSeat(smallBlindSeat);
     
-    POKER_LOG(LOG_INFO, "PostBlinds: smallBlindSeat=%d, bigBlindSeat=%d", smallBlindSeat, bigBlindSeat);
+    // POKER_LOG(LOG_INFO, "PostBlinds: smallBlindSeat=%d, bigBlindSeat=%d", smallBlindSeat, bigBlindSeat);
     
     // Small blind
     TakeChips(seats[smallBlindSeat].occupant, SMALL_BLIND_AMOUNT);
@@ -530,10 +536,10 @@ void PokerTable::PostBlinds() {
     statusList[bigBlindSeat] = BIG_BLIND_AMOUNT;
     currentBet = BIG_BLIND_AMOUNT;
     
-    POKER_LOG(LOG_INFO, "Blinds posted: seat %d (SB=%d), seat %d (BB=%d)", smallBlindSeat, SMALL_BLIND_AMOUNT, bigBlindSeat, BIG_BLIND_AMOUNT);
-    POKER_LOG(LOG_INFO, "After PostBlinds - statusList: [0]=%d [1]=%d [2]=%d [3]=%d [4]=%d [5]=%d [6]=%d [7]=%d", 
-              statusList[0], statusList[1], statusList[2], statusList[3], 
-              statusList[4], statusList[5], statusList[6], statusList[7]);
+    // POKER_LOG(LOG_INFO, "Blinds posted: seat %d (SB=%d), seat %d (BB=%d)", smallBlindSeat, SMALL_BLIND_AMOUNT, bigBlindSeat, BIG_BLIND_AMOUNT);
+    // POKER_LOG(LOG_INFO, "After PostBlinds - statusList: [0]=%d [1]=%d [2]=%d [3]=%d [4]=%d [5]=%d [6]=%d [7]=%d", 
+    //           statusList[0], statusList[1], statusList[2], statusList[3], 
+    //           statusList[4], statusList[5], statusList[6], statusList[7]);
 }
 
 void PokerTable::StartBettingRound(int startPlayer) {
@@ -557,12 +563,12 @@ void PokerTable::DealFlop() {
     float cardY = position.y + size.y/2.0f + 0.02f;  // Flush on table surface
     float cardZ = position.z + 0.5f;  // Offset to opposite side from deck/pot
     
-    POKER_LOG(LOG_INFO, "Dealing flop - cardY=%.2f, cardZ=%.2f", cardY, cardZ);
+    // POKER_LOG(LOG_INFO, "Dealing flop - cardY=%.2f, cardZ=%.2f", cardY, cardZ);
     
     for (int i = 0; i < 3; i++) {
         Card* card = deck->DrawCard();
         if (!card) {
-            POKER_LOG(LOG_INFO, "Failed to draw card %d for flop", i);
+            // POKER_LOG(LOG_INFO, "Failed to draw card %d for flop", i);
             continue;
         }
         
@@ -574,11 +580,11 @@ void PokerTable::DealFlop() {
         AddChild(card);  // Dual-reference: in children for rendering
         communityCards.push_back(card);  // And in vector for game logic
         
-        POKER_LOG(LOG_INFO, "Flop card %d: %s at (%.2f, %.2f, %.2f)", 
-                  i, card->GetType(), card->position.x, card->position.y, card->position.z);
+        // POKER_LOG(LOG_INFO, "Flop card %d: %s at (%.2f, %.2f, %.2f)", 
+    //                   i, card->GetType(), card->position.x, card->position.y, card->position.z);
     }
     
-    POKER_LOG(LOG_INFO, "Dealt flop - %zu community cards total", communityCards.size());
+    // POKER_LOG(LOG_INFO, "Dealt flop - %zu community cards total", communityCards.size());
     StartBettingRound(NextOccupiedSeat(smallBlindSeat));  // Start from first seat after rotation
 }
 
@@ -600,7 +606,7 @@ void PokerTable::DealTurn() {
     AddChild(card);  // Dual-reference: in children for rendering
     communityCards.push_back(card);  // And in vector for game logic
     
-    POKER_LOG(LOG_INFO, "Dealt turn");
+    // POKER_LOG(LOG_INFO, "Dealt turn");
     StartBettingRound(NextOccupiedSeat(smallBlindSeat));  // Start from first seat after rotation
 }
 

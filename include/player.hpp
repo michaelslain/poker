@@ -52,6 +52,7 @@ public:
     void HandleInteraction();
     void HandleShooting();
     Interactable* GetClosestInteractable();
+    void Draw(Camera3D camera) override;
     void DrawInventoryUI();
     void DrawHeldItem();
 

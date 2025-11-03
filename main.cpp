@@ -4,7 +4,6 @@
 #include "card.hpp"
 #include "chip.hpp"
 #include "pistol.hpp"
-#include "bullet.hpp"
 #include "floor.hpp"
 #include "ceiling.hpp"
 #include "wall.hpp"
@@ -18,6 +17,9 @@
 #include "dom.hpp"
 #include <cstdlib>
 #include <cstring>
+
+// Global debug flag for collision visualization
+bool g_showCollisionDebug = false;
 
 int main(void)
 {
@@ -170,6 +172,12 @@ int main(void)
                 DisableCursor();
             }
         }
+        
+        // Toggle collision debug with G key
+        if (IsKeyPressed(KEY_G)) {
+            g_showCollisionDebug = !g_showCollisionDebug;
+            GAME_LOG(LOG_INFO, "Collision debug: %s", g_showCollisionDebug ? "ON" : "OFF");
+        }
 
         // Update player (handles input, camera, and FOV)
         player->Update(deltaTime);
@@ -196,6 +204,13 @@ int main(void)
         // Only update root objects (those without parents) - they will recursively update their children
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
+            
+            // Debug: Check for bullets
+            if (obj != nullptr && strcmp(obj->GetType(), "bullet") == 0) {
+                TraceLog(LOG_INFO, "Found bullet in DOM at index %d, parent: %p, isActive: %d", 
+                         i, (void*)obj->GetParent(), obj->isActive);
+            }
+            
             if (obj != nullptr && obj != player && obj->GetParent() == nullptr) {  // Skip player and non-root objects
                 obj->UpdateWithChildren(deltaTime);
             }

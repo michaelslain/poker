@@ -4,9 +4,10 @@
 #include "poker_table.hpp"
 #include "wall.hpp"
 #include "pistol.hpp"
-#include "bullet.hpp"
+#include "person.hpp"
 #include "dom.hpp"
 #include "inventory_ui.hpp"
+#include "debug.hpp"
 #include "raymath.h"
 #include <cmath>
 #include <cstring>
@@ -375,12 +376,20 @@ Interactable* Player::GetClosestInteractable() {
 }
 
 void Player::HandleShooting() {
+    GAME_LOG(LOG_INFO, "HandleShooting() ENTRY - selectedIndex: %d, stackCount: %d", 
+             selectedItemIndex, inventory.GetStackCount());
+    
     // Only shoot if left mouse button is pressed and we have an item selected
-    if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) return;
+    if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        return;
+    }
 
-    TraceLog(LOG_INFO, "=== MOUSE CLICKED - HandleShooting called ===");
+    GAME_LOG(LOG_INFO, "=== MOUSE CLICKED - HandleShooting called ===");
 
-    if (selectedItemIndex < 0 || selectedItemIndex >= inventory.GetStackCount()) return;
+    if (selectedItemIndex < 0 || selectedItemIndex >= inventory.GetStackCount()) {
+        GAME_LOG(LOG_INFO, "Invalid selectedItemIndex, returning");
+        return;
+    }
 
     // Get the selected item
     ItemStack* stack = inventory.GetStack(selectedItemIndex);
@@ -394,38 +403,102 @@ void Player::HandleShooting() {
 
     // Check if we can shoot
     if (!pistol->CanShoot()) {
-        TraceLog(LOG_INFO, "Out of ammo!");
+        GAME_LOG(LOG_INFO, "Out of ammo!");
         return;
     }
 
-    TraceLog(LOG_INFO, "Before shoot - Ammo: %d", pistol->GetAmmo());
+    GAME_LOG(LOG_INFO, "Before shoot - Ammo: %d", pistol->GetAmmo());
 
     // Shoot the pistol (decrements ammo)
     pistol->Shoot();
 
-    TraceLog(LOG_INFO, "After shoot - Ammo: %d", pistol->GetAmmo());
+    GAME_LOG(LOG_INFO, "After shoot - Ammo: %d", pistol->GetAmmo());
 
-    // Create bullet from camera center
+
+    // Instant raycast from camera
     Camera3D* cam = GetCamera();
-    Vector3 bulletStart = cam->position;
+    Vector3 rayStart = cam->position;
     Vector3 direction = Vector3Normalize({
         cam->target.x - cam->position.x,
         cam->target.y - cam->position.y,
         cam->target.z - cam->position.z
     });
-
-    // Create bullet and add to DOM
-    Bullet* bullet = new Bullet(bulletStart, direction, 300.0f);  // Very fast bullet speed
+    
+    // Cast ray through all people in the DOM
     DOM* dom = DOM::GetGlobal();
     if (dom) {
-        dom->AddObject(bullet);
+        float maxDistance = 1000.0f;  // Max shooting range
+        Person* hitPerson = nullptr;
+        float closestHit = maxDistance;
+        
+        for (int i = 0; i < dom->GetCount(); i++) {
+            Object* obj = dom->GetObject(i);
+            if (!obj || !obj->isActive) continue;
+            
+            const char* type = obj->GetType();
+            if (strncmp(type, "player", 6) == 0 || 
+                strncmp(type, "enemy", 5) == 0 || 
+                strncmp(type, "dealer", 6) == 0) {
+                
+                Person* person = static_cast<Person*>(obj);
+                
+                // Cylinder collision: check if ray intersects the person's hitbox
+                float personHeight = person->GetHeight();
+                float personTopY = person->position.y + 2.4f * personHeight;
+                float personBottomY = person->position.y;
+                float hitRadius = 0.5f;
+                
+                // For each point along the ray, check cylinder intersection
+                for (float dist = 0; dist < maxDistance; dist += 0.1f) {
+                    Vector3 rayPoint = {
+                        rayStart.x + direction.x * dist,
+                        rayStart.y + direction.y * dist,
+                        rayStart.z + direction.z * dist
+                    };
+                    
+                    // Check if within height range
+                    if (rayPoint.y >= personBottomY && rayPoint.y <= personTopY) {
+                        // Check horizontal distance
+                        float dx = rayPoint.x - person->position.x;
+                        float dz = rayPoint.z - person->position.z;
+                        float horizontalDist = sqrtf(dx*dx + dz*dz);
+                        
+                        if (horizontalDist < hitRadius && dist < closestHit) {
+                            hitPerson = person;
+                            closestHit = dist;
+                            break;  // Hit this person, stop checking this person
+                        }
+                    }
+                }
+            }
+        }
+        
+        // If we hit someone, kill them
+        if (hitPerson) {
+            GAME_LOG(LOG_INFO, "*** SHOT HIT %s at distance %.2f! ***", hitPerson->GetName().c_str(), closestHit);
+            
+            // If person is sitting, unseat them from all poker tables
+            if (hitPerson->IsSeated()) {
+                for (int j = 0; j < dom->GetCount(); j++) {
+                    Object* tableObj = dom->GetObject(j);
+                    if (tableObj && tableObj->isActive) {
+                        const char* tableType = tableObj->GetType();
+                        if (strcmp(tableType, "poker_table") == 0) {
+                            PokerTable* table = static_cast<PokerTable*>(tableObj);
+                            table->UnseatPerson(hitPerson);
+                        }
+                    }
+                }
+            }
+            
+            hitPerson->isActive = false;
+        } else {
+            GAME_LOG(LOG_INFO, "Shot missed!");
+        }
     }
-
-    TraceLog(LOG_INFO, "Bullet created! Total ammo now: %d", pistol->GetAmmo());
-
     // Check if pistol is out of ammo after shooting
     if (pistol->GetAmmo() <= 0) {
-        TraceLog(LOG_INFO, "Pistol out of ammo! Removing from inventory and deleting.");
+        GAME_LOG(LOG_INFO, "Pistol out of ammo! Removing from inventory and deleting.");
 
         // Remove from inventory
         inventory.RemoveItem(selectedItemIndex);
@@ -436,6 +509,21 @@ void Player::HandleShooting() {
         // Deselect item since it's gone
         selectedItemIndex = -1;
         lastHeldItemIndex = -1;
+    }
+}
+
+void Player::Draw(Camera3D camera) {
+    // Call parent's draw (draws the person model)
+    Person::Draw(camera);
+    
+    // Draw player's capsule collision geometry if debug mode is on
+    if (g_showCollisionDebug && geom) {
+        dReal radius, length;
+        dGeomCapsuleGetParams(geom, &radius, &length);
+        
+        // Draw wireframe capsule at player position
+        Vector3 topPos = {position.x, position.y + (float)length, position.z};
+        DrawCapsuleWires(position, topPos, (float)radius, 8, 8, LIME);
     }
 }
 
@@ -459,7 +547,7 @@ void Player::DrawHeldItem() {
     if (strcmp(itemType, "pistol") == 0) {
         Pistol* pistol = static_cast<Pistol*>(stack->item);
         Camera3D* cam = GetCamera();
-        TraceLog(LOG_INFO, "Drawing held pistol at selected index %d", selectedItemIndex);
+        GAME_LOG(LOG_INFO, "Drawing held pistol at selected index %d", selectedItemIndex);
         pistol->DrawHeld(*cam);
     }
 }

@@ -1,4 +1,5 @@
 #include "person.hpp"
+#include "debug.hpp"
 #include "raymath.h"
 #include "rlgl.h"
 
@@ -169,6 +170,13 @@ void Person::Draw(Camera3D camera) {
     
     // Reset color back to white so we don't affect other objects
     rlColor4ub(255, 255, 255, 255);
+    
+    // Draw collision cylinder wireframe if debug mode is on
+    if (g_showCollisionDebug) {
+        float topY = 2.4f * height;  // Top of head
+        float radius = 0.5f;  // Hitbox radius
+        DrawCylinderWires(position, radius, radius, topY, 16, LIME);
+    }
 }
 
 const char* Person::GetType() const {
