@@ -44,11 +44,10 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
     dealer = new Dealer({pos.x, ground, pos.z - hd - dist}, "Dealer");
     DOM::GetGlobal()->AddObject(dealer);
     
-    // Create deck and add to DOM
+    // Create deck (not added to DOM - we don't want to render it)
     Vector3 deckPos = {pos.x - hw * 0.5f, pos.y + size.y / 2.0f + 0.05f, pos.z};
     deck = new Deck(deckPos);
     deck->Shuffle();
-    DOM::GetGlobal()->AddObject(deck);
     
     // Create pot stack and add to DOM
     Vector3 potPos = {pos.x - hw * 0.5f, pos.y + size.y / 2.0f + 0.05f, pos.z - 0.5f};
@@ -86,12 +85,8 @@ PokerTable::~PokerTable() {
         potStack = nullptr;
     }
     
-    // Clean up deck (remove from DOM and delete)
+    // Clean up deck (not in DOM, just delete it)
     if (deck) {
-        DOM* dom = DOM::GetGlobal();
-        if (dom) {
-            dom->RemoveObject(deck);
-        }
         delete deck;
         deck = nullptr;
     }
