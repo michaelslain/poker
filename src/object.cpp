@@ -24,6 +24,6 @@ void Object::Draw(Camera3D camera) {
     // Default: do nothing
 }
 
-const char* Object::GetType() const {
+std::string Object::GetType() const {
     return "object";
 }

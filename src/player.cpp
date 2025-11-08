@@ -8,9 +8,11 @@
 #include "dom.hpp"
 #include "inventory_ui.hpp"
 #include "debug.hpp"
+#include "card.hpp"
 #include "raymath.h"
 #include <cmath>
 #include <cstring>
+#include <vector>
 #include <ode/ode.h>
 
 Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName)
@@ -18,7 +20,8 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
       lookYaw(0.0f), lookPitch(0.0f), body(nullptr), geom(nullptr), physics(physicsWorld),
       selectedItemIndex(-1), lastHeldItemIndex(-1),
       bettingUIActive(false), bettingChoice(-1), raiseSliderValue(0), raiseMin(0), raiseMax(0),
-      storedCurrentBet(0), storedCallAmount(0)
+      storedCurrentBet(0), storedCallAmount(0),
+      cardSelectionUIActive(false), selectedCardIndices()
 {
     if (physics != nullptr) {
         // Create kinematic body (controlled by code, not physics forces)
@@ -53,7 +56,7 @@ Player::~Player() {
     }
 }
 
-const char* Player::GetType() const {
+std::string Player::GetType() const {
     return "player";
 }
 
@@ -63,10 +66,10 @@ void Player::HandleInteraction() {
     Interactable* closestInteractable = GetClosestInteractable();
     if (!closestInteractable) return;
 
-    const char* typeStr = closestInteractable->GetType();
+    std::string typeStr = closestInteractable->GetType();
 
     // Handle poker table interaction (sit down or stand up)
-    if (strcmp(typeStr, "poker_table") == 0) {
+    if (typeStr == "poker_table") {
         PokerTable* table = static_cast<PokerTable*>(closestInteractable);
         
         // Check if we're already seated at this table
@@ -85,7 +88,7 @@ void Player::HandleInteraction() {
         }
     }
     // Handle item pickup
-    else if (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0 || strcmp(typeStr, "pistol") == 0) {
+    else if (typeStr.substr(0, 5) == "card_" || typeStr.substr(0, 5) == "chip_" || typeStr == "pistol") {
         Item* item = static_cast<Item*>(closestInteractable);
 
         // Add to inventory
@@ -97,7 +100,7 @@ void Player::HandleInteraction() {
             dom->RemoveObject(item);
         }
 
-        TraceLog(LOG_INFO, "Item picked up: %s, Inventory stacks: %d", typeStr, inventory.GetStackCount());
+        TraceLog(LOG_INFO, "Item picked up: %s, Inventory stacks: %d", typeStr.c_str(), inventory.GetStackCount());
     }
 }
 
@@ -191,14 +194,14 @@ void Player::Update(float deltaTime) {
             if (dom) {
                 for (int i = 0; i < dom->GetCount(); i++) {
                     Object* obj = dom->GetObject(i);
-                    const char* typeStr = obj->GetType();
+                    std::string typeStr = obj->GetType();
 
                     dGeomID otherGeom = nullptr;
                     
-                    if (strcmp(typeStr, "poker_table") == 0) {
+                    if (typeStr == "poker_table") {
                         PokerTable* table = static_cast<PokerTable*>(obj);
                         otherGeom = table->GetGeom();
-                    } else if (strcmp(typeStr, "wall") == 0) {
+                    } else if (typeStr == "wall") {
                         Wall* wall = static_cast<Wall*>(obj);
                         otherGeom = wall->GetGeom();
                     }
@@ -338,10 +341,10 @@ Interactable* Player::GetClosestInteractable() {
 
     for (int i = 0; i < dom->GetCount(); i++) {
         Object* obj = dom->GetObject(i);
-        const char* typeStr = obj->GetType();
+        std::string typeStr = obj->GetType();
 
-        bool isItem = (strncmp(typeStr, "card_", 5) == 0 || strncmp(typeStr, "chip_", 5) == 0 || strcmp(typeStr, "pistol") == 0);
-        bool isPokerTable = (strcmp(typeStr, "poker_table") == 0);
+        bool isItem = (typeStr.substr(0, 5) == "card_" || typeStr.substr(0, 5) == "chip_" || typeStr == "pistol");
+        bool isPokerTable = (typeStr == "poker_table");
 
         if (!isItem && !isPokerTable) continue;
 
@@ -394,8 +397,8 @@ void Player::HandleShooting() {
     if (!stack || !stack->item) return;
 
     // Check if it's a pistol
-    const char* itemType = stack->item->GetType();
-    if (strcmp(itemType, "pistol") != 0) return;
+    std::string itemType = stack->item->GetType();
+    if (itemType != "pistol") return;
 
     Pistol* pistol = static_cast<Pistol*>(stack->item);
 
@@ -433,10 +436,10 @@ void Player::HandleShooting() {
             Object* obj = dom->GetObject(i);
             if (!obj) continue;
             
-            const char* type = obj->GetType();
-            if (strncmp(type, "player", 6) == 0 || 
-                strncmp(type, "enemy", 5) == 0 || 
-                strncmp(type, "dealer", 6) == 0) {
+            std::string type = obj->GetType();
+            if (type == "player" || 
+                type == "enemy" || 
+                type == "dealer") {
                 
                 Person* person = static_cast<Person*>(obj);
                 
@@ -483,8 +486,8 @@ void Player::HandleShooting() {
                 for (int j = 0; j < dom->GetCount(); j++) {
                     Object* tableObj = dom->GetObject(j);
                     if (tableObj) {
-                        const char* tableType = tableObj->GetType();
-                        if (strcmp(tableType, "poker_table") == 0) {
+                        std::string tableType = tableObj->GetType();
+                        if (tableType == "poker_table") {
                             PokerTable* table = static_cast<PokerTable*>(tableObj);
                             table->UnseatPerson(hitPerson);
                         }
@@ -531,6 +534,9 @@ void Player::Draw(Camera3D camera) {
 
 void Player::DrawInventoryUI() {
     InventoryUI_Draw(&inventory, selectedItemIndex);
+    
+    // Draw card selection UI if active
+    DrawCardSelectionUI();
 }
 
 void Player::DrawHeldItem() {
@@ -545,12 +551,12 @@ void Player::DrawHeldItem() {
     }
 
     // Check if it's a pistol
-    const char* itemType = stack->item->GetType();
-    if (!itemType) {
+    std::string itemType = stack->item->GetType();
+    if (itemType.empty()) {
         return;  // Safety check - GetType() returned null
     }
     
-    if (strcmp(itemType, "pistol") == 0) {
+    if (itemType == "pistol") {
         Pistol* pistol = static_cast<Pistol*>(stack->item);
         if (!pistol) {
             return;  // Safety check - cast failed
@@ -703,4 +709,127 @@ void Player::DrawBettingUI() {
     if (IsKeyPressed(KEY_THREE)) {
         bettingChoice = 2;
     }
+}
+
+void Player::DrawCardSelectionUI() {
+    if (!cardSelectionUIActive) return;
+    
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    // Count cards in inventory
+    std::vector<int> cardIndices;
+    for (int i = 0; i < inventory.GetStackCount(); i++) {
+        ItemStack* stack = inventory.GetStack(i);
+        if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+            cardIndices.push_back(i);
+        }
+    }
+    
+    // Draw semi-transparent background
+    DrawRectangle(0, screenHeight / 2 - 150, screenWidth, 300, (Color){0, 0, 0, 220});
+    
+    // Draw title
+    DrawText("SELECT 2 CARDS FOR YOUR HAND", screenWidth / 2 - 200, screenHeight / 2 - 140, 24, YELLOW);
+    DrawText(TextFormat("Selected: %d/2", (int)selectedCardIndices.size()), screenWidth / 2 - 80, screenHeight / 2 - 110, 20, WHITE);
+    DrawText("Click on cards to select/deselect. Press ENTER when done.", screenWidth / 2 - 240, screenHeight / 2 - 85, 16, LIGHTGRAY);
+    
+    // Draw cards as clickable boxes
+    int cardWidth = 80;
+    int cardHeight = 120;
+    int spacing = 20;
+    int startX = screenWidth / 2 - ((cardWidth + spacing) * cardIndices.size()) / 2;
+    int startY = screenHeight / 2 - 40;
+    
+    for (size_t i = 0; i < cardIndices.size(); i++) {
+        int invIndex = cardIndices[i];
+        ItemStack* stack = inventory.GetStack(invIndex);
+        if (!stack || !stack->item) continue;
+        
+        Card* card = static_cast<Card*>(stack->item);
+        
+        int x = startX + i * (cardWidth + spacing);
+        int y = startY;
+        
+        Rectangle cardRect = {(float)x, (float)y, (float)cardWidth, (float)cardHeight};
+        
+        // Check if this card is selected
+        bool isSelected = false;
+        for (int selIdx : selectedCardIndices) {
+            if (selIdx == invIndex) {
+                isSelected = true;
+                break;
+            }
+        }
+        
+        // Handle mouse click
+        if (CheckCollisionPointRec(GetMousePosition(), cardRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (isSelected) {
+                // Deselect
+                for (size_t j = 0; j < selectedCardIndices.size(); j++) {
+                    if (selectedCardIndices[j] == invIndex) {
+                        selectedCardIndices.erase(selectedCardIndices.begin() + j);
+                        break;
+                    }
+                }
+            } else {
+                // Select (if not already 2 selected)
+                if (selectedCardIndices.size() < 2) {
+                    selectedCardIndices.push_back(invIndex);
+                }
+            }
+        }
+        
+        // Draw card
+        Color borderColor = isSelected ? GOLD : WHITE;
+        int borderWidth = isSelected ? 4 : 2;
+        
+        DrawRectangleRec(cardRect, WHITE);
+        DrawRectangleLinesEx(cardRect, borderWidth, borderColor);
+        
+        // Draw card icon (simplified - just show rank and suit)
+        const char* rankStr = Card::GetRankString(card->rank);
+        const char* suitSymbol = Card::GetSuitSymbol(card->suit);
+        Color suitColor = Card::GetSuitColor(card->suit);
+        
+        DrawText(rankStr, x + 10, y + 10, 20, BLACK);
+        DrawText(suitSymbol, x + 10, y + 35, 30, suitColor);
+    }
+    
+    // Draw confirm button
+    Rectangle confirmButton = {(float)(screenWidth / 2 - 100), (float)(screenHeight / 2 + 100), 200.0f, 40.0f};
+    Color confirmColor = selectedCardIndices.size() == 2 ? GREEN : DARKGRAY;
+    DrawRectangleRec(confirmButton, confirmColor);
+    DrawText("CONFIRM", (int)confirmButton.x + 50, (int)confirmButton.y + 10, 20, WHITE);
+    DrawText("ENTER", (int)confirmButton.x + 70, (int)confirmButton.y + 32, 10, LIGHTGRAY);
+    
+    // Confirm with ENTER
+    if (IsKeyPressed(KEY_ENTER) && selectedCardIndices.size() == 2) {
+        cardSelectionUIActive = false;
+    }
+}
+
+std::vector<Card*> Player::GetSelectedCards() {
+    std::vector<Card*> cards;
+    
+    // If no selection active or not enough cards selected, return all cards
+    if (!cardSelectionUIActive && selectedCardIndices.empty()) {
+        for (int i = 0; i < inventory.GetStackCount(); i++) {
+            ItemStack* stack = inventory.GetStack(i);
+            if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+                cards.push_back(static_cast<Card*>(stack->item));
+            }
+        }
+        return cards;
+    }
+    
+    // Return only selected cards
+    for (int idx : selectedCardIndices) {
+        ItemStack* stack = inventory.GetStack(idx);
+        if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+            cards.push_back(static_cast<Card*>(stack->item));
+        }
+    }
+    
+    return cards;
 }

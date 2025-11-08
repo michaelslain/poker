@@ -132,6 +132,6 @@ void Pistol::Shoot() {
     }
 }
 
-const char* Pistol::GetType() const {
+std::string Pistol::GetType() const {
     return "pistol";
 }

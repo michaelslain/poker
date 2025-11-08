@@ -10,7 +10,7 @@ Enemy::Enemy(Vector3 pos, const std::string& enemyName)
       pendingAction(-1) {
 }
 
-const char* Enemy::GetType() const {
+std::string Enemy::GetType() const {
     return "enemy";
 }
 
@@ -62,8 +62,8 @@ int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise,
         for (int i = 0; i < inv->GetStackCount(); i++) {
             ItemStack* stack = inv->GetStack(i);
             if (stack && stack->item) {
-                const char* type = stack->item->GetType();
-                if (strncmp(type, "chip_", 5) == 0) {
+                std::string type = stack->item->GetType();
+                if (type.substr(0, 5) == "chip_") {
                     Chip* chip = static_cast<Chip*>(stack->item);
                     totalChipValue += chip->value * stack->count;
                 }

@@ -19,7 +19,7 @@ public:
     
     void Update(float deltaTime) override;
     void Draw(Camera3D camera) override;
-    const char* GetType() const override;
+    std::string GetType() const override;
     
     // Chip management
     void AddChip(Chip* chip);

@@ -9,7 +9,7 @@ public:
     virtual ~Item() = default;
 
     virtual void DrawIcon(Rectangle destRect);
-    const char* GetType() const override;
+    std::string GetType() const override;
 };
 
 #endif

@@ -8,7 +8,7 @@ Spawner::Spawner(Vector3 pos, float spawnRadius)
 {
 }
 
-const char* Spawner::GetType() const {
+std::string Spawner::GetType() const {
     return "spawner";
 }
 

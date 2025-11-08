@@ -60,7 +60,7 @@ void Deck::Draw(Camera3D camera) {
     }
 }
 
-const char* Deck::GetType() const {
+std::string Deck::GetType() const {
     return "deck";
 }
 

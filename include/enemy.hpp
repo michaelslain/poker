@@ -16,7 +16,7 @@ public:
     virtual ~Enemy() = default;
 
     // Override GetType for identification
-    const char* GetType() const override;
+    std::string GetType() const override;
     
     // Override PromptBet for AI logic (random decision with delay)
     int PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) override;

@@ -1,5 +1,6 @@
 #include "poker_table.hpp"
 #include "dealer.hpp"
+#include "player.hpp"
 #include "chip.hpp"
 #include "debug.hpp"
 #include "dom.hpp"
@@ -13,7 +14,7 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
     : Interactable(pos), size(tableSize), color(tableColor), geom(nullptr), physics(physicsWorld),
       dealer(nullptr), deck(nullptr), potStack(nullptr),
       smallBlindSeat(-1), bigBlindSeat(-1), currentPlayerSeat(-1),
-      currentBet(0), potValue(0), handActive(false), bettingActive(false),
+      currentBet(0), potValue(0), handActive(false), bettingActive(false), showdownActive(false),
       lastLoggedPlayerSeat(-1)
 {
     // Calculate seat positions around the table
@@ -43,10 +44,11 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
     dealer = new Dealer({pos.x, ground, pos.z - hd - dist}, "Dealer");
     DOM::GetGlobal()->AddObject(dealer);
     
-    // Create deck (don't add to DOM - we don't want to render it)
+    // Create deck and add to DOM
     Vector3 deckPos = {pos.x - hw * 0.5f, pos.y + size.y / 2.0f + 0.05f, pos.z};
     deck = new Deck(deckPos);
     deck->Shuffle();
+    DOM::GetGlobal()->AddObject(deck);
     
     // Create pot stack and add to DOM
     Vector3 potPos = {pos.x - hw * 0.5f, pos.y + size.y / 2.0f + 0.05f, pos.z - 0.5f};
@@ -64,14 +66,40 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
 }
 
 PokerTable::~PokerTable() {
-    // Clean up deck (not in DOM, so we manage it)
+    // Clean up dealer (remove from DOM and delete)
+    if (dealer) {
+        DOM* dom = DOM::GetGlobal();
+        if (dom) {
+            dom->RemoveObject(dealer);
+        }
+        delete dealer;
+        dealer = nullptr;
+    }
+    
+    // Clean up pot stack (remove from DOM and delete)
+    if (potStack) {
+        DOM* dom = DOM::GetGlobal();
+        if (dom) {
+            dom->RemoveObject(potStack);
+        }
+        delete potStack;
+        potStack = nullptr;
+    }
+    
+    // Clean up deck (remove from DOM and delete)
     if (deck) {
+        DOM* dom = DOM::GetGlobal();
+        if (dom) {
+            dom->RemoveObject(deck);
+        }
         delete deck;
+        deck = nullptr;
     }
     
     if (geom) {
         dGeomSetData(geom, nullptr);
         dGeomDestroy(geom);
+        geom = nullptr;
     }
 }
 
@@ -118,6 +146,12 @@ void PokerTable::Update(float deltaTime) {
     // Process betting if active
     if (bettingActive) {
         ProcessBetting(deltaTime);
+        POKER_LOG(LOG_INFO, "ProcessBetting completed, returning from PokerTable::Update");
+    }
+    
+    // Process showdown if active (waiting for card selection)
+    if (showdownActive) {
+        Showdown();
     }
 }
 
@@ -136,24 +170,14 @@ void PokerTable::Draw(Camera3D camera) {
         DrawCubeWires(position, size.x, size.y, size.z, LIME);
     }
     
-    // Draw community cards
-    for (Card* card : communityCards) {
-        if (card) {
-            card->Draw(camera);
-        }
-    }
-    
-    // Draw deck
-    if (deck) {
-        deck->Draw(camera);
-    }
+    // Community cards and deck are now managed by DOM - they render themselves
 }
 
 void PokerTable::Interact() {
     // POKER_LOG(LOG_INFO, "Table interaction");
 }
 
-const char* PokerTable::GetType() const {
+std::string PokerTable::GetType() const {
     return "poker_table";
 }
 
@@ -209,6 +233,29 @@ void PokerTable::UnseatPerson(Person* p) {
     
     for (int i = 0; i < MAX_SEATS; i++) {
         if (seats[i].occupant == p) {
+            // Return only the dealt hole cards before unseating (during active hand)
+            if (handActive) {
+                Inventory* inv = p->GetInventory();
+                if (inv) {
+                    // Only remove the specific cards that were dealt this hand
+                    std::string personName = p->GetName();
+                    POKER_LOG(LOG_INFO, "Returning %d dealt cards for %s", (int)dealtHoleCards[i].size(), personName.c_str());
+                    for (Card* dealtCard : dealtHoleCards[i]) {
+                        // Find and remove this specific card from inventory
+                        for (int j = inv->GetStackCount() - 1; j >= 0; j--) {
+                            ItemStack* stack = inv->GetStack(j);
+                            if (stack && stack->item == dealtCard) {
+                                // Just remove from inventory - Deck owns the cards
+                                inv->RemoveItem(j);
+                                break;
+                            }
+                        }
+                    }
+                    // Clear this seat's dealt cards list
+                    dealtHoleCards[i].clear();
+                }
+            }
+            
             seats[i].occupant = nullptr;
             seats[i].isOccupied = false;
             statusList[i] = 0;
@@ -270,7 +317,7 @@ int PokerTable::CountChips(Person* p) {
     int total = 0;
     for (int i = 0; i < inv->GetStackCount(); i++) {
         ItemStack* stack = inv->GetStack(i);
-        if (stack && stack->item && strncmp(stack->item->GetType(), "chip_", 5) == 0) {
+        if (stack && stack->item && stack->item->GetType().substr(0, 5) == "chip_") {
             Chip* chip = static_cast<Chip*>(stack->item);
             total += chip->value * stack->count;
         }
@@ -328,7 +375,7 @@ void PokerTable::TakeChips(Person* p, int amount) {
     // Remove all chips from player
     for (int i = inv->GetStackCount() - 1; i >= 0; i--) {
         ItemStack* stack = inv->GetStack(i);
-        if (stack && stack->item && strncmp(stack->item->GetType(), "chip_", 5) == 0) {
+        if (stack && stack->item && stack->item->GetType().substr(0, 5) == "chip_") {
             for (int j = 0; j < stack->count; j++) {
                 inv->RemoveItem(i);
             }
@@ -436,8 +483,9 @@ void PokerTable::ProcessBetting(float dt) {
     
     // Only log when we first move to this player (prevent spamming while they think)
     if (lastLoggedPlayerSeat != currentPlayerSeat) {
+        std::string personName = p->GetName();
         POKER_LOG(LOG_INFO, "%s to act: currentBet=%d, statusList[%d]=%d, callAmount=%d, canRaise=%d", 
-                          p->GetName().c_str(), currentBet, currentPlayerSeat, statusList[currentPlayerSeat], callAmount, canRaise);
+                          personName.c_str(), currentBet, currentPlayerSeat, statusList[currentPlayerSeat], callAmount, canRaise);
         lastLoggedPlayerSeat = currentPlayerSeat;
     }
     
@@ -454,7 +502,8 @@ void PokerTable::ProcessBetting(float dt) {
         return;
     }
     
-    POKER_LOG(LOG_INFO, "About to call PromptBet on %s (ptr=%p)", p->GetName().c_str(), (void*)p);
+    std::string personName = p->GetName();
+    POKER_LOG(LOG_INFO, "About to call PromptBet on %s (ptr=%p)", personName.c_str(), (void*)p);
     int action = p->PromptBet(currentBet, callAmount, minRaise, maxRaise, raiseAmount);
     POKER_LOG(LOG_INFO, "PromptBet returned %d", action);
     
@@ -463,11 +512,11 @@ void PokerTable::ProcessBetting(float dt) {
     // Process action
     if (action == 0) {
         // Fold
-        POKER_LOG(LOG_INFO, "%s folds", p->GetName().c_str());
+        POKER_LOG(LOG_INFO, "%s folds", personName.c_str());
         statusList[currentPlayerSeat] = -1;
     } else if (action == 1) {
         // Call
-        POKER_LOG(LOG_INFO, "%s calls %d", p->GetName().c_str(), callAmount);
+        POKER_LOG(LOG_INFO, "%s calls %d", personName.c_str(), callAmount);
         TakeChips(p, callAmount);
         statusList[currentPlayerSeat] += callAmount;
     } else if (action == 2) {
@@ -516,7 +565,8 @@ void PokerTable::ProcessBetting(float dt) {
                 // POKER_LOG(LOG_INFO, "About to deal river...");
                 DealRiver();
             } else {
-                // Showdown
+                // Showdown - call once, then showdownActive will keep it running
+                showdownActive = true;
                 Showdown();
             }
         }
@@ -538,10 +588,7 @@ void PokerTable::StartHand() {
     currentBet = 0;
     
     // Community cards should already be cleared by EndHand()
-    // Just ensure the vector is empty (don't delete again)
-    communityCards.clear();
-    
-    POKER_LOG(LOG_INFO, "StartHand: Cleared community cards");
+    // Don't clear here - EndHand() needs to remove them from DOM first
     
     // Clear pot
     std::vector<Chip*> oldChips = potStack->RemoveAll();
@@ -578,6 +625,12 @@ void PokerTable::StartHand() {
 
 void PokerTable::DealHoleCards() {
     POKER_LOG(LOG_INFO, "DealHoleCards: Starting to deal cards");
+    
+    // Clear previous hand's dealt cards tracking
+    for (int i = 0; i < MAX_SEATS; i++) {
+        dealtHoleCards[i].clear();
+    }
+    
     for (int round = 0; round < 2; round++) {
         POKER_LOG(LOG_INFO, "DealHoleCards: Round %d", round);
         for (int i = 0; i < MAX_SEATS; i++) {
@@ -592,26 +645,54 @@ void PokerTable::DealHoleCards() {
                 continue;
             }
             
-            POKER_LOG(LOG_INFO, "DealHoleCards: Seat %d occupant ptr=%p, getting name", i, (void*)seats[i].occupant);
-            const char* name = seats[i].occupant->GetName().c_str();
-            POKER_LOG(LOG_INFO, "DealHoleCards: Dealing to %s at seat %d", name, i);
+            POKER_LOG(LOG_INFO, "DealHoleCards: Seat %d occupant ptr=%p, about to get type", i, (void*)seats[i].occupant);
             
+            // Verify object is valid by checking type first
+            std::string personType = seats[i].occupant->GetType();
+            if (personType.empty()) {
+                POKER_LOG(LOG_INFO, "ERROR: Seat %d occupant has null/empty type!", i);
+                seats[i].isOccupied = false;
+                continue;
+            }
+            POKER_LOG(LOG_INFO, "DealHoleCards: Seat %d occupant type=%s", i, personType.c_str());
+            
+            POKER_LOG(LOG_INFO, "DealHoleCards: About to get name");
+            // Get name safely - store as string and use it immediately
+            std::string playerName = seats[i].occupant->GetName();
+            POKER_LOG(LOG_INFO, "DealHoleCards: Dealing to %s at seat %d", playerName.c_str(), i);
+            
+            POKER_LOG(LOG_INFO, "DealHoleCards: About to draw card from deck");
             Card* card = deck->DrawCard();
+            POKER_LOG(LOG_INFO, "DealHoleCards: Drew card %p", (void*)card);
+            
             if (!card) {
                 POKER_LOG(LOG_INFO, "DealHoleCards: No card available from deck");
                 continue;
             }
             
+            POKER_LOG(LOG_INFO, "DealHoleCards: Setting card properties");
             card->canInteract = false;  // Disable interaction for hole cards
             
-            // Safety check - verify inventory exists
-            Inventory* inv = seats[i].occupant->GetInventory();
+            POKER_LOG(LOG_INFO, "DealHoleCards: Tracking card for seat %d", i);
+            // Track this card as dealt this hand
+            dealtHoleCards[i].push_back(card);
+            
+            POKER_LOG(LOG_INFO, "DealHoleCards: Getting inventory");
+            // Get inventory with safety checks
+            Person* occupant = seats[i].occupant;
+            if (!occupant) {
+                POKER_LOG(LOG_INFO, "ERROR: Occupant became null during card dealing!");
+                continue;
+            }
+            
+            Inventory* inv = occupant->GetInventory();
             if (!inv) {
                 POKER_LOG(LOG_INFO, "ERROR: Seat %d occupant has null inventory!", i);
                 continue;
             }
             
-            POKER_LOG(LOG_INFO, "DealHoleCards: About to add card to %s's inventory", name);
+            POKER_LOG(LOG_INFO, "DealHoleCards: Adding card to inventory");
+            // Add card to inventory
             inv->AddItem(card);
             POKER_LOG(LOG_INFO, "DealHoleCards: Card added successfully");
         }
@@ -679,7 +760,8 @@ void PokerTable::DealFlop() {
         card->rotation = {-90, 0, 0};  // Lay flat on table, face up
         card->canInteract = false;  // Disable interaction for community cards
         
-        // Don't add to DOM - PokerTable will render community cards itself
+        // Add to DOM for rendering
+        DOM::GetGlobal()->AddObject(card);
         communityCards.push_back(card);
         
         // POKER_LOG(LOG_INFO, "Flop card %d: %s at (%.2f, %.2f, %.2f)", 
@@ -704,7 +786,8 @@ void PokerTable::DealTurn() {
     card->rotation = {-90, 0, 0};  // Lay flat on table, face up
     card->canInteract = false;  // Disable interaction for community cards
     
-    // Don't add to DOM - PokerTable will render community cards itself
+    // Add to DOM for rendering
+    DOM::GetGlobal()->AddObject(card);
     communityCards.push_back(card);
     
     // POKER_LOG(LOG_INFO, "Dealt turn");
@@ -725,7 +808,8 @@ void PokerTable::DealRiver() {
     card->rotation = {-90, 0, 0};  // Lay flat on table, face up
     card->canInteract = false;  // Disable interaction for community cards
     
-    // Don't add to DOM - PokerTable will render community cards itself
+    // Add to DOM for rendering
+    DOM::GetGlobal()->AddObject(card);
     communityCards.push_back(card);
     
     TraceLog(LOG_INFO, "Dealt river");
@@ -735,6 +819,47 @@ void PokerTable::DealRiver() {
 void PokerTable::Showdown() {
     TraceLog(LOG_INFO, "=== Showdown ===");
     
+    // First, check if any players have 3+ cards and need to select
+    for (int i = 0; i < MAX_SEATS; i++) {
+        if (!seats[i].isOccupied || statusList[i] == -1) continue;
+        if (!seats[i].occupant) continue;
+        
+        // Check if this is a player (not Enemy/Dealer) and count cards
+        if (seats[i].occupant->GetType() == "player") {
+            Player* player = static_cast<Player*>(seats[i].occupant);
+            Inventory* inv = player->GetInventory();
+            if (!inv) continue;
+            
+            // Count cards in inventory
+            int cardCount = 0;
+            for (int j = 0; j < inv->GetStackCount(); j++) {
+                ItemStack* stack = inv->GetStack(j);
+                if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+                    cardCount++;
+                }
+            }
+            
+            // If player has 3+ cards, show selection UI
+            if (cardCount >= 3) {
+                // Activate card selection UI if not already active
+                if (!player->cardSelectionUIActive && player->selectedCardIndices.empty()) {
+                    player->cardSelectionUIActive = true;
+                    showdownActive = true;  // Keep calling Showdown() until selection is done
+                    POKER_LOG(LOG_INFO, "Player has %d cards - activating card selection UI", cardCount);
+                }
+                
+                // Wait for player to complete selection
+                if (player->cardSelectionUIActive) {
+                    return;  // Don't proceed with showdown yet, will be called again next frame
+                }
+            }
+        }
+    }
+    
+    // All players have made their selections (or don't need to)
+    showdownActive = false;
+    
+    // All players have made their selections (or don't need to), now evaluate
     int winnerIndex = -1;
     HandEvaluation bestHand = {HIGH_CARD, {}};
     
@@ -757,7 +882,8 @@ void PokerTable::Showdown() {
     }
     
     if (winnerIndex != -1 && seats[winnerIndex].occupant) {
-        TraceLog(LOG_INFO, "*** %s wins with hand rank %d! ***", seats[winnerIndex].occupant->GetName().c_str(), bestHand.rank);
+        std::string winnerName = seats[winnerIndex].occupant->GetName();
+        TraceLog(LOG_INFO, "*** %s wins with hand rank %d! ***", winnerName.c_str(), bestHand.rank);
         GiveChips(seats[winnerIndex].occupant, potValue);
     }
     
@@ -784,7 +910,7 @@ void PokerTable::EndHand() {
         }
     }
     
-    // Clear hole cards from all players' inventories
+    // Clear hole cards from all players' inventories and reset card selection
     for (int i = 0; i < MAX_SEATS; i++) {
         if (!seats[i].isOccupied) continue;
         
@@ -795,25 +921,43 @@ void PokerTable::EndHand() {
             continue;
         }
         
+        // Reset card selection for players
+        if (seats[i].occupant->GetType() == "player") {
+            Player* player = static_cast<Player*>(seats[i].occupant);
+            player->cardSelectionUIActive = false;
+            player->selectedCardIndices.clear();
+        }
+        
         Inventory* inv = seats[i].occupant->GetInventory();
         if (!inv) {
             POKER_LOG(LOG_INFO, "ERROR: Seat %d occupant has null inventory in EndHand!", i);
             continue;
         }
         
-        for (int j = inv->GetStackCount() - 1; j >= 0; j--) {
-            ItemStack* stack = inv->GetStack(j);
-            if (stack && stack->item && strncmp(stack->item->GetType(), "card_", 5) == 0) {
-                // DON'T delete the card - the Deck owns it and will reuse it
-                // Just remove from inventory
-                inv->RemoveItem(j);
+        // Only remove the specific cards that were dealt this hand
+        POKER_LOG(LOG_INFO, "EndHand: Removing %d dealt cards from seat %d", (int)dealtHoleCards[i].size(), i);
+        for (Card* dealtCard : dealtHoleCards[i]) {
+            // Find and remove this specific card from inventory
+            for (int j = inv->GetStackCount() - 1; j >= 0; j--) {
+                ItemStack* stack = inv->GetStack(j);
+                if (stack && stack->item == dealtCard) {
+                    // DON'T delete the card - the Deck owns it and will reuse it
+                    // Just remove from inventory
+                    POKER_LOG(LOG_INFO, "EndHand: Removing dealt card %s from inventory slot %d", dealtCard->GetType().c_str(), j);
+                    inv->RemoveItem(j);
+                    break;  // Found and removed, move to next dealt card
+                }
             }
         }
+        
+        // Clear this seat's dealt cards list
+        dealtHoleCards[i].clear();
     }
     
-    // Clear community cards
+    // Clear community cards from DOM
+    // DON'T delete these cards - the Deck owns them and will reuse them
     for (Card* card : communityCards) {
-        DOM::GetGlobal()->RemoveAndDelete(card);
+        DOM::GetGlobal()->RemoveObject(card);  // Remove from DOM but don't delete
     }
     communityCards.clear();
     
@@ -846,11 +990,33 @@ HandEvaluation PokerTable::EvaluateHand(Person* p) {
         return {HIGH_CARD, {}};
     }
     
-    for (int i = 0; i < inv->GetStackCount(); i++) {
-        ItemStack* stack = inv->GetStack(i);
-        if (stack && stack->item && strncmp(stack->item->GetType(), "card_", 5) == 0) {
-            Card* card = static_cast<Card*>(stack->item);
-            allCards.push_back(card);
+    // Check if this is a Player (human) who might have selected specific cards
+    if (p->GetType() == "player") {
+        Player* player = static_cast<Player*>(p);
+        std::vector<Card*> selectedCards = player->GetSelectedCards();
+        
+        // Use selected cards if available (should be exactly 2 for cheating)
+        if (selectedCards.size() == 2) {
+            POKER_LOG(LOG_INFO, "Using player's selected cards for evaluation (cheating)");
+            allCards = selectedCards;
+        } else {
+            // Fallback to all cards in inventory
+            for (int i = 0; i < inv->GetStackCount(); i++) {
+                ItemStack* stack = inv->GetStack(i);
+                if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+                    Card* card = static_cast<Card*>(stack->item);
+                    allCards.push_back(card);
+                }
+            }
+        }
+    } else {
+        // For non-players (Enemy, Dealer), use all cards in inventory
+        for (int i = 0; i < inv->GetStackCount(); i++) {
+            ItemStack* stack = inv->GetStack(i);
+            if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+                Card* card = static_cast<Card*>(stack->item);
+                allCards.push_back(card);
+            }
         }
     }
     

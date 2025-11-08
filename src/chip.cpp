@@ -2,6 +2,8 @@
 #include "raymath.h"
 #include "rlgl.h"
 #include <cstdio>
+#include <stdexcept>
+#include <string>
 
 Chip::Chip(int chipValue, Vector3 pos, PhysicsWorld* physics)
     : Item(pos), value(chipValue), iconTextureLoaded(false), rigidBody(nullptr)
@@ -96,16 +98,19 @@ void Chip::DrawIcon(Rectangle destRect) {
     DrawTexturePro(iconTexture.texture, sourceRec, destRect, {0, 0}, 0.0f, WHITE);
 }
 
-const char* Chip::GetType() const {
+std::string Chip::GetType() const {
     static char typeBuffer[32];
     snprintf(typeBuffer, sizeof(typeBuffer), "chip_%d", value);
     return typeBuffer;
 }
 
 Color Chip::GetColorFromValue(int value) {
-    if (value >= 100) return BLACK;   // $100 chips
-    if (value >= 25) return GREEN;    // $25 chips
-    if (value >= 10) return BLUE;     // $10 chips
-    if (value >= 5) return RED;       // $5 chips
-    return WHITE;                      // $1 chips (anything < 5, typically 1)
+    // Check for exact valid chip values
+    if (value == 100) return BLACK;
+    if (value == 25) return GREEN;
+    if (value == 10) return BLUE;
+    if (value == 5) return RED;
+    if (value == 1) return WHITE;
+    // Invalid chip value - throw error
+    throw std::invalid_argument("Invalid chip value: " + std::to_string(value));
 }

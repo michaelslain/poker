@@ -11,6 +11,6 @@ void Item::DrawIcon(Rectangle destRect) {
     DrawRectangleLinesEx(destRect, 2, DARKGRAY);
 }
 
-const char* Item::GetType() const {
+std::string Item::GetType() const {
     return "item";
 }

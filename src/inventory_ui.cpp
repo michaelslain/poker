@@ -39,9 +39,9 @@ void InventoryUI_Draw(Inventory* inventory, int selectedIndex) {
         // Draw count in bottom-right corner
         // For pistols, show ammo count instead of stack count
         const char* countText = nullptr;
-        const char* itemType = item->GetType();
+        std::string itemType = item->GetType();
         
-        if (strcmp(itemType, "pistol") == 0) {
+        if (itemType == "pistol") {
             // Show ammo count for pistols
             Pistol* pistol = static_cast<Pistol*>(item);
             countText = TextFormat("%d", pistol->GetAmmo());

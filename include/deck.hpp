@@ -18,7 +18,7 @@ public:
     
     void Update(float deltaTime) override;
     void Draw(Camera3D camera) override;
-    const char* GetType() const override;
+    std::string GetType() const override;
     
     void Shuffle();
     Card* DrawCard();  // Pop from top of stack

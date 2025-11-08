@@ -17,7 +17,7 @@ public:
     virtual void Interact();
     void DrawPrompt(Camera3D camera);
     
-    const char* GetType() const override;
+    std::string GetType() const override;
 };
 
 #endif

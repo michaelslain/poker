@@ -2,6 +2,7 @@
 #define OBJECT_HPP
 
 #include "raylib.h"
+#include <string>
 
 class Object {
 private:
@@ -18,7 +19,7 @@ public:
 
     virtual void Update(float deltaTime);
     virtual void Draw(Camera3D camera);
-    virtual const char* GetType() const;
+    virtual std::string GetType() const;
     
     int GetID() const { return id; }
 };

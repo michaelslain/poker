@@ -120,7 +120,7 @@ void Card::DrawIcon(Rectangle destRect) {
     DrawTexturePro(texture.texture, sourceRec, destRect, {0, 0}, 0.0f, WHITE);
 }
 
-const char* Card::GetType() const {
+std::string Card::GetType() const {
     static char typeBuffer[64];
     
     // Get suit name (lowercase)

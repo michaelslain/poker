@@ -31,7 +31,7 @@ void ChipStack::Draw(Camera3D camera) {
     }
 }
 
-const char* ChipStack::GetType() const {
+std::string ChipStack::GetType() const {
     return "chip_stack";
 }
 

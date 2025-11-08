@@ -33,7 +33,10 @@ public:
     
     // Accessors
     int GetStackCount() const { return stacks.size(); }
-    ItemStack* GetStack(int index) { return &stacks[index]; }
+    ItemStack* GetStack(int index) { 
+        if (index < 0 || index >= (int)stacks.size()) return nullptr;
+        return &stacks[index]; 
+    }
     const std::vector<ItemStack>& GetStacks() const { return stacks; }
 };
 

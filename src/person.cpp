@@ -179,7 +179,7 @@ void Person::Draw(Camera3D camera) {
     }
 }
 
-const char* Person::GetType() const {
+std::string Person::GetType() const {
     return "person";
 }
 

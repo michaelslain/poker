@@ -20,6 +20,6 @@ void Interactable::DrawPrompt(Camera3D camera) {
     DrawTextBillboard(camera, "E", promptPos, 20, WHITE);
 }
 
-const char* Interactable::GetType() const {
+std::string Interactable::GetType() const {
     return "interactable";
 }

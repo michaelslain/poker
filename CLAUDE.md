@@ -16,8 +16,153 @@ The project uses a Makefile with macOS-specific paths:
 ```bash
 make           # Compile the project
 make run       # Build and run the game
+make test      # Build and run all unit tests
 make clean     # Remove build artifacts (*.o and game executable)
 ```
+
+## Testing
+
+The project uses the Catch2 v3.5.0 testing framework for comprehensive unit testing of all classes.
+
+### Running Tests
+
+```bash
+make test      # Build and run all tests
+```
+
+This command compiles all test files and executes them, showing which tests pass or fail.
+
+### Test Structure
+
+- **Location**: All tests are in the `tests/` directory
+- **Framework**: Catch2 v3.5.0 (header-only)
+- **Test files**: One `test_*.cpp` file for each class (e.g., `test_card.cpp`, `test_player.cpp`)
+- **Coverage**: 26 test files covering all game classes
+
+### Test Organization
+
+Each test file follows this structure:
+
+```cpp
+#include "catch_amalgamated.hpp"
+#include "../include/class_name.hpp"
+
+TEST_CASE("ClassName - Feature", "[tag]") {
+    SECTION("Specific test scenario") {
+        // Arrange
+        ClassName obj;
+        
+        // Act
+        obj.DoSomething();
+        
+        // Assert
+        REQUIRE(obj.GetValue() == expectedValue);
+    }
+}
+```
+
+### Available Test Files
+
+- `test_object.cpp` - Base Object class
+- `test_camera.cpp` - GameCamera functionality
+- `test_card.cpp` - Card class with all suits/ranks
+- `test_chip.cpp` - Chip values and colors
+- `test_chip_stack.cpp` - Chip stack management
+- `test_deck.cpp` - Deck shuffling and dealing
+- `test_inventory.cpp` - Inventory stacking and management (includes regression tests)
+- `test_dom.cpp` - DOM object tracking
+- `test_interactable.cpp` - Interaction system
+- `test_item.cpp` - Item base class
+- `test_person.cpp` - Person base class
+- `test_enemy.cpp` - AI enemy behavior
+- `test_dealer.cpp` - Dealer NPC
+
+- `test_poker_table.cpp` - Poker table game logic
+- `test_pistol.cpp` - Pistol item
+- `test_spawner.cpp` - Object spawning
+- `test_floor.cpp` - Floor geometry
+- `test_ceiling.cpp` - Ceiling geometry
+- `test_wall.cpp` - Wall geometry
+
+- `test_light_bulb.cpp` - Light bulb rendering
+- `test_physics.cpp` - ODE physics integration
+- `test_rigidbody.cpp` - Physics body simulation
+- `test_inventory_ui.cpp` - Inventory rendering
+- `test_render_utils.cpp` - 3D text rendering
+
+### Test Categories
+
+Tests are tagged for easy filtering:
+
+- `[card]` - Card-related tests
+- `[chip]` - Chip-related tests
+- `[inventory]` - Inventory system tests
+- `[regression]` - Tests for previously fixed bugs
+- `[physics]` - Physics simulation tests
+- `[dom]` - DOM management tests
+- etc.
+
+### Benefits of Testing
+
+1. **Catch bugs early**: Find issues before gameplay testing
+2. **Regression prevention**: Ensure fixed bugs stay fixed
+3. **Documentation**: Tests show how classes should be used
+4. **Refactoring safety**: Change code confidently knowing tests will catch breaks
+5. **Edge case coverage**: Test unusual inputs and boundary conditions
+
+### Writing New Tests
+
+When adding a new class:
+
+1. Create `tests/test_classname.cpp`
+2. Include Catch2 and your class header
+3. Write TEST_CASE blocks for each feature
+4. Add test file to `TEST_SRCS` in Makefile
+5. Run `make test` to verify
+
+Example:
+
+```cpp
+#include "catch_amalgamated.hpp"
+#include "../include/my_class.hpp"
+
+TEST_CASE("MyClass - Construction", "[myclass]") {
+    SECTION("Default constructor") {
+        MyClass obj;
+        REQUIRE(obj.GetValue() == 0);
+    }
+}
+
+TEST_CASE("MyClass - Operations", "[myclass]") {
+    MyClass obj;
+    
+    SECTION("Setting value") {
+        obj.SetValue(42);
+        REQUIRE(obj.GetValue() == 42);
+    }
+    
+    SECTION("Edge case - negative value") {
+        obj.SetValue(-5);
+        REQUIRE(obj.GetValue() == -5);
+    }
+}
+```
+
+### Regression Tests
+
+The test suite includes specific regression tests for bugs found during gameplay:
+
+- **Card stacking bug**: `test_inventory.cpp` verifies duplicate cards don't incorrectly stack
+- **Physics edge cases**: `test_rigidbody.cpp` tests extreme positions and masses
+- **Seating logic**: `test_poker_table.cpp` validates seat management
+
+### Test Implementation Notes
+
+- Tests initialize raylib but don't render (tests run headless)
+- Physics tests verify behavior without requiring full simulation
+- Global variables needed by game code are declared in `tests/test_main.cpp`
+- Tests use `nullptr` for physics when physics isn't needed
+- Tests clean up dynamically allocated objects to prevent memory leaks
 
 ## Development Environment
 
@@ -116,47 +261,52 @@ poker/
 ### Core Components
 
 **Object** (`object.hpp/cpp`):
-- Base class with position, rotation, scale
-- `isActive` flag for lifecycle management
+- Base class with public `position`, `rotation`, `scale` (Vector3)
+- Private static `nextID` for unique ID generation
+- Private `id` field with `GetID()` accessor
 - Virtual functions: `Update(float deltaTime)`, `Draw(Camera3D camera)`, `GetType() const`
 - All other components inherit from this
 - Uses RAII pattern
+- **No child management** - objects added directly to DOM instead
 
 **Person** (`person.hpp/cpp`):
 - Inherits from Object
 - Abstract base class for Player, Enemy, and Dealer
-- Contains `Inventory` instance for chip and card management
-- `name` field for identification
-- `isSitting` flag for seated state
-- `height` field (customizable, e.g., enemies are 1.5x taller)
-- Virtual `PromptBet()` for betting decisions (returns -1 for thinking, 0=fold, 1=call, 2=raise)
-- `SitDown()` and `StandUp()` for seating management
-- Provides common interface for poker table interaction
+- Protected members: `inventory` (Inventory), `name` (std::string), `height` (float), `bodyYaw` (float)
+- Seating system: `isSeated` (bool), `seatPosition` (Vector3)
+- `SitDown(Vector3 seatPos)` and `SitDownFacingPoint(Vector3 seatPos, Vector3 faceTowards)` for seating
+- `StandUp()` for standing
+- `IsSeated()` to check seating state
+- `SetBodyYaw(float)` and `GetBodyYaw()` for rotation control
+- Virtual `PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount)` returns 0=fold, 1=call, 2=raise
+- Accessors: `GetInventory()`, `GetName()`, `SetName()`, `GetHeight()`, `SetHeight()`
+- Overrides `Draw()` to render pitch black (unaffected by lighting)
 - Returns type string in format: "player", "enemy", "dealer"
 
 **Player** (`player.hpp/cpp`):
 - Inherits from Person
-- First-person controller with WASD movement
-- Mouse look with reduced sensitivity (0.001f)
+- First-person controller with WASD movement via `speed` field
+- Mouse look with `lookYaw` and `lookPitch` tracking
 - Contains `GameCamera` instance
-- FOV control with `[` and `]` keys
-- Crosshair-based interaction system (raycasting)
-- Pickup behavior: adds items to inventory, removes from DOM
-- Inventory selection: X key to select/deselect, arrow keys to navigate
-- ODE physics capsule geometry for collision
-- Proper collision detection with poker table using `dCollide()`
-- Betting UI: Shows fold/call/raise options with slider for raise amount
-- Overrides `PromptBet()` to use UI-based betting decisions
+- ODE physics: `dBodyID body` and `dGeomID geom` (capsule)
+- Collision categories: `COLLISION_CATEGORY_PLAYER` (1 << 0)
+- Inventory: `selectedItemIndex` (-1 = none), `lastHeldItemIndex` for remembering last held
+- Betting UI state: `bettingUIActive`, `bettingChoice`, `raiseSliderValue`, `raiseMin`, `raiseMax`, `storedCurrentBet`, `storedCallAmount`
+- Card selection UI: `cardSelectionUIActive` (bool), `selectedCardIndices` (vector<int>) for cheating with 3+ cards
+- Methods: `HandleInteraction()`, `HandleShooting()`, `GetClosestInteractable()`, `DrawInventoryUI()`, `DrawHeldItem()`, `DrawBettingUI()`, `DrawCardSelectionUI()`, `GetSelectedCards()`
+- Overrides `SitDown()` and `StandUp()` to handle physics
+- Overrides `PromptBet()` for UI-based betting
 - Returns type: "player"
 
 **Enemy** (`enemy.hpp/cpp`):
 - Inherits from Person
 - AI-controlled poker player
-- Thinking timer system: 2-4 second random delay before betting decisions
+- Private members: `thinkingTimer` (float), `thinkingDuration` (float), `isThinking` (bool), `pendingAction` (int)
+- Thinking timer system: `thinkingDuration` stores how long to think (2-4 seconds)
 - Simple AI logic: Random choice between fold/call/raise
-- Checks total chip value (not stack count) for affordability
-- Taller than player (1.5x normal height) for visual distinction
+- Height: 1.5x normal (2.7 units) for visual distinction
 - Overrides `PromptBet()` with state machine (thinking → decision)
+- Overrides `Update()` to handle thinking timer countdown
 - Returns type: "enemy"
 
 **Dealer** (`dealer.hpp/cpp`):
@@ -164,25 +314,26 @@ poker/
 - Non-player character positioned at poker table
 - Does not participate in poker hands
 - Visual presence only (no AI or betting logic)
-- Owned as child object by PokerTable
+- Normal height (1.0x)
+- Overrides `Update()` and `GetType()`
 - Returns type: "dealer"
 
 **GameCamera** (`camera.hpp/cpp`):
-- Wraps raylib's Camera3D
-- Tracks pitch/yaw angles (Vector2)
+- Public members: `camera` (Camera3D), `angle` (Vector2) where x=pitch, y=yaw
+- Constructor: `GameCamera(Vector3 pos = {0, 0, 0})`
+- `Update(Vector2 mouseDelta)` handles mouse movement
 - `AdjustFOV()` handles FOV controls
-- `SetTarget()` positions camera
+- `SetTarget(Vector3 target)` positions camera
 - `GetCamera()` returns pointer to internal Camera3D
-- Eye-level offset: 1.7 units above player position
 
 **Interactable** (`interactable.hpp/cpp`):
 - Inherits from Object
-- Objects player can interact with (press E)
-- `interactRange` field (default 3.0 units)
-- `std::function<void(Interactable*)> onInteract` callback
-- `Interact()` virtual function
+- Public members: `interactRange` (float), `canInteract` (bool), `onInteract` (std::function callback)
+- Constructor: `Interactable(Vector3 pos = {0, 0, 0})`
+- Virtual `Interact()` calls onInteract callback if set
 - `DrawPrompt(Camera3D)` renders "E" prompt billboard
-- Default behavior defined by callback
+- `GetType()` returns "interactable"
+- Default interact range: 3.0 units
 
 **Item** (`item.hpp/cpp`):
 - Inherits from Interactable
@@ -207,22 +358,23 @@ poker/
 
 **Chip** (`chip.hpp/cpp`):
 - Inherits from Item
-- Integer `value` field (1, 5, 10, 25, 100)
-- Contains `RigidBody*` for physics
+- Public members: `value` (int), `color` (Color), `iconTexture` (RenderTexture2D), `iconTextureLoaded` (bool), `rigidBody` (RigidBody*)
+- Constructor: `Chip(int chipValue, Vector3 pos, PhysicsWorld* physics)`
 - Color-coded: WHITE(1), RED(5), BLUE(10), GREEN(25), BLACK(100)
-- `RenderTexture2D iconTexture` for chip rendering
-- Constructor: `Chip(int value, Vector3 pos, PhysicsWorld* physics)`
 - Destructor: Automatically cleans up texture and rigid body
 - `Update()` syncs with physics body
 - `Draw()` renders as 3D cylinder
 - `DrawIcon()` renders as 2D icon
-- Static function: `GetColorFromValue()`
+- `GetType()` returns "chip_<value>"
+- Static function: `GetColorFromValue(int value)`
 
 **Inventory** (`inventory.hpp/cpp`):
 - Uses `std::vector<ItemStack>` for dynamic storage
-- `ItemStack` contains: `Item* item`, `int count`, `std::string typeString`
-- `AddItem(Item*)` adds or increments stack
-- `RemoveItem(int stackIndex)` decrements or removes stack
+- `ItemStack` struct: `Item* item`, `int count`, `std::string typeString`
+- `AddItem(Item*)` returns bool, adds or increments stack
+- `RemoveItem(int stackIndex)` returns bool, decrements or removes stack
+- `Cleanup()` cleans up all items
+- `Sort()` sorts inventory by type: weapons, cards (by rank), chips (by value)
 - Accessors: `GetStackCount()`, `GetStack(int index)`, `GetStacks()`
 - Automatic cleanup in destructor
 
@@ -234,49 +386,62 @@ poker/
 - Delegates to `Item::DrawIcon()` polymorphically
 
 **Deck** (`deck.hpp/cpp`):
-- NOT an Object - standalone class
-- Uses `std::array<Card*, DECK_SIZE>` (52 cards)
-- Constructor automatically creates all 52 cards (no physics)
-- `Shuffle()` uses Fisher-Yates algorithm
-- `Draw()` returns top card, decrements count
+- Inherits from Object
+- Private members: `cards` (vector<Card*>) for stack, `allCards` (vector<Card*>) for cleanup
+- Constructor: `Deck(Vector3 pos = {0, 0, 0})` creates all 52 cards (no physics)
+- `Shuffle()` uses Fisher-Yates algorithm on stack
+- `DrawCard()` pops from top of stack (back of vector)
 - `Peek()` returns top card without removing
-- `Reset()` resets count to 52
-- Destructor cleans up all cards
+- `Reset()` pushes all cards back onto stack
+- `Cleanup()` and destructor clean up all cards
+- Accessors: `GetCount()`, `IsEmpty()`
+- Overrides: `Update()`, `Draw()`, `GetType()`
 
-**PokerTable** (`poker_table.hpp/cpp`) - **SIMPLIFIED DESIGN (398 lines)**:
+**PokerTable** (`poker_table.hpp/cpp`):
 - Inherits from Interactable
-- Manages 8 seats with Person* occupants (Player or Enemy)
-- **Dual-reference pattern**: Deck and community cards are both attributes (for game logic) AND children (for DOM rendering)
-- Deck* and Dealer* owned as child objects
-- ODE box geometry (`dGeomID`) for collision
-- Simple state: `handActive`, `pot`, `currentBet`, `currentSeat`, `bettingActive`
+- Private visual: `size` (Vector3), `color` (Color), `geom` (dGeomID), `physics` (PhysicsWorld*)
+- Game objects: `dealer` (Dealer*), `deck` (Deck*), `potStack` (ChipStack*), `communityCards` (vector<Card*>)
+- Seating: `seats` (array<Seat, MAX_SEATS>), `statusList` (array<int, MAX_SEATS>), `hasRaised` (array<bool, MAX_SEATS>)
+- Hole cards tracking: `dealtHoleCards` (array<vector<Card*>, MAX_SEATS>) for end-of-hand cleanup
+- Game state: `smallBlindSeat`, `bigBlindSeat`, `currentPlayerSeat`, `currentBet`, `potValue`, `handActive`, `bettingActive`, `showdownActive`
+- Logging: `lastLoggedPlayerSeat` to prevent duplicate logs
+- Helper methods: `CountChips()`, `TakeChips()`, `GiveChips()`, `CalculateChipCombination()`, `NextOccupiedSeat()`, `NextActiveSeat()`, `GetOccupiedSeatCount()`, `IsBettingRoundComplete()`, `ProcessBetting()`, `EvaluateHand()`, `CompareHands()`
+- Game flow: `StartHand()`, `DealHoleCards()`, `PostBlinds()`, `StartBettingRound()`, `DealFlop()`, `DealTurn()`, `DealRiver()`, `Showdown()`, `EndHand()`
 - Constructor: `PokerTable(Vector3 pos, Vector3 size, Color color, PhysicsWorld*)`
-- Virtual functions: `Update()`, `Draw()`, `Interact()`, `GetType()`
-- Seating: `SeatPerson()`, `UnseatPerson()`, `FindSeatIndex()`, `FindClosestOpenSeat()`
-- Renders as brown box with green felt top
+- Seating: `FindClosestOpenSeat()`, `SeatPerson()`, `UnseatPerson()`, `FindSeatIndex()`
+- Accessor: `GetGeom()` returns dGeomID
+- Overrides: `Update()`, `Draw()`, `Interact()`, `GetType()`
+- Defines: `MAX_SEATS` (8), `SMALL_BLIND_AMOUNT` (5), `BIG_BLIND_AMOUNT` (10)
+- Collision: `COLLISION_CATEGORY_TABLE` (1 << 2)
 
-**Simplified Poker Game Logic**:
-- **Seat management**: Simple `Seat` struct with `Person* occupant`, `currentBet`, `hasFolded`
+**Poker Game Logic**:
+- **Seat management**: `Seat` struct with `position` (Vector3), `occupant` (Person*), `isOccupied` (bool)
+- **Status tracking**: `statusList` array (-1 = folded, >= 0 = current bet), `hasRaised` array
 - **Dealer button**: Rotates with `NextOccupiedSeat()` helper
-- **Blinds**: Posted in `StartHand()` via `TakeChips()` helper (SB=5, BB=10)
-- **Hole cards**: Deal 2 cards per player directly into inventories (NOT stored in separate array)
-- **Community cards**: Stored in `std::vector<Card*>` AND added as children via `AddChild()` for rendering. Positioned in a line (0.6 spacing) offset to the side of the table (left side, -0.3z offset) and raised 0.15 above table surface for visibility
-- **Betting**: Single `ProcessBetting(dt)` called each frame handles all betting logic
+- **Blinds**: Posted in `PostBlinds()` via `TakeChips()` helper (SB=5, BB=10)
+- **Hole cards**: Deal 2 cards per player directly into inventories, tracked in `dealtHoleCards` for cleanup
+- **Community cards**: Stored in `communityCards` vector, added to DOM for rendering
+- **Betting**: `ProcessBetting(dt)` called each frame handles all betting logic
 - **Value-based chips**: `CountChips()`, `TakeChips()`, `GiveChips()` helpers use inventory system
-- **Hand flow**: `StartHand()` → betting → `DealFlop()` → betting → `DealTurn()` → betting → `DealRiver()` → betting → `EndHand()`
-- **Winner**: First non-folded player found (simplified, no hand evaluation yet)
-- **Cleanup**: `EndHand()` removes hole cards from inventories, deletes them, starts next hand
+- **Chip combinations**: `CalculateChipCombination()` optimizes denominations (100s, 25s, 10s, 5s, 1s)
+- **Hand flow**: `StartHand()` → `PostBlinds()` → `DealHoleCards()` → betting → `DealFlop()` → betting → `DealTurn()` → betting → `DealRiver()` → betting → `Showdown()` → `EndHand()`
+- **Hand evaluation**: `EvaluateHand()` returns `HandEvaluation` struct with `HandRank` enum (HIGH_CARD to ROYAL_FLUSH) and `rankValues` for tie-breaking
+- **Winner determination**: `CompareHands()` compares two `HandEvaluation` structs, returns -1/0/1
+- **Showdown**: Player with 3+ cards uses card selection UI to choose 2 cards for evaluation
+- **Cleanup**: `EndHand()` removes hole cards from inventories (from `dealtHoleCards` tracking), deletes them, clears community cards, starts next hand
 
 **Key Implementation Details**:
-- **No separate hole cards tracking**: Cards only exist in player inventories
-- **Dual-reference for rendering**: `deck` pointer + `AddChild(deck)` so DOM renders it
-- **Community cards**: `communityCards.push_back(card)` + `AddChild(card)` for dual-reference. Cards positioned at `{startX + (i * 0.6f), tableY + 0.15f, tableZ - 0.3f}` for flop (i=0-2), turn (i=3), river (i=4), starting from `position.x - 1.0f`
-- **Mid-hand joining**: Players marked as `hasFolded = true` if joining during active hand
-- **Person::PromptBet()**: Returns -1 (thinking), 0 (fold), 1 (call), or 2 (raise)
-- **Enemy thinking**: 2-4 second timer before returning action
-- **Player betting UI**: Displays fold/call/raise buttons with values
-- **Chip affordability**: Checks `CountChips(person)` total value, not stack count
-- **Automatic progression**: Hands start automatically when 2+ players seated
+- **Hole cards tracking**: `dealtHoleCards` array tracks which cards were dealt this hand for proper cleanup
+- **DOM-based rendering**: Objects added to DOM for rendering (deck, potStack, community cards)
+- **Community cards**: Added to both `communityCards` vector and DOM
+- **Mid-hand joining**: Players marked with `statusList[seat] = -1` (folded) if joining during active hand
+- **Person::PromptBet()**: Takes currentBet, callAmount, minRaise, maxRaise, raiseAmount reference; returns 0=fold, 1=call, 2=raise
+- **Enemy thinking**: `isThinking` flag with `thinkingTimer` countdown before returning action
+- **Player betting UI**: `bettingUIActive` flag, displays fold/call/raise options with slider
+- **Player card selection**: `cardSelectionUIActive` flag when showdown with 3+ cards, selects 2 cards via `selectedCardIndices`
+- **Chip affordability**: Checks `CountChips(person)` total value via inventory iteration
+- **Automatic progression**: Hands start automatically when 2+ players seated via `GetOccupiedSeatCount()`
+- **Logging**: `GAME_LOG` macro for poker table events, `lastLoggedPlayerSeat` prevents duplicates
 
 ### Physics System
 

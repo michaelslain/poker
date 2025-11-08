@@ -1,6 +1,7 @@
 # Compiled files
 *.o
 game
+test_runner
 
 # macOS
 .DS_Store

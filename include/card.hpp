@@ -45,7 +45,7 @@ public:
     void Update(float deltaTime) override;
     void Draw(Camera3D camera) override;
     void DrawIcon(Rectangle destRect) override;
-    const char* GetType() const override;
+    std::string GetType() const override;
     
     static const char* GetSuitSymbol(Suit s);
     static const char* GetRankString(Rank r);

@@ -69,6 +69,6 @@ void LightBulb::Draw(Camera3D camera) {
     DrawSphere(position, 0.58f, (Color){255, 140, 40, 20});
 }
 
-const char* LightBulb::GetType() const {
+std::string LightBulb::GetType() const {
     return "light_bulb";
 }

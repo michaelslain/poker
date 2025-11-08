@@ -5,7 +5,9 @@ Ceiling::Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor, Phys
     : Object(position), size(ceilingSize), color(ceilingColor), geom(nullptr), physics(physicsWorld)
 {
     // Create static plane geometry (normal pointing down: Y-)
-    geom = dCreatePlane(physics->space, 0, -1, 0, -position.y);
+    if (physics) {
+        geom = dCreatePlane(physics->space, 0, -1, 0, -position.y);
+    }
     
     // Create model with proper normals for lighting
     model = LoadModelFromMesh(GenMeshPlane(size.x, size.y, 10, 10));
@@ -25,6 +27,6 @@ void Ceiling::Draw(Camera3D camera) {
     DrawModel(model, position, 1.0f, color);
 }
 
-const char* Ceiling::GetType() const {
+std::string Ceiling::GetType() const {
     return "ceiling";
 }

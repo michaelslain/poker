@@ -20,7 +20,7 @@ public:
 
     // Override virtual functions
     void Draw(Camera3D camera) override;
-    const char* GetType() const override;
+    std::string GetType() const override;
 };
 
 #endif

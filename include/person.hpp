@@ -49,7 +49,7 @@ public:
     float GetHeight() const { return height; }
     void SetHeight(float newHeight) { height = newHeight; }
 
-    const char* GetType() const override;
+    std::string GetType() const override;
 };
 
 #endif

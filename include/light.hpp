@@ -16,7 +16,7 @@ public:
     // Static methods to manage the lighting shader
     static void InitLightingSystem();
     static void CleanupLightingSystem();
-    static Shader GetLightingShader() { return lightingShader; }
+    static Shader& GetLightingShader() { return lightingShader; }
     static void UpdateCameraPosition(Vector3 cameraPos);
     
     // Virtual method for updating light in shader

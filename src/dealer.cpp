@@ -17,6 +17,6 @@ void Dealer::Update(float deltaTime) {
     // Dealer-specific update logic can go here
 }
 
-const char* Dealer::GetType() const {
+std::string Dealer::GetType() const {
     return "dealer";
 }

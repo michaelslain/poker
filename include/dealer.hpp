@@ -11,7 +11,7 @@ public:
     ~Dealer();
     
     void Update(float deltaTime) override;
-    const char* GetType() const override;
+    std::string GetType() const override;
 };
 
 #endif

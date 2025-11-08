@@ -6,9 +6,11 @@
 #include "camera.hpp"
 #include "physics.hpp"
 #include <ode/ode.h>
+#include <vector>
 
-// Forward declaration
+// Forward declarations
 class Interactable;
+class Card;
 
 // Collision categories
 #define COLLISION_CATEGORY_PLAYER   (1 << 0)  // 0001
@@ -41,12 +43,15 @@ private:
     int storedCallAmount;   // Stored for UI display
 
 public:
+    // Card selection UI state (for cheating with 3+ cards) - public so poker table can access
+    bool cardSelectionUIActive;     // Is card selection UI shown
+    std::vector<int> selectedCardIndices;  // Indices of selected cards (max 2)
     Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName = "Player");
     virtual ~Player();
 
     // Override virtual functions
     void Update(float deltaTime) override;
-    const char* GetType() const override;
+    std::string GetType() const override;
 
     // Player-specific methods
     void HandleInteraction();
@@ -65,6 +70,10 @@ public:
     
     // Betting UI
     void DrawBettingUI();
+    
+    // Card selection UI (for cheating with 3+ cards)
+    void DrawCardSelectionUI();
+    std::vector<Card*> GetSelectedCards();  // Returns the 2 selected cards for hand evaluation
     
     // Accessors
     Camera3D* GetCamera() { return camera.GetCamera(); }

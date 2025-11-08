@@ -47,6 +47,7 @@ brew install ode
 ```bash
 make        # Compile the project
 make run    # Build and run
+make test   # Run all unit tests
 make clean  # Clean build artifacts
 ```
 
@@ -59,5 +60,34 @@ make clean  # Clean build artifacts
 - **X** - Toggle item selection in inventory
 - **Left/Right Arrow** - Navigate inventory selection
 - **[ ]** - Adjust FOV
+
+## Testing
+
+The project includes comprehensive unit tests for all classes using Catch2 v3.5.0.
+
+### Running Tests
+
+```bash
+make test   # Build and run all tests
+```
+
+### Test Coverage
+
+- 28 test files covering all game classes
+- Tests for base classes (Object, Person, Interactable, Item)
+- Tests for game objects (Card, Chip, Deck, PokerTable)
+- Tests for systems (DOM, Inventory, Physics, Spawner)
+- Tests for rendering (Camera, Light, RenderUtils)
+- Regression tests for previously fixed bugs
+
+### Benefits
+
+- Catch bugs before gameplay testing
+- Ensure fixed bugs stay fixed
+- Document expected class behavior
+- Enable safe refactoring
+- Validate edge cases and boundary conditions
+
+See `CLAUDE.md` for detailed testing documentation.
 
 

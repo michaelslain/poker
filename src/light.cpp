@@ -19,6 +19,12 @@ void LightSource::InitLightingSystem() {
     // Load lighting shader
     lightingShader = LoadShader("shaders/lighting.vs", "shaders/lighting.fs");
     
+    // Validate shader loaded successfully
+    if (lightingShader.id == 0) {
+        TraceLog(LOG_ERROR, "LIGHT: Failed to load lighting shader!");
+        return;
+    }
+    
     // Get shader locations
     lightingShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(lightingShader, "viewPos");
     

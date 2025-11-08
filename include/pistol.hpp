@@ -18,7 +18,7 @@ public:
     void Draw(Camera3D camera) override;
     void DrawIcon(Rectangle destRect) override;
     void DrawHeld(Camera3D camera);  // Draw when player is holding it
-    const char* GetType() const override;
+    std::string GetType() const override;
     
     bool CanShoot() const { return ammo > 0; }
     void Shoot();  // Decrements ammo

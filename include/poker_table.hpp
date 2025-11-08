@@ -75,6 +75,9 @@ private:
     std::array<int, MAX_SEATS> statusList;  // Betting status: -1 = folded, >= 0 = current bet
     std::array<bool, MAX_SEATS> hasRaised;  // Track if player has raised this betting round
     
+    // Track hole cards dealt this hand (for removal at end)
+    std::array<std::vector<Card*>, MAX_SEATS> dealtHoleCards;  // Cards dealt to each seat this hand
+    
     // Game state
     int smallBlindSeat;     // Index of seat with small blind
     int bigBlindSeat;       // Index of seat with big blind
@@ -83,6 +86,7 @@ private:
     int potValue;           // Total value of pot
     bool handActive;
     bool bettingActive;
+    bool showdownActive;    // Waiting for player card selection at showdown
     
     // Logging state (to prevent duplicate logs)
     int lastLoggedPlayerSeat;  // Last player seat that was logged
@@ -125,7 +129,7 @@ public:
     void Update(float deltaTime) override;
     void Draw(Camera3D camera) override;
     void Interact() override;
-    const char* GetType() const override;
+    std::string GetType() const override;
     
     // Seating
     int FindClosestOpenSeat(Vector3 pos);

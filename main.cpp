@@ -182,8 +182,8 @@ int main(void)
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
             // Check if object is a LightSource (use dynamic_cast or type check)
-            const char* type = obj->GetType();
-            if (strcmp(type, "light_bulb") == 0) {
+            std::string type = obj->GetType();
+            if (type == "light_bulb") {
                 LightSource* light = static_cast<LightSource*>(obj);
                 light->UpdateLight();
             }
@@ -193,56 +193,85 @@ int main(void)
         physics.Step(deltaTime);
 
         // Update all objects in DOM (except player - already updated above)
+        GAME_LOG(LOG_INFO, "Starting DOM object updates, count=%d", dom.GetCount());
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
-            if (obj != nullptr && obj != player) {
-                obj->Update(deltaTime);
+            if (obj == nullptr) {
+                GAME_LOG(LOG_INFO, "Object %d is null, skipping", i);
+                continue;
             }
+            if (obj == player) {
+                GAME_LOG(LOG_INFO, "Object %d is player, skipping", i);
+                continue;
+            }
+            
+            std::string type = obj->GetType();
+            if (type.empty()) {
+                GAME_LOG(LOG_INFO, "Object %d has empty type, skipping", i);
+                continue;
+            }
+            
+            GAME_LOG(LOG_INFO, "Updating object %d (type=%s, ptr=%p)", i, type.c_str(), (void*)obj);
+            obj->Update(deltaTime);
+            GAME_LOG(LOG_INFO, "Object %d update completed", i);
         }
+        GAME_LOG(LOG_INFO, "All object updates completed");
+        
         // Get closest interactable for E prompt
         Interactable* closestInteractable = player->GetClosestInteractable();
+        GAME_LOG(LOG_INFO, "Got closest interactable");
 
         // Draw
+        GAME_LOG(LOG_INFO, "About to BeginDrawing");
         BeginDrawing();
+            GAME_LOG(LOG_INFO, "BeginDrawing done, clearing background");
             ClearBackground(BLACK);
 
+            GAME_LOG(LOG_INFO, "Getting camera");
             Camera3D* camera = player->GetCamera();
+            GAME_LOG(LOG_INFO, "Got camera, about to BeginMode3D");
 
             // === 3D RENDERING PASS ===
             BeginMode3D(*camera);
+            GAME_LOG(LOG_INFO, "BeginMode3D done");
+            GAME_LOG(LOG_INFO, "About to BeginShaderMode");
                 // Apply lighting shader to all 3D objects automatically (except light sources, chips, enemies, persons, players, and closest interactable)
-                BeginShaderMode(LightSource::GetLightingShader());
+                Shader& lightingShader = LightSource::GetLightingShader();
+                if (lightingShader.id != 0) {
+                    BeginShaderMode(lightingShader);
                     // Draw all root objects (and their children recursively) except light sources, chips, enemies, persons, players, and closest interactable
                     for (int i = 0; i < dom.GetCount(); i++) {
                         Object* obj = dom.GetObject(i);
                         if (obj != nullptr) {
-                            const char* type = obj->GetType();
-                            if (!type) continue;  // Safety check
+                            std::string type = obj->GetType();
+                            if (type.empty()) continue;  // Safety check
                             
-                            // Skip light sources and chips - they don't have proper normals for lighting
-                            if (strcmp(type, "light_bulb") == 0) continue;
-                            if (strncmp(type, "chip_", 5) == 0) continue;
+                            // Skip light sources, chips, and cards - they don't need lighting
+                            if (type == "light_bulb") continue;
+                            if (type.substr(0, 5) == "chip_") continue;
+                            if (type.substr(0, 5) == "card_") continue;
                             // Skip enemies, persons, and players - they should be pitch black (unaffected by lighting)
-                            if (strcmp(type, "enemy") == 0) continue;
-                            if (strcmp(type, "person") == 0) continue;
-                            if (strcmp(type, "player") == 0) continue;
+                            if (type == "enemy") continue;
+                            if (type == "person") continue;
+                            if (type == "player") continue;
                             // Skip closest interactable only if it exists and matches
                             if (closestInteractable != nullptr && obj == closestInteractable) continue;
                             
                             obj->Draw(*camera);
                         }
                     }
-                EndShaderMode();
+                    EndShaderMode();
+                }
                 
-                // Draw objects without shader (light sources, chips, enemies, persons, and players)
+                // Draw objects without shader (light sources, chips, cards, enemies, persons, and players)
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
                     if (obj != nullptr && obj != closestInteractable) {
-                        const char* type = obj->GetType();
-                        if (!type) continue;  // Safety check
+                        std::string type = obj->GetType();
+                        if (type.empty()) continue;  // Safety check
                         
-                        if (strcmp(type, "light_bulb") == 0 || strncmp(type, "chip_", 5) == 0 || 
-                            strcmp(type, "enemy") == 0 || strcmp(type, "person") == 0 || strcmp(type, "player") == 0) {
+                        if (type == "light_bulb" || type.substr(0, 5) == "chip_" || type.substr(0, 5) == "card_" ||
+                            type == "enemy" || type == "person" || type == "player") {
                             obj->Draw(*camera);
                         }
                     }
@@ -265,9 +294,13 @@ int main(void)
             rlDisableDepthTest();
             BeginMode3D(*camera);
                 // Apply lighting shader to held item
-                BeginShaderMode(LightSource::GetLightingShader());
+                if (lightingShader.id != 0) {
+                    BeginShaderMode(lightingShader);
+                        player->DrawHeldItem();
+                    EndShaderMode();
+                } else {
                     player->DrawHeldItem();
-                EndShaderMode();
+                }
             EndMode3D();
             rlEnableDepthTest();
 
