@@ -54,10 +54,13 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
     potStack = new ChipStack(potPos);
     DOM::GetGlobal()->AddObject(potStack);
     
-    // Create collision geometry
+    // Create collision geometry that extends from ground to table top
+    // This makes the table act like a solid barrier you can't walk through
     if (physics) {
-        geom = dCreateBox(physics->space, size.x, size.y, size.z);
-        dGeomSetPosition(geom, pos.x, pos.y, pos.z);
+        float collisionHeight = pos.y + size.y / 2.0f; // Height from ground to table top
+        float collisionY = collisionHeight / 2.0f; // Center the collision box
+        geom = dCreateBox(physics->space, size.x, collisionHeight, size.z);
+        dGeomSetPosition(geom, pos.x, collisionY, pos.z);
         dGeomSetCategoryBits(geom, COLLISION_CATEGORY_TABLE);
         dGeomSetCollideBits(geom, COLLISION_CATEGORY_PLAYER);
         dGeomSetData(geom, this);

@@ -24,16 +24,22 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
       cardSelectionUIActive(false), selectedCardIndices()
 {
     if (physics != nullptr) {
-        // Create kinematic body (controlled by code, not physics forces)
+        // Create dynamic body with mass for gravity
         body = dBodyCreate(physics->world);
         dBodySetPosition(body, pos.x, pos.y + 0.85f, pos.z);
-        dBodySetKinematic(body);
-
-        // Create capsule geometry
+        
+        // Set mass for the player (needed for gravity)
+        dMass mass;
         float radius = 0.4f;
         float height = 1.7f;
         float cylinderLength = height - (2.0f * radius);
+        dMassSetCapsuleTotal(&mass, 70.0f, 3, radius, cylinderLength); // 70kg player
+        dBodySetMass(body, &mass);
+        
+        // Disable auto-disable so player doesn't "sleep" and fall through floor
+        dBodySetAutoDisableFlag(body, 0);
 
+        // Create capsule geometry
         geom = dCreateCapsule(physics->space, radius, cylinderLength);
         dGeomSetBody(geom, body);
 
@@ -148,15 +154,21 @@ void Player::Update(float deltaTime) {
     Vector3 moveDir = {0.0f, 0.0f, 0.0f};
 
     if (isSeated) {
-        // When seated, lock position to seat
-        position = seatPosition;
+        // When seated, lock XZ position to seat but keep Y at ground level
+        // This keeps camera height consistent
+        position.x = seatPosition.x;
+        position.z = seatPosition.z;
+        position.y = 0.0f;  // Keep at ground level for consistent camera height
         
-        // Also lock physics body to seat position
+        // Lock physics body to ground position at seat XZ
         if (body != nullptr) {
-            dBodySetPosition(body, seatPosition.x, seatPosition.y + 0.85f, seatPosition.z);
+            dBodySetPosition(body, seatPosition.x, 0.85f, seatPosition.z);
+            // Reset velocity when seated
+            dBodySetLinearVel(body, 0, 0, 0);
+            dBodySetAngularVel(body, 0, 0, 0);
         }
         if (geom != nullptr) {
-            dGeomSetPosition(geom, seatPosition.x, seatPosition.y + 0.85f, seatPosition.z);
+            dGeomSetPosition(geom, seatPosition.x, 0.85f, seatPosition.z);
         }
         
         // Skip movement processing when seated
@@ -186,48 +198,86 @@ void Player::Update(float deltaTime) {
 
         // Update physics body position and check for collisions
         if (body != nullptr && geom != nullptr) {
-            dGeomSetPosition(geom, newPos.x, newPos.y + 0.85f, newPos.z);
+            // Helper lambda to extract geometry from any object type
+            auto getGeomFromObject = [](Object* obj) -> dGeomID {
+                std::string typeStr = obj->GetType();
+                if (typeStr == "poker_table") {
+                    PokerTable* table = static_cast<PokerTable*>(obj);
+                    return table->GetGeom();
+                } else if (typeStr == "wall") {
+                    Wall* wall = static_cast<Wall*>(obj);
+                    return wall->GetGeom();
+                }
+                // Add more collider types here as needed
+                return nullptr;
+            };
 
-            // Check for collisions with objects using ODE
-            bool collided = false;
-            DOM* dom = DOM::GetGlobal();
-            if (dom) {
-                for (int i = 0; i < dom->GetCount(); i++) {
-                    Object* obj = dom->GetObject(i);
-                    std::string typeStr = obj->GetType();
+            Vector3 finalPos = newPos;
+            const int maxIterations = 3;  // Handle corners and complex geometry
 
-                    dGeomID otherGeom = nullptr;
-                    
-                    if (typeStr == "poker_table") {
-                        PokerTable* table = static_cast<PokerTable*>(obj);
-                        otherGeom = table->GetGeom();
-                    } else if (typeStr == "wall") {
-                        Wall* wall = static_cast<Wall*>(obj);
-                        otherGeom = wall->GetGeom();
-                    }
+            for (int iteration = 0; iteration < maxIterations; iteration++) {
+                // Test the position
+                dGeomSetPosition(geom, finalPos.x, finalPos.y + 0.85f, finalPos.z);
 
-                    if (otherGeom != nullptr) {
-                        // Use ODE collision detection
-                        dContactGeom contacts[4];
-                        int numContacts = dCollide(geom, otherGeom, 4, contacts, sizeof(dContactGeom));
+                // Check for collisions
+                bool collided = false;
+                Vector3 collisionNormal = {0.0f, 0.0f, 0.0f};
+                DOM* dom = DOM::GetGlobal();
 
-                        if (numContacts > 0) {
-                            collided = true;
-                            break;
+                if (dom) {
+                    for (int i = 0; i < dom->GetCount(); i++) {
+                        Object* obj = dom->GetObject(i);
+                        dGeomID otherGeom = getGeomFromObject(obj);
+
+                        if (otherGeom != nullptr) {
+                            dContactGeom contacts[4];
+                            int numContacts = dCollide(geom, otherGeom, 4, contacts, sizeof(dContactGeom));
+                            if (numContacts > 0) {
+                                collided = true;
+                                // Use the first contact normal
+                                collisionNormal.x = contacts[0].normal[0];
+                                collisionNormal.y = contacts[0].normal[1];
+                                collisionNormal.z = contacts[0].normal[2];
+                                break;
+                            }
                         }
                     }
                 }
+
+                if (!collided) {
+                    // No collision, accept this position
+                    break;
+                }
+
+                // Collision detected - slide along the surface
+                // Calculate movement vector relative to where we currently are
+                Vector3 movementVec = Vector3Subtract(finalPos, oldPos);
+                
+                // Only slide if moving into the surface
+                float dotProduct = Vector3DotProduct(movementVec, collisionNormal);
+                if (dotProduct < 0) {
+                    // Project movement onto the plane perpendicular to collision normal
+                    Vector3 projectedMovement = Vector3Subtract(movementVec, Vector3Scale(collisionNormal, dotProduct));
+                    finalPos = Vector3Add(oldPos, projectedMovement);
+                } else {
+                    // Moving away from surface - allow it
+                    break;
+                }
             }
 
-            if (collided) {
-                // Revert to old position
-                dGeomSetPosition(geom, oldPos.x, oldPos.y + 0.85f, oldPos.z);
-                dBodySetPosition(body, oldPos.x, oldPos.y + 0.85f, oldPos.z);
-            } else {
-                // Accept new position
-                dBodySetPosition(body, newPos.x, newPos.y + 0.85f, newPos.z);
-                position = newPos;
-            }
+            // Get current Y position from physics (affected by gravity)
+            const dReal* physicsPos = dBodyGetPosition(body);
+            float currentY = (float)physicsPos[1] - 0.85f;
+            
+            // Set final XZ position, preserve Y from physics
+            finalPos.y = currentY;
+            dGeomSetPosition(geom, finalPos.x, finalPos.y + 0.85f, finalPos.z);
+            dBodySetPosition(body, finalPos.x, finalPos.y + 0.85f, finalPos.z);
+            position = finalPos;
+            
+            // Reset horizontal velocity to prevent sliding, preserve vertical velocity for gravity
+            const dReal* vel = dBodyGetLinearVel(body);
+            dBodySetLinearVel(body, 0, vel[1], 0);
         } else {
             // No physics - just move directly
             position = newPos;
@@ -570,9 +620,12 @@ void Player::SitDown(Vector3 seatPos) {
     // Call base class to set seating state
     Person::SitDown(seatPos);
     
-    // Update physics body position
+    // Update physics body position and reset velocity
     if (body != nullptr) {
         dBodySetPosition(body, seatPos.x, seatPos.y + 0.85f, seatPos.z);
+        // Reset velocity when sitting
+        dBodySetLinearVel(body, 0, 0, 0);
+        dBodySetAngularVel(body, 0, 0, 0);
     }
     if (geom != nullptr) {
         dGeomSetPosition(geom, seatPos.x, seatPos.y + 0.85f, seatPos.z);
@@ -582,6 +635,21 @@ void Player::SitDown(Vector3 seatPos) {
 void Player::StandUp() {
     // Call base class to clear seating state
     Person::StandUp();
+    
+    // Move player to ground level when standing (prevents clipping through table)
+    // Seat positions are at table height, we need to move to ground
+    position.y = 0.0f;  // Reset to ground level
+    
+    // Update physics body to ground position
+    if (body != nullptr) {
+        dBodySetPosition(body, position.x, position.y + 0.85f, position.z);
+        // Reset velocity so player doesn't fly off
+        dBodySetLinearVel(body, 0, 0, 0);
+        dBodySetAngularVel(body, 0, 0, 0);
+    }
+    if (geom != nullptr) {
+        dGeomSetPosition(geom, position.x, position.y + 0.85f, position.z);
+    }
 }
 
 int Player::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) {
