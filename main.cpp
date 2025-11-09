@@ -1,24 +1,12 @@
-#include "raylib.h"
-#include "rlgl.h"
-#include "interactable.hpp"
-#include "card.hpp"
-#include "chip.hpp"
-#include "pistol.hpp"
-#include "floor.hpp"
-#include "ceiling.hpp"
-#include "wall.hpp"
-#include "light.hpp"
-#include "light_bulb.hpp"
-#include "player.hpp"
-#include "enemy.hpp"
-#include "physics.hpp"
-#include "spawner.hpp"
-#include "poker_table.hpp"
+#include "scene_manager.hpp"
+#include "scenes/game_scene.hpp"
 #include "dom.hpp"
-#include <cstdlib>
-#include <cstring>
+#include "physics.hpp"
+#include "player.hpp"
+#include "light.hpp"
+#include "raylib.h"
 
-// Global debug flag for collision visualization
+// Global debug flag
 bool g_showCollisionDebug = false;
 
 int main(void)
@@ -27,127 +15,40 @@ int main(void)
     const int screenWidth = 800;
     const int screenHeight = 450;
     InitWindow(screenWidth, screenHeight, "Poker - First Person");
-    
-    // Disable raylib's verbose logging (textures, FBOs, etc.)
-    SetTraceLogLevel(LOG_WARNING);  // Only show warnings and errors from raylib
-    
-    // Poker logs will still show because POKER_LOG uses TraceLog directly
-    POKER_LOG(LOG_INFO, "=== GAME STARTING ===");
 
-    // Disable cursor for FPS controls
+    SetTraceLogLevel(LOG_WARNING);
+    TraceLog(LOG_INFO, "=== GAME STARTING ===");
     DisableCursor();
 
-    // Initialize physics world
+    // Initialize core systems
     PhysicsWorld physics;
-
-    // Initialize lighting system (loads shader, sets up ambient light)
     LightSource::InitLightingSystem();
 
-    // Initialize DOM
+    // Initialize DOM (main owns this)
     DOM dom;
     DOM::SetGlobal(&dom);
 
-    // Initialize player (using C++ new and constructor)
-    Player* player = new Player({0.0f, 0.0f, 0.0f}, &physics, "Player");
-    dom.AddObject(player);
-    
-    // Give player starting chips (500 chips total)
-    // Add chips directly to player's inventory
-    Inventory* playerInv = player->GetInventory();
-    for (int i = 0; i < 5; i++) {  // 5x 100 chips
-        Chip* chip = new Chip(100, {0, 0, 0}, nullptr);  // No physics, just in inventory
-        playerInv->AddItem(chip);
-    }
-    TraceLog(LOG_INFO, "Player initialized with 500 chips in inventory");
+    // Initialize scene manager and register scenes
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    sceneManager->RegisterSceneFactory("game", CreateGameScene);
 
-    // Initialize ground floor with physics
-    Floor* groundFloor = new Floor({0.0f, 0.0f, 0.0f}, {50.0f, 50.0f}, {50, 0, 12, 255}, &physics);
-    dom.AddObject(groundFloor);
-
-    // Create ceiling (black)
-    Ceiling* ceiling = new Ceiling({0.0f, 5.0f, 0.0f}, {50.0f, 50.0f}, BLACK, &physics);
-    dom.AddObject(ceiling);
-
-    // Create 4 walls to make a room (20x20 room centered at origin)
-    Wall* wallNorth = new Wall({0.0f, 2.5f, 10.0f}, {20.0f, 5.0f, 0.5f}, &physics);   // North wall
-    Wall* wallSouth = new Wall({0.0f, 2.5f, -10.0f}, {20.0f, 5.0f, 0.5f}, &physics);  // South wall
-    Wall* wallEast = new Wall({10.0f, 2.5f, 0.0f}, {0.5f, 5.0f, 20.0f}, &physics);    // East wall
-    Wall* wallWest = new Wall({-10.0f, 2.5f, 0.0f}, {0.5f, 5.0f, 20.0f}, &physics);   // West wall
-    dom.AddObject(wallNorth);
-    dom.AddObject(wallSouth);
-    dom.AddObject(wallEast);
-    dom.AddObject(wallWest);
-
-    // Create light bulb at center of room (blue light)
-    LightBulb* lightBulb = new LightBulb({0.0f, 4.0f, 0.0f}, (Color){120, 140, 200, 255});
-    dom.AddObject(lightBulb);
-
-    // Create poker table inside the room
-    PokerTable* pokerTable = new PokerTable({5.0f, 1.0f, 0.0f}, {4.0f, 0.2f, 2.5f}, BROWN, &physics);
-    dom.AddObject(pokerTable);
-
-    // Create 3 enemies at different positions in the room
-    Enemy* enemy1 = new Enemy({-5.0f, 0.0f, 5.0f}, "Person 1");
-    dom.AddObject(enemy1);
-    // Give enemy1 starting chips (500 chips)
-    Inventory* enemy1Inv = enemy1->GetInventory();
-    for (int i = 0; i < 5; i++) {
-        Chip* chip = new Chip(100, {0, 0, 0}, nullptr);
-        enemy1Inv->AddItem(chip);
+    // Load initial scene
+    Scene* currentScene = sceneManager->CreateScene("game", &physics);
+    if (currentScene) {
+        // Add all initial objects to DOM
+        for (Object* obj : currentScene->GetInitialObjects()) {
+            dom.AddObject(obj);
+        }
     }
 
-    Enemy* enemy2 = new Enemy({5.0f, 0.0f, -5.0f}, "Person 2");
-    dom.AddObject(enemy2);
-    // Give enemy2 starting chips (500 chips)
-    Inventory* enemy2Inv = enemy2->GetInventory();
-    for (int i = 0; i < 5; i++) {
-        Chip* chip = new Chip(100, {0, 0, 0}, nullptr);
-        enemy2Inv->AddItem(chip);
+    // Get player reference for rendering
+    Player* player = nullptr;
+    for (int i = 0; i < dom.GetCount(); i++) {
+        if (dom.GetObject(i)->GetType() == "player") {
+            player = static_cast<Player*>(dom.GetObject(i));
+            break;
+        }
     }
-
-    Enemy* enemy3 = new Enemy({-3.0f, 0.0f, -7.0f}, "Person 3");
-    dom.AddObject(enemy3);
-    // Give enemy3 starting chips (500 chips)
-    Inventory* enemy3Inv = enemy3->GetInventory();
-    for (int i = 0; i < 5; i++) {
-        Chip* chip = new Chip(100, {0, 0, 0}, nullptr);
-        enemy3Inv->AddItem(chip);
-    }
-    
-    // Seat enemies at the poker table
-    int seat1 = pokerTable->FindClosestOpenSeat(enemy1->position);
-    if (seat1 != -1) {
-        pokerTable->SeatPerson(enemy1, seat1);
-    }
-    
-    int seat2 = pokerTable->FindClosestOpenSeat(enemy2->position);
-    if (seat2 != -1) {
-        pokerTable->SeatPerson(enemy2, seat2);
-    }
-    
-    int seat3 = pokerTable->FindClosestOpenSeat(enemy3->position);
-    if (seat3 != -1) {
-        pokerTable->SeatPerson(enemy3, seat3);
-    }
-
-    // Create spawners inside the room
-    Spawner cardSpawner({0.0f, 2.0f, 3.0f}, 2.0f);
-    Spawner chipSpawner({-5.0f, 2.0f, -3.0f}, 1.5f);
-    Spawner pistolSpawner({3.0f, 2.0f, -5.0f}, 1.0f);
-
-    // Spawn some cards (spawner allocates and adds to DOM)
-    cardSpawner.SpawnCards(SUIT_SPADES, RANK_ACE, 3, &physics, &dom);
-    cardSpawner.SpawnCards(SUIT_HEARTS, RANK_KING, 2, &physics, &dom);
-
-    // Spawn some chips (spawner allocates and adds to DOM)
-    chipSpawner.SpawnChips(1, 5, &physics, &dom);
-    chipSpawner.SpawnChips(5, 5, &physics, &dom);
-    chipSpawner.SpawnChips(10, 5, &physics, &dom);
-    chipSpawner.SpawnChips(25, 5, &physics, &dom);
-    chipSpawner.SpawnChips(100, 5, &physics, &dom);
-
-    // Spawn a pistol
-    pistolSpawner.SpawnPistols(1, &physics, &dom);
 
     SetTargetFPS(60);
 
@@ -156,187 +57,116 @@ int main(void)
     {
         float deltaTime = GetFrameTime();
 
-        // Toggle cursor lock with U key
+        // Toggle cursor with U key
         if (IsKeyPressed(KEY_U)) {
-            if (IsCursorHidden()) {
-                EnableCursor();
-            } else {
-                DisableCursor();
-            }
+            if (IsCursorHidden()) EnableCursor();
+            else DisableCursor();
         }
-        
+
         // Toggle collision debug with G key
         if (IsKeyPressed(KEY_G)) {
             g_showCollisionDebug = !g_showCollisionDebug;
-            GAME_LOG(LOG_INFO, "Collision debug: %s", g_showCollisionDebug ? "ON" : "OFF");
+            TraceLog(LOG_INFO, "Collision debug: %s", g_showCollisionDebug ? "ON" : "OFF");
         }
 
-        // Update player (handles input, camera, and FOV)
-        player->Update(deltaTime);
+        // Update physics
+        physics.Step(deltaTime);
 
-        // Update camera position in lighting shader
-        Camera3D* cam = player->GetCamera();
-        LightSource::UpdateCameraPosition(cam->position);
+        // Update camera in lighting shader
+        if (player) {
+            Camera3D* cam = player->GetCamera();
+            LightSource::UpdateCameraPosition(cam->position);
+        }
 
-        // Update all light sources in shader
+        // Update all light sources
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
-            // Check if object is a LightSource (use dynamic_cast or type check)
-            std::string type = obj->GetType();
-            if (type == "light_bulb") {
+            if (obj->GetType() == "light_bulb") {
                 LightSource* light = static_cast<LightSource*>(obj);
                 light->UpdateLight();
             }
         }
 
-        // Step physics simulation
-        physics.Step(deltaTime);
-
-        // Update all objects in DOM (except player - already updated above)
-        GAME_LOG(LOG_INFO, "Starting DOM object updates, count=%d", dom.GetCount());
+        // Update all objects
         for (int i = 0; i < dom.GetCount(); i++) {
-            Object* obj = dom.GetObject(i);
-            if (obj == nullptr) {
-                GAME_LOG(LOG_INFO, "Object %d is null, skipping", i);
-                continue;
-            }
-            if (obj == player) {
-                GAME_LOG(LOG_INFO, "Object %d is player, skipping", i);
-                continue;
-            }
-            
-            std::string type = obj->GetType();
-            if (type.empty()) {
-                GAME_LOG(LOG_INFO, "Object %d has empty type, skipping", i);
-                continue;
-            }
-            
-            GAME_LOG(LOG_INFO, "Updating object %d (type=%s, ptr=%p)", i, type.c_str(), (void*)obj);
-            obj->Update(deltaTime);
-            GAME_LOG(LOG_INFO, "Object %d update completed", i);
+            dom.GetObject(i)->Update(deltaTime);
         }
-        GAME_LOG(LOG_INFO, "All object updates completed");
-        
-        // Get closest interactable for E prompt
-        Interactable* closestInteractable = player->GetClosestInteractable();
-        GAME_LOG(LOG_INFO, "Got closest interactable");
 
-        // Draw
-        GAME_LOG(LOG_INFO, "About to BeginDrawing");
+        // Get closest interactable
+        Interactable* closestInteractable = player ? player->GetClosestInteractable() : nullptr;
+
+        // Rendering
         BeginDrawing();
-            GAME_LOG(LOG_INFO, "BeginDrawing done, clearing background");
-            ClearBackground(BLACK);
+        ClearBackground(BLACK);
 
-            GAME_LOG(LOG_INFO, "Getting camera");
+        if (player) {
             Camera3D* camera = player->GetCamera();
-            GAME_LOG(LOG_INFO, "Got camera, about to BeginMode3D");
 
-            // === 3D RENDERING PASS ===
             BeginMode3D(*camera);
-            GAME_LOG(LOG_INFO, "BeginMode3D done");
-            GAME_LOG(LOG_INFO, "About to BeginShaderMode");
-                // Apply lighting shader to all 3D objects automatically (except light sources, chips, enemies, persons, players, and closest interactable)
-                Shader& lightingShader = LightSource::GetLightingShader();
-                if (lightingShader.id != 0) {
-                    BeginShaderMode(lightingShader);
-                    // Draw all root objects (and their children recursively) except light sources, chips, enemies, persons, players, and closest interactable
-                    for (int i = 0; i < dom.GetCount(); i++) {
-                        Object* obj = dom.GetObject(i);
-                        if (obj != nullptr) {
-                            std::string type = obj->GetType();
-                            if (type.empty()) continue;  // Safety check
-                            
-                            // Skip light sources, chips, and cards - they don't need lighting
-                            if (type == "light_bulb") continue;
-                            if (type.substr(0, 5) == "chip_") continue;
-                            if (type.substr(0, 5) == "card_") continue;
-                            // Skip enemies, persons, and players - they should be pitch black (unaffected by lighting)
-                            if (type == "enemy") continue;
-                            if (type == "person") continue;
-                            if (type == "player") continue;
-                            // Skip closest interactable only if it exists and matches
-                            if (closestInteractable != nullptr && obj == closestInteractable) continue;
-                            
-                            obj->Draw(*camera);
-                        }
-                    }
-                    EndShaderMode();
-                }
-                
-                // Draw objects without shader (light sources, chips, cards, enemies, persons, and players)
+
+            // Get lighting shader
+            Shader& lightingShader = LightSource::GetLightingShader();
+
+            // Draw objects with lighting
+            if (lightingShader.id != 0) {
+                BeginShaderMode(lightingShader);
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
-                    if (obj != nullptr && obj != closestInteractable) {
-                        std::string type = obj->GetType();
-                        if (type.empty()) continue;  // Safety check
-                        
-                        if (type == "light_bulb" || type.substr(0, 5) == "chip_" || type.substr(0, 5) == "card_" ||
-                            type == "enemy" || type == "person" || type == "player") {
-                            obj->Draw(*camera);
-                        }
-                    }
+                    std::string type = obj->GetType();
+
+                    // Skip unlit objects and closest interactable
+                    if (type == "light_bulb" || type.substr(0, 5) == "chip_" ||
+                        type.substr(0, 5) == "card_" || type == "enemy" ||
+                        type == "person" || type == "player") continue;
+                    if (closestInteractable && obj == closestInteractable) continue;
+
+                    obj->Draw(*camera);
                 }
+                EndShaderMode();
+            }
+
+            // Draw unlit objects
+            for (int i = 0; i < dom.GetCount(); i++) {
+                Object* obj = dom.GetObject(i);
+                if (obj == closestInteractable) continue;
+
+                std::string type = obj->GetType();
+                if (type == "light_bulb" || type.substr(0, 5) == "chip_" ||
+                    type.substr(0, 5) == "card_" || type == "enemy" ||
+                    type == "person" || type == "player") {
+                    obj->Draw(*camera);
+                }
+            }
+
             EndMode3D();
 
-            // Draw E prompt and closest interactable without shader (so it's bright/visible)
-            if (closestInteractable != nullptr) {
+            // Draw closest interactable and prompt
+            if (closestInteractable) {
                 BeginMode3D(*camera);
-                    // Draw the closest interactable without lighting shader (unaffected, fully bright)
-                    // Use Draw to also draw any children (e.g., Deck and Dealer for PokerTable)
-                    closestInteractable->Draw(*camera);
-                    
-                    // Draw E prompt
-                    closestInteractable->DrawPrompt(*camera);
+                closestInteractable->Draw(*camera);
+                closestInteractable->DrawPrompt(*camera);
                 EndMode3D();
             }
 
-            // Draw held item (pistol) in 3D space - disable depth test so it draws on top
-            rlDisableDepthTest();
-            BeginMode3D(*camera);
-                // Apply lighting shader to held item
-                if (lightingShader.id != 0) {
-                    BeginShaderMode(lightingShader);
-                        player->DrawHeldItem();
-                    EndShaderMode();
-                } else {
-                    player->DrawHeldItem();
-                }
-            EndMode3D();
-            rlEnableDepthTest();
+            // Draw UI
+            player->DrawInventoryUI();
+            player->DrawBettingUI();
+            player->DrawHeldItem();
+        }
 
-            // === 2D UI RENDERING PASS ===
-            // Flush 3D rendering and switch to pure 2D mode
-            rlDrawRenderBatchActive();
-            rlDisableDepthTest();
-            rlDisableBackfaceCulling();
-
-            // Set 2D mode explicitly
-            BeginMode2D({{0, 0}, {0, 0}, 0, 1.0f});
-                player->DrawInventoryUI();
-                
-                // Draw betting UI (will only show if bettingUIActive is true)
-                // DrawBettingUI handles whether to show or not internally
-                player->DrawBettingUI();
-            EndMode2D();
-
-            // Draw FPS counter
-            DrawFPS(10, screenHeight - 30);
-
-            rlEnableDepthTest();
+        DrawFPS(10, screenHeight - 30);
         EndDrawing();
     }
 
-    // De-Initialization
-    // Clean up all objects in DOM
+    // Cleanup
     for (int i = 0; i < dom.GetCount(); i++) {
-        Object* obj = dom.GetObject(i);
-        delete obj;
+        delete dom.GetObject(i);
     }
+    dom.Cleanup();
 
-    // Cleanup lighting system
     LightSource::CleanupLightingSystem();
+    SceneManager::DestroyInstance();
 
     CloseWindow();
-
     return 0;
 }
