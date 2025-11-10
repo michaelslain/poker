@@ -41,7 +41,7 @@ void InventoryUI_Draw(Inventory* inventory, int selectedIndex) {
         const char* countText = nullptr;
         std::string itemType = item->GetType();
         
-        if (itemType == "pistol") {
+        if (itemType.find("pistol") != std::string::npos) {
             // Show ammo count for pistols
             Pistol* pistol = static_cast<Pistol*>(item);
             countText = TextFormat("%d", pistol->GetAmmo());
