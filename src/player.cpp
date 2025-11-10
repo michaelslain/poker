@@ -550,7 +550,7 @@ void Player::HandleShooting() {
                     Object* tableObj = dom->GetObject(j);
                     if (tableObj) {
                         std::string tableType = tableObj->GetType();
-                        if (tableType == "poker_table") {
+                        if (tableType.find("poker_table") != std::string::npos) {
                             PokerTable* table = static_cast<PokerTable*>(tableObj);
                             table->UnseatPerson(hitPerson);
                         }
