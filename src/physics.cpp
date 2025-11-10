@@ -1,5 +1,8 @@
 #include "physics.hpp"
 
+// Initialize static member
+PhysicsWorld* PhysicsWorld::globalInstance = nullptr;
+
 PhysicsWorld::PhysicsWorld() {
     // Initialize ODE
     dInitODE();
@@ -70,4 +73,12 @@ void PhysicsWorld::Step(float deltaTime) {
     
     // Remove all contact joints
     dJointGroupEmpty(contactGroup);
+}
+
+void PhysicsWorld::SetGlobal(PhysicsWorld* physics) {
+    globalInstance = physics;
+}
+
+PhysicsWorld* PhysicsWorld::GetGlobal() {
+    return globalInstance;
 }

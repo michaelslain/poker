@@ -1,4 +1,4 @@
-#include "game_scene.hpp"
+#include "../include/scene.hpp"
 #include "../include/player.hpp"
 #include "../include/enemy.hpp"
 #include "../include/floor.hpp"
@@ -13,6 +13,9 @@
 
 Scene* CreateGameScene(PhysicsWorld* physics) {
     std::vector<Object*> objects;
+    
+    // Set global physics instance so spawners can access it
+    PhysicsWorld::SetGlobal(physics);
     
     // Create player
     Player* player = new Player({0.0f, 0.0f, 0.0f}, physics, "Player");
@@ -79,28 +82,16 @@ Scene* CreateGameScene(PhysicsWorld* physics) {
     int seat3 = pokerTable->FindClosestOpenSeat(enemy3->position);
     if (seat3 != -1) pokerTable->SeatPerson(enemy3, seat3);
     
-    // Create spawners and spawn objects
-    Spawner cardSpawner({0.0f, 2.0f, 3.0f}, 2.0f);
-    Spawner chipSpawner({-5.0f, 2.0f, -3.0f}, 1.5f);
-    Spawner pistolSpawner({3.0f, 2.0f, -5.0f}, 1.0f);
-    
-    // Note: Spawner adds objects directly to a temporary vector
-    // We need to get those objects and add to our objects list
-    DOM tempDom;  // Temporary DOM for spawners
-    cardSpawner.SpawnCards(SUIT_SPADES, RANK_ACE, 3, physics, &tempDom);
-    cardSpawner.SpawnCards(SUIT_HEARTS, RANK_KING, 2, physics, &tempDom);
-    chipSpawner.SpawnChips(1, 5, physics, &tempDom);
-    chipSpawner.SpawnChips(5, 5, physics, &tempDom);
-    chipSpawner.SpawnChips(10, 5, physics, &tempDom);
-    chipSpawner.SpawnChips(25, 5, physics, &tempDom);
-    chipSpawner.SpawnChips(100, 5, physics, &tempDom);
-    pistolSpawner.SpawnPistols(1, physics, &tempDom);
-    
-    // Move spawned objects from temp DOM to our objects list
-    for (int i = 0; i < tempDom.GetCount(); i++) {
-        objects.push_back(tempDom.GetObject(i));
-    }
-    tempDom.Cleanup();  // Clear temp DOM (doesn't delete objects)
+    // Create spawners - they spawn automatically on construction and add to global DOM
+    // Spawners take ownership of the template object and delete it in destructor
+    objects.push_back(new Spawner({0.0f, 2.0f, 3.0f}, 2.0f, new Card(SUIT_SPADES, RANK_ACE, {0, 0, 0}, nullptr), 3));
+    objects.push_back(new Spawner({0.0f, 2.0f, 3.0f}, 2.0f, new Card(SUIT_HEARTS, RANK_KING, {0, 0, 0}, nullptr), 2));
+    objects.push_back(new Spawner({-5.0f, 2.0f, -3.0f}, 1.5f, new Chip(1, {0, 0, 0}, nullptr), 5));
+    objects.push_back(new Spawner({-5.0f, 2.0f, -3.0f}, 1.5f, new Chip(5, {0, 0, 0}, nullptr), 5));
+    objects.push_back(new Spawner({-5.0f, 2.0f, -3.0f}, 1.5f, new Chip(10, {0, 0, 0}, nullptr), 5));
+    objects.push_back(new Spawner({-5.0f, 2.0f, -3.0f}, 1.5f, new Chip(25, {0, 0, 0}, nullptr), 5));
+    objects.push_back(new Spawner({-5.0f, 2.0f, -3.0f}, 1.5f, new Chip(100, {0, 0, 0}, nullptr), 5));
+    objects.push_back(new Spawner({3.0f, 2.0f, -5.0f}, 1.0f, new Pistol({0, 0, 0}, nullptr), 1));
     
     return new Scene("game", objects);
 }

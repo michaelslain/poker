@@ -2,24 +2,23 @@
 #define SPAWNER_HPP
 
 #include "object.hpp"
-#include "card.hpp"
-#include "chip.hpp"
-#include "physics.hpp"
-#include "dom.hpp"
 
 class Spawner : public Object {
 private:
     float radius;
+    Object* templateObject;  // The object to spawn copies of
+    int count;
+    bool hasSpawned;
+    
+    void PerformSpawn();
 
 public:
-    Spawner(Vector3 pos, float spawnRadius);
-    virtual ~Spawner() = default;
+    // Constructor: spawns 'spawnCount' copies of 'obj' within 'spawnRadius'
+    Spawner(Vector3 pos, float spawnRadius, Object* obj, int spawnCount);
     
-    // Spawning methods
-    void SpawnCards(Suit suit, Rank rank, int count, PhysicsWorld* physics, DOM* dom);
-    void SpawnChips(int value, int count, PhysicsWorld* physics, DOM* dom);
-    void SpawnPistols(int count, PhysicsWorld* physics, DOM* dom);
+    virtual ~Spawner();
     
+    void Update(float deltaTime) override;
     std::string GetType() const override;
 };
 
