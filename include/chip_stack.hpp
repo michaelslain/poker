@@ -26,6 +26,7 @@ public:
     void AddChips(const std::vector<Chip*>& newChips);
     void Clear();  // Remove all chips (doesn't delete them)
     std::vector<Chip*> RemoveAll();  // Remove and return all chips
+    void MakeAllInteractable();  // Make all chips in stack interactable
     
     int GetTotalValue() const;
     int GetChipCount() const { return chips.size(); }

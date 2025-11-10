@@ -54,10 +54,10 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
     potStack = new ChipStack(potPos);
     DOM::GetGlobal()->AddObject(potStack);
     
-    // Create collision geometry that extends from ground to table top
-    // This makes the table act like a solid barrier you can't walk through
+    // Create collision geometry that extends higher than table to prevent walking on top
+    // This makes the table act like a solid barrier you can't walk through or climb on
     if (physicsWorld) {
-        float collisionHeight = pos.y + size.y / 2.0f; // Height from ground to table top
+        float collisionHeight = pos.y + size.y / 2.0f + 1.5f; // Extend 1.5 units above table top
         float collisionY = collisionHeight / 2.0f; // Center the collision box
         
         Vector3 collisionSize = {size.x, collisionHeight, size.z};
@@ -272,6 +272,20 @@ int PokerTable::FindSeatIndex(Person* p) {
     }
     
     return -1;
+}
+
+void PokerTable::MakePotItemsInteractable() {
+    // Make all chips in pot stack interactable
+    if (potStack) {
+        potStack->MakeAllInteractable();
+    }
+    
+    // Make all community cards interactable
+    for (Card* card : communityCards) {
+        if (card) {
+            card->canInteract = true;
+        }
+    }
 }
 
 // ========== SEAT NAVIGATION ==========

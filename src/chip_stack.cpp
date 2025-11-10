@@ -108,6 +108,14 @@ std::vector<Chip*> ChipStack::RemoveAll() {
     return result;
 }
 
+void ChipStack::MakeAllInteractable() {
+    for (Chip* chip : chips) {
+        if (chip) {
+            chip->canInteract = true;
+        }
+    }
+}
+
 int ChipStack::GetTotalValue() const {
     int total = 0;
     for (Chip* chip : chips) {

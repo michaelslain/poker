@@ -43,9 +43,9 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
         geom = dCreateCapsule(physics->space, radius, cylinderLength);
         dGeomSetBody(geom, body);
 
-        // Set collision category and mask (collide with everything)
+        // Set collision category and mask (collide with everything except items)
         dGeomSetCategoryBits(geom, COLLISION_CATEGORY_PLAYER);
-        dGeomSetCollideBits(geom, ~0);  // Collide with all objects
+        dGeomSetCollideBits(geom, ~COLLISION_CATEGORY_ITEM);  // Collide with all except items
 
         dGeomSetData(geom, this);
     }
@@ -544,6 +544,9 @@ void Player::HandleShooting() {
         if (hitPerson) {
             TraceLog(LOG_INFO, "Shot hit %s", hitPerson->GetName().c_str());
             
+            // Check if we killed a dealer
+            bool killedDealer = (hitPerson->GetType().find("dealer") != std::string::npos);
+            
             // If person is sitting, unseat them from all poker tables
             if (hitPerson->IsSeated()) {
                 for (int j = 0; j < dom->GetCount(); j++) {
@@ -553,6 +556,20 @@ void Player::HandleShooting() {
                         if (tableType.find("poker_table") != std::string::npos) {
                             PokerTable* table = static_cast<PokerTable*>(tableObj);
                             table->UnseatPerson(hitPerson);
+                        }
+                    }
+                }
+            }
+            
+            // If we killed a dealer, make all pot items interactable
+            if (killedDealer) {
+                for (int j = 0; j < dom->GetCount(); j++) {
+                    Object* tableObj = dom->GetObject(j);
+                    if (tableObj) {
+                        std::string tableType = tableObj->GetType();
+                        if (tableType.find("poker_table") != std::string::npos) {
+                            PokerTable* table = static_cast<PokerTable*>(tableObj);
+                            table->MakePotItemsInteractable();
                         }
                     }
                 }

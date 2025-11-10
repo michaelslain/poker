@@ -138,6 +138,9 @@ public:
     void UnseatPerson(Person* p);
     int FindSeatIndex(Person* p);  // Returns seat index or -1 if not seated
     
+    // Game state management
+    void MakePotItemsInteractable();  // Make all pot chips and community cards interactable
+    
     // Accessors
     Collider* GetCollider() { return &collider; }
 };
