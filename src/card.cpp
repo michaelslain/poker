@@ -6,6 +6,8 @@
 Card::Card(Suit s, Rank r, Vector3 pos, PhysicsWorld* physics)
     : Item(pos), suit(s), rank(r), textureLoaded(false), rigidBody(nullptr)
 {
+    usesLighting = false;  // Cards render without lighting
+    
     // Create texture for this card
     texture = LoadRenderTexture(256, 356);  // Card aspect ratio
     textureLoaded = true;

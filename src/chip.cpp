@@ -8,6 +8,8 @@
 Chip::Chip(int chipValue, Vector3 pos, PhysicsWorld* physics)
     : Item(pos), value(chipValue), iconTextureLoaded(false), rigidBody(nullptr)
 {
+    usesLighting = false;  // Chips render without lighting
+    
     color = GetColorFromValue(value);
 
     // Initialize physics
@@ -82,7 +84,18 @@ void Chip::Draw(Camera3D camera) {
         baseColor.a
     };
     
-    Matrix rotMatrix = rigidBody ? rigidBody->GetRotationMatrix() : MatrixIdentity();
+    // Use rotation from rigid body if available, otherwise use Object rotation
+    Matrix rotMatrix;
+    if (rigidBody && rigidBody->body) {
+        rotMatrix = rigidBody->GetRotationMatrix();
+    } else {
+        // Use the rotation from Object base class
+        rotMatrix = MatrixRotateXYZ((Vector3){
+            rotation.x * DEG2RAD,
+            rotation.y * DEG2RAD,
+            rotation.z * DEG2RAD
+        });
+    }
     Matrix transMatrix = MatrixTranslate(position.x, position.y, position.z);
     Matrix transform = MatrixMultiply(rotMatrix, transMatrix);
     

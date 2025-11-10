@@ -8,6 +8,7 @@ Object::Object(Vector3 pos)
     , position(pos)
     , rotation({0.0f, 0.0f, 0.0f})
     , scale({1.0f, 1.0f, 1.0f})
+    , usesLighting(true)  // Default: objects use lighting
 {}
 
 Object::~Object() {

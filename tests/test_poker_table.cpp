@@ -373,13 +373,13 @@ TEST_CASE("PokerTable - Enemy Seating", "[poker_table]") {
 TEST_CASE("PokerTable - GetGeom", "[poker_table]") {
     SECTION("GetGeom returns nullptr when physics is null") {
         PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
-        REQUIRE(table.GetGeom() == nullptr);
+        REQUIRE(table.GetCollider()->GetGeom() == nullptr);
     }
 
     SECTION("GetGeom returns valid geom when physics provided") {
         PhysicsWorld physics;
         PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, &physics);
-        REQUIRE(table.GetGeom() != nullptr);
+        REQUIRE(table.GetCollider()->GetGeom() != nullptr);
     }
 }
 

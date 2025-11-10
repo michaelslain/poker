@@ -27,6 +27,9 @@ void Enemy::Update(float deltaTime) {
 int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) {
     (void)currentBet;  // Suppress unused warning
     
+    printf("[ENEMY %s PromptBet] this=%p, isThinking=%d, timer=%.2f/%.2f\n",
+           name.c_str(), (void*)this, isThinking, thinkingTimer, thinkingDuration);
+    
     // First call: Start thinking
     if (!isThinking) {
         isThinking = true;
@@ -35,8 +38,7 @@ int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise,
         thinkingDuration = 2.0f + ((rand() % 200) / 100.0f);
         pendingAction = -1;
         
-
-        return -1;  // Still thinking
+        printf("[ENEMY %s] STARTED THINKING, duration set to %.2f\n", name.c_str(), thinkingDuration);        return -1;  // Still thinking
     }
     
     // Still thinking...
@@ -62,7 +64,7 @@ int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise,
             ItemStack* stack = inv->GetStack(i);
             if (stack && stack->item) {
                 std::string type = stack->item->GetType();
-                if (type.substr(0, 5) == "chip_") {
+                if (type.find("chip") != std::string::npos) {
                     Chip* chip = static_cast<Chip*>(stack->item);
                     totalChipValue += chip->value * stack->count;
                 }

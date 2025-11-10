@@ -2,11 +2,12 @@
 #include "light.hpp"
 
 Floor::Floor(Vector3 position, Vector2 floorSize, Color floorColor, PhysicsWorld* physicsWorld)
-    : Object(position), size(floorSize), color(floorColor), geom(nullptr), physics(physicsWorld)
+    : Object(position), size(floorSize), color(floorColor)
 {
-    // Create static plane geometry (normal pointing up: Y+)
-    if (physics) {
-        geom = dCreatePlane(physics->space, 0, 1, 0, 0);
+    // Initialize static plane collision (normal pointing up: Y+)
+    if (physicsWorld) {
+        // For plane: size = normal vector (0, 1, 0), offset.x = distance (0)
+        collider.InitStatic(physicsWorld, COLLISION_SHAPE_PLANE, {0, 1, 0}, {0, 0, 0});
     }
     
     // Create model with proper normals for lighting
@@ -15,10 +16,6 @@ Floor::Floor(Vector3 position, Vector2 floorSize, Color floorColor, PhysicsWorld
 }
 
 Floor::~Floor() {
-    if (geom) {
-        dGeomDestroy(geom);
-        geom = nullptr;
-    }
     UnloadModel(model);
 }
 

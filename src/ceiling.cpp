@@ -2,11 +2,12 @@
 #include "light.hpp"
 
 Ceiling::Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor, PhysicsWorld* physicsWorld)
-    : Object(position), size(ceilingSize), color(ceilingColor), geom(nullptr), physics(physicsWorld)
+    : Object(position), size(ceilingSize), color(ceilingColor)
 {
-    // Create static plane geometry (normal pointing down: Y-)
-    if (physics) {
-        geom = dCreatePlane(physics->space, 0, -1, 0, -position.y);
+    // Initialize static plane collision (normal pointing down: Y-)
+    if (physicsWorld) {
+        // For plane: size = normal vector (0, -1, 0), offset.x = distance (-position.y)
+        collider.InitStatic(physicsWorld, COLLISION_SHAPE_PLANE, {0, -1, 0}, {-position.y, 0, 0});
     }
     
     // Create model with proper normals for lighting
@@ -15,10 +16,6 @@ Ceiling::Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor, Phys
 }
 
 Ceiling::~Ceiling() {
-    if (geom) {
-        dGeomDestroy(geom);
-        geom = nullptr;
-    }
     UnloadModel(model);
 }
 

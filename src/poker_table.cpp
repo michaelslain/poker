@@ -11,7 +11,7 @@
 #include <cstdio>
 
 PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, PhysicsWorld* physicsWorld)
-    : Interactable(pos), size(tableSize), color(tableColor), geom(nullptr), physics(physicsWorld),
+    : Interactable(pos), size(tableSize), color(tableColor),
       dealer(nullptr), deck(nullptr), potStack(nullptr),
       smallBlindSeat(-1), bigBlindSeat(-1), currentPlayerSeat(-1),
       currentBet(0), potValue(0), handActive(false), bettingActive(false), showdownActive(false),
@@ -56,14 +56,16 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
     
     // Create collision geometry that extends from ground to table top
     // This makes the table act like a solid barrier you can't walk through
-    if (physics) {
+    if (physicsWorld) {
         float collisionHeight = pos.y + size.y / 2.0f; // Height from ground to table top
         float collisionY = collisionHeight / 2.0f; // Center the collision box
-        geom = dCreateBox(physics->space, size.x, collisionHeight, size.z);
-        dGeomSetPosition(geom, pos.x, collisionY, pos.z);
-        dGeomSetCategoryBits(geom, COLLISION_CATEGORY_TABLE);
-        dGeomSetCollideBits(geom, COLLISION_CATEGORY_PLAYER);
-        dGeomSetData(geom, this);
+        
+        Vector3 collisionSize = {size.x, collisionHeight, size.z};
+        Vector3 collisionOffset = {0, collisionY - pos.y, 0}; // Offset from table position
+        
+        collider.InitStatic(physicsWorld, COLLISION_SHAPE_BOX, collisionSize, collisionOffset);
+        collider.SetCollisionBits(COLLISION_CATEGORY_TABLE, ~0);
+        collider.UpdateFromObject(this);
     }
 }
 
@@ -94,11 +96,7 @@ PokerTable::~PokerTable() {
         deck = nullptr;
     }
     
-    if (geom) {
-        dGeomSetData(geom, nullptr);
-        dGeomDestroy(geom);
-        geom = nullptr;
-    }
+    // Collider cleanup is automatic via destructor
 }
 
 void PokerTable::Update(float deltaTime) {
@@ -315,7 +313,7 @@ int PokerTable::CountChips(Person* p) {
     int total = 0;
     for (int i = 0; i < inv->GetStackCount(); i++) {
         ItemStack* stack = inv->GetStack(i);
-        if (stack && stack->item && stack->item->GetType().substr(0, 5) == "chip_") {
+        if (stack && stack->item && stack->item->GetType().find("chip") != std::string::npos) {
             Chip* chip = static_cast<Chip*>(stack->item);
             total += chip->value * stack->count;
         }
@@ -373,7 +371,7 @@ void PokerTable::TakeChips(Person* p, int amount) {
     // Remove all chips from player
     for (int i = inv->GetStackCount() - 1; i >= 0; i--) {
         ItemStack* stack = inv->GetStack(i);
-        if (stack && stack->item && stack->item->GetType().substr(0, 5) == "chip_") {
+        if (stack && stack->item && stack->item->GetType().find("chip") != std::string::npos) {
             for (int j = 0; j < stack->count; j++) {
                 inv->RemoveItem(i);
             }
@@ -831,7 +829,7 @@ void PokerTable::Showdown() {
             int cardCount = 0;
             for (int j = 0; j < inv->GetStackCount(); j++) {
                 ItemStack* stack = inv->GetStack(j);
-                if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+                if (stack && stack->item && stack->item->GetType().find("card") != std::string::npos) {
                     cardCount++;
                 }
             }
@@ -999,7 +997,7 @@ HandEvaluation PokerTable::EvaluateHand(Person* p) {
             // Fallback to all cards in inventory
             for (int i = 0; i < inv->GetStackCount(); i++) {
                 ItemStack* stack = inv->GetStack(i);
-                if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+                if (stack && stack->item && stack->item->GetType().find("card") != std::string::npos) {
                     Card* card = static_cast<Card*>(stack->item);
                     allCards.push_back(card);
                 }
@@ -1009,7 +1007,7 @@ HandEvaluation PokerTable::EvaluateHand(Person* p) {
         // For non-players (Enemy, Dealer), use all cards in inventory
         for (int i = 0; i < inv->GetStackCount(); i++) {
             ItemStack* stack = inv->GetStack(i);
-            if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+            if (stack && stack->item && stack->item->GetType().find("card") != std::string::npos) {
                 Card* card = static_cast<Card*>(stack->item);
                 allCards.push_back(card);
             }

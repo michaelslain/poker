@@ -8,6 +8,7 @@ Shader LightSource::lightingShader = { 0 };
 bool LightSource::shaderInitialized = false;
 
 LightSource::LightSource(Vector3 position) : Object(position) {
+    usesLighting = false;  // Light sources render without lighting
 }
 
 LightSource::~LightSource() {

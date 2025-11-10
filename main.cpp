@@ -119,13 +119,10 @@ int main(void)
                 BeginShaderMode(lightingShader);
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
-                    std::string type = obj->GetType();
-
-                    // Skip unlit objects and closest interactable
-                    if (TypeContains(type, "light_bulb") || TypeContains(type, "chip") ||
-                        TypeContains(type, "card") || TypeContains(type, "person")) continue;
-                    if (closestInteractable && obj == closestInteractable) continue;
-
+                    
+                    // Skip unlit objects
+                    if (!obj->usesLighting) continue;
+                    
                     obj->Draw(*camera);
                 }
                 EndShaderMode();
@@ -134,29 +131,25 @@ int main(void)
             // Draw unlit objects
             for (int i = 0; i < dom.GetCount(); i++) {
                 Object* obj = dom.GetObject(i);
-                if (obj == closestInteractable) continue;
-
-                std::string type = obj->GetType();
-                if (TypeContains(type, "light_bulb") || TypeContains(type, "chip") ||
-                    TypeContains(type, "card") || TypeContains(type, "person")) {
+                
+                if (!obj->usesLighting) {
                     obj->Draw(*camera);
                 }
+            }
+            
+            // Draw held item (needs to be in 3D mode)
+            player->DrawHeldItem();
+            
+            // Draw closest interactable prompt
+            if (closestInteractable) {
+                closestInteractable->DrawPrompt(*camera);
             }
 
             EndMode3D();
 
-            // Draw closest interactable and prompt
-            if (closestInteractable) {
-                BeginMode3D(*camera);
-                closestInteractable->Draw(*camera);
-                closestInteractable->DrawPrompt(*camera);
-                EndMode3D();
-            }
-
             // Draw UI
             player->DrawInventoryUI();
             player->DrawBettingUI();
-            player->DrawHeldItem();
         }
 
         DrawFPS(10, screenHeight - 30);

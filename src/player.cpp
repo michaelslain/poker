@@ -75,7 +75,7 @@ void Player::HandleInteraction() {
     std::string typeStr = closestInteractable->GetType();
 
     // Handle poker table interaction (sit down or stand up)
-    if (typeStr == "poker_table") {
+    if (typeStr.find("poker_table") != std::string::npos) {
         PokerTable* table = static_cast<PokerTable*>(closestInteractable);
         
         // Check if we're already seated at this table
@@ -94,11 +94,15 @@ void Player::HandleInteraction() {
         }
     }
     // Handle item pickup
-    else if (typeStr.substr(0, 5) == "card_" || typeStr.substr(0, 5) == "chip_" || typeStr == "pistol") {
+    else if (typeStr.find("card") != std::string::npos || typeStr.find("chip") != std::string::npos || typeStr.find("pistol") != std::string::npos) {
         Item* item = static_cast<Item*>(closestInteractable);
 
+        TraceLog(LOG_WARNING, "PICKUP: Item type = '%s'", typeStr.c_str());
+        
         // Add to inventory
         inventory.AddItem(item);
+        
+        TraceLog(LOG_WARNING, "PICKUP: Item added, inventory count = %d", inventory.GetStackCount());
 
         // Remove from DOM - inventory now owns it
         DOM* dom = DOM::GetGlobal();
@@ -201,12 +205,12 @@ void Player::Update(float deltaTime) {
             // Helper lambda to extract geometry from any object type
             auto getGeomFromObject = [](Object* obj) -> dGeomID {
                 std::string typeStr = obj->GetType();
-                if (typeStr == "poker_table") {
+                if (typeStr.find("poker_table") != std::string::npos) {
                     PokerTable* table = static_cast<PokerTable*>(obj);
-                    return table->GetGeom();
-                } else if (typeStr == "wall") {
+                    return table->GetCollider() ? table->GetCollider()->GetGeom() : nullptr;
+                } else if (typeStr.find("wall") != std::string::npos) {
                     Wall* wall = static_cast<Wall*>(obj);
-                    return wall->GetGeom();
+                    return wall->GetCollider() ? wall->GetCollider()->GetGeom() : nullptr;
                 }
                 // Add more collider types here as needed
                 return nullptr;
@@ -390,8 +394,8 @@ Interactable* Player::GetClosestInteractable() {
         Object* obj = dom->GetObject(i);
         std::string typeStr = obj->GetType();
 
-        bool isItem = (typeStr.substr(0, 5) == "card_" || typeStr.substr(0, 5) == "chip_" || typeStr == "pistol");
-        bool isPokerTable = (typeStr == "poker_table");
+        bool isItem = (typeStr.find("card") != std::string::npos || typeStr.find("chip") != std::string::npos || typeStr.find("pistol") != std::string::npos);
+        bool isPokerTable = (typeStr.find("poker_table") != std::string::npos);
 
         if (!isItem && !isPokerTable) continue;
 
@@ -427,22 +431,44 @@ Interactable* Player::GetClosestInteractable() {
 }
 
 void Player::HandleShooting() {
+    // Debug: Check if function is being called
+    static int frameCount = 0;
+    if (frameCount++ % 60 == 0) {
+        TraceLog(LOG_WARNING, "SHOOT: HandleShooting called, mousePressed=%d, bettingUI=%d", 
+                 IsMouseButtonPressed(MOUSE_LEFT_BUTTON), bettingUIActive);
+    }
+    
     // Only shoot if left mouse button is pressed and we have an item selected
     if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;
     }
 
+    TraceLog(LOG_WARNING, "SHOOT: Mouse clicked, selectedIndex=%d, inventoryCount=%d", 
+             selectedItemIndex, inventory.GetStackCount());
+
     if (selectedItemIndex < 0 || selectedItemIndex >= inventory.GetStackCount()) {
+        TraceLog(LOG_WARNING, "SHOOT: No valid selection");
         return;
     }
 
     // Get the selected item
     ItemStack* stack = inventory.GetStack(selectedItemIndex);
-    if (!stack || !stack->item) return;
+    if (!stack || !stack->item) {
+        TraceLog(LOG_WARNING, "SHOOT: Stack or item is null");
+        return;
+    }
 
-    // Check if it's a pistol
+    // Check if it's a pistol (use substring check due to type hierarchy)
     std::string itemType = stack->item->GetType();
-    if (itemType != "pistol") return;
+    TraceLog(LOG_WARNING, "SHOOT: Item type = '%s', contains pistol = %d", 
+             itemType.c_str(), itemType.find("pistol") != std::string::npos);
+    
+    if (itemType.find("pistol") == std::string::npos) {
+        TraceLog(LOG_WARNING, "SHOOT: Not a pistol, aborting");
+        return;
+    }
+    
+    TraceLog(LOG_WARNING, "SHOOT: Found pistol, attempting to shoot");
 
     Pistol* pistol = static_cast<Pistol*>(stack->item);
 
@@ -476,9 +502,7 @@ void Player::HandleShooting() {
             if (!obj) continue;
             
             std::string type = obj->GetType();
-            if (type == "player" || 
-                type == "enemy" || 
-                type == "dealer") {
+            if (type.find("person") != std::string::npos) {
                 
                 Person* person = static_cast<Person*>(obj);
                 
@@ -586,13 +610,17 @@ void Player::DrawHeldItem() {
         return;
     }
 
-    // Check if it's a pistol
+    // Check if it's a pistol (use substring check due to type hierarchy)
     std::string itemType = stack->item->GetType();
+    TraceLog(LOG_WARNING, "DRAWHELD: Item type = '%s', contains pistol = %d", 
+             itemType.c_str(), itemType.find("pistol") != std::string::npos);
+    
     if (itemType.empty()) {
         return;  // Safety check - GetType() returned null
     }
     
-    if (itemType == "pistol") {
+    if (itemType.find("pistol") != std::string::npos) {
+        TraceLog(LOG_WARNING, "DRAWHELD: Drawing pistol!");
         Pistol* pistol = static_cast<Pistol*>(stack->item);
         if (!pistol) {
             return;  // Safety check - cast failed
@@ -772,7 +800,7 @@ void Player::DrawCardSelectionUI() {
     std::vector<int> cardIndices;
     for (int i = 0; i < inventory.GetStackCount(); i++) {
         ItemStack* stack = inventory.GetStack(i);
-        if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+        if (stack && stack->item && stack->item->GetType().find("card") != std::string::npos) {
             cardIndices.push_back(i);
         }
     }
@@ -867,7 +895,7 @@ std::vector<Card*> Player::GetSelectedCards() {
     if (!cardSelectionUIActive && selectedCardIndices.empty()) {
         for (int i = 0; i < inventory.GetStackCount(); i++) {
             ItemStack* stack = inventory.GetStack(i);
-            if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+            if (stack && stack->item && stack->item->GetType().find("card") != std::string::npos) {
                 cards.push_back(static_cast<Card*>(stack->item));
             }
         }
@@ -877,7 +905,7 @@ std::vector<Card*> Player::GetSelectedCards() {
     // Return only selected cards
     for (int idx : selectedCardIndices) {
         ItemStack* stack = inventory.GetStack(idx);
-        if (stack && stack->item && stack->item->GetType().substr(0, 5) == "card_") {
+        if (stack && stack->item && stack->item->GetType().find("card") != std::string::npos) {
             cards.push_back(static_cast<Card*>(stack->item));
         }
     }

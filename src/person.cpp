@@ -6,6 +6,7 @@
 Person::Person(Vector3 pos, const std::string& personName, float personHeight)
     : Object(pos), inventory(), name(personName), height(personHeight), bodyYaw(0.0f),
       isSeated(false), seatPosition({0, 0, 0}) {
+    usesLighting = false;  // Persons render without lighting (pitch black)
 }
 
 // Helper function to draw a cube using raw rlgl (no lighting)

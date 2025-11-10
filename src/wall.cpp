@@ -2,12 +2,12 @@
 #include "light.hpp"
 
 Wall::Wall(Vector3 position, Vector3 wallSize, PhysicsWorld* physicsWorld)
-    : Object(position), size(wallSize), color({25, 30, 10, 255}), geom(nullptr), physics(physicsWorld)
+    : Object(position), size(wallSize), color({25, 30, 10, 255})
 {
-    // Create static box geometry for the wall
-    if (physics) {
-        geom = dCreateBox(physics->space, size.x, size.y, size.z);
-        dGeomSetPosition(geom, position.x, position.y, position.z);
+    // Initialize static box collision
+    if (physicsWorld) {
+        collider.InitStatic(physicsWorld, COLLISION_SHAPE_BOX, size);
+        collider.UpdateFromObject(this);
     }
     
     // Create model with proper normals for lighting
@@ -16,10 +16,6 @@ Wall::Wall(Vector3 position, Vector3 wallSize, PhysicsWorld* physicsWorld)
 }
 
 Wall::~Wall() {
-    if (geom) {
-        dGeomDestroy(geom);
-        geom = nullptr;
-    }
     UnloadModel(model);
 }
 

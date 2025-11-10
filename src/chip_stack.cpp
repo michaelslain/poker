@@ -1,34 +1,34 @@
 #include "chip_stack.hpp"
+#include "dom.hpp"
+#include "raylib.h"
 #include <algorithm>
 
 ChipStack::ChipStack(Vector3 pos) : Object(pos) {
 }
 
 ChipStack::~ChipStack() {
-    // Note: We don't delete chips here - they're managed elsewhere
-    // Just clear our references
+    // Remove chips from DOM and delete them
+    DOM* dom = DOM::GetGlobal();
+    if (dom) {
+        for (Chip* chip : chips) {
+            if (chip) {
+                dom->RemoveObject(chip);
+                delete chip;
+            }
+        }
+    }
     chips.clear();
     chipsByValue.clear();
 }
 
 void ChipStack::Update(float deltaTime) {
     (void)deltaTime;
-    
-    // Update all chips
-    for (Chip* chip : chips) {
-        if (chip) {
-            chip->Update(deltaTime);
-        }
-    }
+    // Chips update themselves via DOM - no need to update them here
 }
 
 void ChipStack::Draw(Camera3D camera) {
-    // Draw all chips manually (they're not in DOM)
-    for (Chip* chip : chips) {
-        if (chip) {
-            chip->Draw(camera);
-        }
-    }
+    (void)camera;
+    // Chips render themselves via DOM - no need to draw them here
 }
 
 std::string ChipStack::GetType() const {
@@ -41,15 +41,34 @@ void ChipStack::AddChip(Chip* chip) {
     chips.push_back(chip);
     chipsByValue[chip->value].push_back(chip);
     
+    // Make chip non-interactable (it's in the pot)
+    chip->canInteract = false;
+    
+    // Add chip to DOM so it renders
+    DOM* dom = DOM::GetGlobal();
+    if (dom) {
+        dom->AddObject(chip);
+    }
+    
     // Reorganize positions
     OrganizeChips();
 }
 
 void ChipStack::AddChips(const std::vector<Chip*>& newChips) {
+    DOM* dom = DOM::GetGlobal();
+    
     for (Chip* chip : newChips) {
         if (chip) {
             chips.push_back(chip);
             chipsByValue[chip->value].push_back(chip);
+            
+            // Make chip non-interactable (it's in the pot)
+            chip->canInteract = false;
+            
+            // Add chip to DOM so it renders
+            if (dom) {
+                dom->AddObject(chip);
+            }
         }
     }
     
@@ -58,11 +77,31 @@ void ChipStack::AddChips(const std::vector<Chip*>& newChips) {
 }
 
 void ChipStack::Clear() {
+    // Remove chips from DOM (but don't delete them - caller manages that)
+    DOM* dom = DOM::GetGlobal();
+    if (dom) {
+        for (Chip* chip : chips) {
+            if (chip) {
+                dom->RemoveObject(chip);
+            }
+        }
+    }
+    
     chips.clear();
     chipsByValue.clear();
 }
 
 std::vector<Chip*> ChipStack::RemoveAll() {
+    // Remove chips from DOM (caller will manage deletion)
+    DOM* dom = DOM::GetGlobal();
+    if (dom) {
+        for (Chip* chip : chips) {
+            if (chip) {
+                dom->RemoveObject(chip);
+            }
+        }
+    }
+    
     std::vector<Chip*> result = chips;
     chips.clear();
     chipsByValue.clear();

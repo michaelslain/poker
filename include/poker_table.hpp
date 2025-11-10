@@ -11,6 +11,7 @@
 #include <ode/ode.h>
 #include <array>
 #include <vector>
+#include "collider.hpp"
 
 #define MAX_SEATS 8
 #define SMALL_BLIND_AMOUNT 5
@@ -61,8 +62,8 @@ private:
     // Visual
     Vector3 size;
     Color color;
-    dGeomID geom;
-    PhysicsWorld* physics;
+    Collider collider;
+    
     
     // Game objects (dual-reference: attributes for logic, children for rendering)
     Dealer* dealer;
@@ -138,7 +139,7 @@ public:
     int FindSeatIndex(Person* p);  // Returns seat index or -1 if not seated
     
     // Accessors
-    dGeomID GetGeom() const { return geom; }
+    Collider* GetCollider() { return &collider; }
 };
 
 #endif

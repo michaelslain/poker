@@ -13,6 +13,7 @@ public:
     Vector3 position;
     Vector3 rotation;
     Vector3 scale;
+    bool usesLighting;  // Whether this object should be rendered with lighting shader (default: true)
 
     Object(Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Object();

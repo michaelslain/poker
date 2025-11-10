@@ -25,12 +25,12 @@ TEST_CASE("Wall - GetType", "[wall]") {
 TEST_CASE("Wall - GetGeom", "[wall]") {
     SECTION("GetGeom returns nullptr when physics is null") {
         Wall wall({0, 2.5f, 0}, {10, 5, 0.2f}, nullptr);
-        REQUIRE(wall.GetGeom() == nullptr);
+        REQUIRE(wall.GetCollider()->GetGeom() == nullptr);
     }
     
     SECTION("GetGeom returns valid geom when physics provided") {
         PhysicsWorld physics;
         Wall wall({0, 2.5f, 0}, {10, 5, 0.2f}, &physics);
-        REQUIRE(wall.GetGeom() != nullptr);
+        REQUIRE(wall.GetCollider()->GetGeom() != nullptr);
     }
 }
