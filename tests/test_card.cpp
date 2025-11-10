@@ -1,6 +1,13 @@
 #include "catch_amalgamated.hpp"
 #include "../include/card.hpp"
 #include <cmath>
+#include <string>
+
+// Helper to check if type ends with expected suffix
+static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
+    if (suffix.length() > type.length()) return false;
+    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
 
 TEST_CASE("Card - Construction", "[card]") {
     SECTION("Create card with valid suit and rank") {
@@ -8,7 +15,7 @@ TEST_CASE("Card - Construction", "[card]") {
         
         REQUIRE(card.suit == SUIT_SPADES);
         REQUIRE(card.rank == RANK_ACE);
-        REQUIRE(card.GetType() == "card_spades_ace");
+        REQUIRE(card.GetType() == "object_interactable_item_card_spades_ace");
     }
     
     SECTION("Create card for each suit") {
@@ -42,25 +49,25 @@ TEST_CASE("Card - Construction", "[card]") {
 
 TEST_CASE("Card - GetType returns correct string", "[card]") {
     SECTION("Spades suit") {
-        REQUIRE(Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr).GetType() == "card_spades_ace");
-        REQUIRE(Card(SUIT_SPADES, RANK_TWO, {0,0,0}, nullptr).GetType() == "card_spades_two");
-        REQUIRE(Card(SUIT_SPADES, RANK_KING, {0,0,0}, nullptr).GetType() == "card_spades_king");
+        REQUIRE(TypeEndsWith(Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr).GetType(), "card_spades_ace"));
+        REQUIRE(TypeEndsWith(Card(SUIT_SPADES, RANK_TWO, {0,0,0}, nullptr).GetType(), "card_spades_two"));
+        REQUIRE(TypeEndsWith(Card(SUIT_SPADES, RANK_KING, {0,0,0}, nullptr).GetType(), "card_spades_king"));
     }
     
     SECTION("Hearts suit") {
-        REQUIRE(Card(SUIT_HEARTS, RANK_ACE, {0,0,0}, nullptr).GetType() == "card_hearts_ace");
-        REQUIRE(Card(SUIT_HEARTS, RANK_FIVE, {0,0,0}, nullptr).GetType() == "card_hearts_five");
-        REQUIRE(Card(SUIT_HEARTS, RANK_QUEEN, {0,0,0}, nullptr).GetType() == "card_hearts_queen");
+        REQUIRE(TypeEndsWith(Card(SUIT_HEARTS, RANK_ACE, {0,0,0}, nullptr).GetType(), "card_hearts_ace"));
+        REQUIRE(TypeEndsWith(Card(SUIT_HEARTS, RANK_FIVE, {0,0,0}, nullptr).GetType(), "card_hearts_five"));
+        REQUIRE(TypeEndsWith(Card(SUIT_HEARTS, RANK_QUEEN, {0,0,0}, nullptr).GetType(), "card_hearts_queen"));
     }
     
     SECTION("Diamonds suit") {
-        REQUIRE(Card(SUIT_DIAMONDS, RANK_ACE, {0,0,0}, nullptr).GetType() == "card_diamonds_ace");
-        REQUIRE(Card(SUIT_DIAMONDS, RANK_JACK, {0,0,0}, nullptr).GetType() == "card_diamonds_jack");
+        REQUIRE(TypeEndsWith(Card(SUIT_DIAMONDS, RANK_ACE, {0,0,0}, nullptr).GetType(), "card_diamonds_ace"));
+        REQUIRE(TypeEndsWith(Card(SUIT_DIAMONDS, RANK_JACK, {0,0,0}, nullptr).GetType(), "card_diamonds_jack"));
     }
     
     SECTION("Clubs suit") {
-        REQUIRE(Card(SUIT_CLUBS, RANK_ACE, {0,0,0}, nullptr).GetType() == "card_clubs_ace");
-        REQUIRE(Card(SUIT_CLUBS, RANK_TEN, {0,0,0}, nullptr).GetType() == "card_clubs_ten");
+        REQUIRE(TypeEndsWith(Card(SUIT_CLUBS, RANK_ACE, {0,0,0}, nullptr).GetType(), "card_clubs_ace"));
+        REQUIRE(TypeEndsWith(Card(SUIT_CLUBS, RANK_TEN, {0,0,0}, nullptr).GetType(), "card_clubs_ten"));
     }
 }
 

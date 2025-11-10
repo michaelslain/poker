@@ -30,5 +30,5 @@ void Wall::Draw(Camera3D camera) {
 }
 
 std::string Wall::GetType() const {
-    return "wall";
+    return Object::GetType() + "_wall";
 }

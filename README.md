@@ -1,36 +1,12 @@
 # Poker
 
-A first-person poker game built with C++ and raylib featuring an inventory system and object-oriented architecture with physics simulation.
+3D rouge-like puzzle? procedurally generated story game
 
 ## Stack
 
 - C++ (C++17)
 - raylib 5.5
 - ODE (Open Dynamics Engine) - Physics simulation
-
-## Features
-
-### Core Gameplay
-- First-person movement and camera controls
-- Interactive card and chip pickup system
-- Dynamic inventory with visual UI and selection
-- Physics-based object interactions using ODE
-
-### Poker System
-- Fully functional Texas Hold'em poker table with up to 8 seats
-- AI opponents (Enemy) with thinking delays and random betting logic
-- Dealer button rotation and blind management
-- Proper betting rounds: Preflop, Flop, Turn, River
-- Value-based chip system with automatic denomination optimization
-- Community cards rendered on table, hole cards in player inventories
-- UI-based betting interface for human player
-
-### Architecture
-- Object-oriented class hierarchy with virtual functions and inheritance
-- Person base class with Player, Enemy, and Dealer implementations
-- Scene DOM (Document Object Model) for object management
-- Spawner system for dynamic object creation
-- RAII pattern for automatic resource cleanup
 
 ## Dev
 
@@ -59,35 +35,41 @@ make clean  # Clean build artifacts
 - **E** - Interact with objects / Pick up items
 - **X** - Toggle item selection in inventory
 - **Left/Right Arrow** - Navigate inventory selection
-- **[ ]** - Adjust FOV
+- **[** - Decrease FOV
+- **]** - Inrease FOV
 
-## Testing
 
-The project includes comprehensive unit tests for all classes using Catch2 v3.5.0.
+## Architecture
 
-### Running Tests
+### Core Patterns
+- **Object-oriented hierarchy** - Virtual functions and inheritance for polymorphic behavior
+- **DOM (Document Object Model)** - Centralized scene graph for all game objects
+- **RAII (Resource Acquisition Is Initialization)** - Automatic resource cleanup via constructors/destructors
+- **Polymorphic cloning** - Virtual `Clone()` method for object spawning without type checking
+- **Hierarchical type system** - Type strings include full inheritance chain (e.g., `"object_interactable_item_chip_50"`)
 
-```bash
-make test   # Build and run all tests
+### Class Hierarchy
+```
+Object (base class)
+├── Interactable
+│   ├── Item (pickupable objects)
+│   │   ├── Card
+│   │   ├── Chip
+│   │   └── Pistol
+│   └── PokerTable
+├── Person (abstract base with inventory)
+│   ├── Player (human-controlled)
+│   ├── Enemy (AI)
+│   └── Dealer (NPC)
+├── Floor / Ceiling / Wall (geometry)
+├── LightBulb (lighting)
+├── Spawner (object spawning)
+└── ChipStack (chip management)
 ```
 
-### Test Coverage
-
-- 28 test files covering all game classes
-- Tests for base classes (Object, Person, Interactable, Item)
-- Tests for game objects (Card, Chip, Deck, PokerTable)
-- Tests for systems (DOM, Inventory, Physics, Spawner)
-- Tests for rendering (Camera, Light, RenderUtils)
-- Regression tests for previously fixed bugs
-
-### Benefits
-
-- Catch bugs before gameplay testing
-- Ensure fixed bugs stay fixed
-- Document expected class behavior
-- Enable safe refactoring
-- Validate edge cases and boundary conditions
-
-See `CLAUDE.md` for detailed testing documentation.
-
-
+### Key Systems
+- **Physics** - ODE integration for rigid body dynamics and collision detection
+- **Inventory** - Dynamic item stacking with automatic sorting
+- **Poker game logic** - Complete Texas Hold'em implementation with betting, hand evaluation, and showdown
+- **Scene management** - Scene system for different game states
+- **Testing** - Catch2 v3.5.0 framework with 100+ unit tests covering all classes

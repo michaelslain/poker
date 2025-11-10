@@ -63,7 +63,7 @@ Player::~Player() {
 }
 
 std::string Player::GetType() const {
-    return "player";
+    return Person::GetType() + "_player";
 }
 
 void Player::HandleInteraction() {

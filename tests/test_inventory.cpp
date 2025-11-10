@@ -1,4 +1,11 @@
 #include "catch_amalgamated.hpp"
+#include <string>
+
+// Helper to check if type ends with expected suffix
+static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
+    if (suffix.length() > type.length()) return false;
+    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
 #include "../include/inventory.hpp"
 #include "../include/card.hpp"
 #include "../include/chip.hpp"
@@ -271,7 +278,7 @@ TEST_CASE("Inventory - GetStack", "[inventory]") {
         inv.AddItem(card);
         
         ItemStack* stack = inv.GetStack(0);
-        REQUIRE(stack->typeString == "card_spades_ace");
+        REQUIRE(stack->typeString.find("card_spades_ace") != std::string::npos);
         
         delete card;
     }

@@ -19,6 +19,7 @@ public:
     void DrawIcon(Rectangle destRect) override;
     void DrawHeld(Camera3D camera);  // Draw when player is holding it
     std::string GetType() const override;
+    Object* Clone(Vector3 newPos) const override;
     
     bool CanShoot() const { return ammo > 0; }
     void Shoot();  // Decrements ammo

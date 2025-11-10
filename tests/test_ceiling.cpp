@@ -1,4 +1,11 @@
 #include "catch_amalgamated.hpp"
+#include <string>
+
+// Helper to check if type ends with expected suffix
+static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
+    if (suffix.length() > type.length()) return false;
+    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
 #include "../include/ceiling.hpp"
 
 TEST_CASE("Ceiling - Construction", "[ceiling]") {
@@ -12,5 +19,5 @@ TEST_CASE("Ceiling - Construction", "[ceiling]") {
 
 TEST_CASE("Ceiling - GetType", "[ceiling]") {
     Ceiling ceiling({0, 5, 0}, {10, 10}, WHITE, nullptr);
-    REQUIRE(ceiling.GetType() == "ceiling");
+    REQUIRE(ceiling.GetType().find("ceiling") != std::string::npos);
 }

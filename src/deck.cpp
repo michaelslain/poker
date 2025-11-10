@@ -59,7 +59,7 @@ void Deck::Draw(Camera3D camera) {
 }
 
 std::string Deck::GetType() const {
-    return "deck";
+    return Object::GetType() + "_deck";
 }
 
 void Deck::Shuffle() {

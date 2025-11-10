@@ -152,8 +152,9 @@ std::string Card::GetType() const {
         default:         rankName = "unknown"; break;
     }
     
-    // Format: "card_suit_rank"
-    snprintf(typeBuffer, sizeof(typeBuffer), "card_%s_%s", suitName, rankName);
+    // Format: "object_interactable_item_card_suit_rank"
+    std::string base = Item::GetType();
+    snprintf(typeBuffer, sizeof(typeBuffer), "%s_card_%s_%s", base.c_str(), suitName, rankName);
     return typeBuffer;
 }
 
@@ -191,4 +192,9 @@ Color Card::GetSuitColor(Suit s) {
         default:
             return BLACK;
     }
+}
+
+Object* Card::Clone(Vector3 newPos) const {
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
+    return new Card(suit, rank, newPos, physics);
 }

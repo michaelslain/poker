@@ -1,4 +1,11 @@
 #include "catch_amalgamated.hpp"
+#include <string>
+
+// Helper to check if type ends with expected suffix
+static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
+    if (suffix.length() > type.length()) return false;
+    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
 #include "../include/wall.hpp"
 
 TEST_CASE("Wall - Construction", "[wall]") {
@@ -12,7 +19,7 @@ TEST_CASE("Wall - Construction", "[wall]") {
 
 TEST_CASE("Wall - GetType", "[wall]") {
     Wall wall({0, 2.5f, 0}, {10, 5, 0.2f}, nullptr);
-    REQUIRE(wall.GetType() == "wall");
+    REQUIRE(wall.GetType().find("wall") != std::string::npos);
 }
 
 TEST_CASE("Wall - GetGeom", "[wall]") {

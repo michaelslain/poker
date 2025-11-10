@@ -176,7 +176,7 @@ void PokerTable::Interact() {
 }
 
 std::string PokerTable::GetType() const {
-    return "poker_table";
+    return Interactable::GetType() + "_poker_table";
 }
 
 // ========== SEATING ==========

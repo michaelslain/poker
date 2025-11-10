@@ -32,7 +32,7 @@ void ChipStack::Draw(Camera3D camera) {
 }
 
 std::string ChipStack::GetType() const {
-    return "chip_stack";
+    return Object::GetType() + "_chip_stack";
 }
 
 void ChipStack::AddChip(Chip* chip) {

@@ -180,7 +180,7 @@ void Person::Draw(Camera3D camera) {
 }
 
 std::string Person::GetType() const {
-    return "person";
+    return Object::GetType() + "_person";
 }
 
 void Person::SitDown(Vector3 seatPos) {

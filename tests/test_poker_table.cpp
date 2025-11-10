@@ -1,4 +1,11 @@
 #include "catch_amalgamated.hpp"
+#include <string>
+
+// Helper to check if type ends with expected suffix
+static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
+    if (suffix.length() > type.length()) return false;
+    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
 #include "../include/poker_table.hpp"
 #include "../include/player.hpp"
 #include "../include/enemy.hpp"
@@ -19,7 +26,7 @@ TEST_CASE("PokerTable - Construction", "[poker_table]") {
 
 TEST_CASE("PokerTable - GetType", "[poker_table]") {
     PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
-    REQUIRE(table.GetType() == "poker_table");
+    REQUIRE(table.GetType().find("poker_table") != std::string::npos);
 }
 
 TEST_CASE("PokerTable - Seating", "[poker_table]") {

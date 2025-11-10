@@ -21,5 +21,5 @@ void Interactable::DrawPrompt(Camera3D camera) {
 }
 
 std::string Interactable::GetType() const {
-    return "interactable";
+    return Object::GetType() + "_interactable";
 }

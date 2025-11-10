@@ -18,5 +18,5 @@ void Dealer::Update(float deltaTime) {
 }
 
 std::string Dealer::GetType() const {
-    return "dealer";
+    return Person::GetType() + "_dealer";
 }

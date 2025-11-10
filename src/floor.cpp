@@ -28,5 +28,5 @@ void Floor::Draw(Camera3D camera) {
 }
 
 std::string Floor::GetType() const {
-    return "floor";
+    return Object::GetType() + "_floor";
 }

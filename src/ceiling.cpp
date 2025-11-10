@@ -28,5 +28,5 @@ void Ceiling::Draw(Camera3D camera) {
 }
 
 std::string Ceiling::GetType() const {
-    return "ceiling";
+    return Object::GetType() + "_ceiling";
 }

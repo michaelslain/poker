@@ -27,3 +27,9 @@ void Object::Draw(Camera3D camera) {
 std::string Object::GetType() const {
     return "object";
 }
+
+Object* Object::Clone(Vector3 newPos) const {
+    // Default implementation: return nullptr (not cloneable)
+    (void)newPos;
+    return nullptr;
+}

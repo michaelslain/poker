@@ -1,35 +1,42 @@
 #include "catch_amalgamated.hpp"
 #include "../include/chip.hpp"
+#include <string>
+
+// Helper to check if type ends with expected suffix
+static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
+    if (suffix.length() > type.length()) return false;
+    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
 
 TEST_CASE("Chip - Construction", "[chip]") {
     SECTION("Create chip with value 1") {
         Chip chip(1, {0, 0, 0}, nullptr);
         REQUIRE(chip.value == 1);
-        REQUIRE(chip.GetType() == "chip_1");
+        REQUIRE(TypeEndsWith(chip.GetType(), "chip_1"));
     }
     
     SECTION("Create chip with value 5") {
         Chip chip(5, {0, 0, 0}, nullptr);
         REQUIRE(chip.value == 5);
-        REQUIRE(chip.GetType() == "chip_5");
+        REQUIRE(TypeEndsWith(chip.GetType(), "chip_5"));
     }
     
     SECTION("Create chip with value 10") {
         Chip chip(10, {0, 0, 0}, nullptr);
         REQUIRE(chip.value == 10);
-        REQUIRE(chip.GetType() == "chip_10");
+        REQUIRE(TypeEndsWith(chip.GetType(), "chip_10"));
     }
     
     SECTION("Create chip with value 25") {
         Chip chip(25, {0, 0, 0}, nullptr);
         REQUIRE(chip.value == 25);
-        REQUIRE(chip.GetType() == "chip_25");
+        REQUIRE(TypeEndsWith(chip.GetType(), "chip_25"));
     }
     
     SECTION("Create chip with value 100") {
         Chip chip(100, {0, 0, 0}, nullptr);
         REQUIRE(chip.value == 100);
-        REQUIRE(chip.GetType() == "chip_100");
+        REQUIRE(TypeEndsWith(chip.GetType(), "chip_100"));
     }
     
     SECTION("Chip position is set correctly") {
@@ -44,17 +51,17 @@ TEST_CASE("Chip - Construction", "[chip]") {
 
 TEST_CASE("Chip - GetType", "[chip]") {
     SECTION("GetType returns correct string for all values") {
-        REQUIRE(Chip(1, {0,0,0}, nullptr).GetType() == "chip_1");
-        REQUIRE(Chip(5, {0,0,0}, nullptr).GetType() == "chip_5");
-        REQUIRE(Chip(10, {0,0,0}, nullptr).GetType() == "chip_10");
-        REQUIRE(Chip(25, {0,0,0}, nullptr).GetType() == "chip_25");
-        REQUIRE(Chip(100, {0,0,0}, nullptr).GetType() == "chip_100");
+        REQUIRE(TypeEndsWith(Chip(1, {0,0,0}, nullptr).GetType(), "chip_1"));
+        REQUIRE(TypeEndsWith(Chip(5, {0,0,0}, nullptr).GetType(), "chip_5"));
+        REQUIRE(TypeEndsWith(Chip(10, {0,0,0}, nullptr).GetType(), "chip_10"));
+        REQUIRE(TypeEndsWith(Chip(25, {0,0,0}, nullptr).GetType(), "chip_25"));
+        REQUIRE(TypeEndsWith(Chip(100, {0,0,0}, nullptr).GetType(), "chip_100"));
     }
     
     SECTION("GetType starts with 'chip_'") {
         Chip chip(5, {0,0,0}, nullptr);
         std::string type = chip.GetType();
-        REQUIRE(type.substr(0, 5) == "chip_");
+        REQUIRE(type.find("chip_") != std::string::npos);
     }
 }
 

@@ -46,6 +46,7 @@ public:
     void Draw(Camera3D camera) override;
     void DrawIcon(Rectangle destRect) override;
     std::string GetType() const override;
+    Object* Clone(Vector3 newPos) const override;
     
     static const char* GetSuitSymbol(Suit s);
     static const char* GetRankString(Rank r);

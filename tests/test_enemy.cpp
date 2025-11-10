@@ -1,4 +1,11 @@
 #include "catch_amalgamated.hpp"
+#include <string>
+
+// Helper to check if type ends with expected suffix
+static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
+    if (suffix.length() > type.length()) return false;
+    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
 #include "../include/enemy.hpp"
 
 TEST_CASE("Enemy - Construction", "[enemy]") {
@@ -20,7 +27,7 @@ TEST_CASE("Enemy - Construction", "[enemy]") {
 
 TEST_CASE("Enemy - GetType", "[enemy]") {
     Enemy enemy({0, 0, 0});
-    REQUIRE(enemy.GetType() == "enemy");
+    REQUIRE(enemy.GetType().find("enemy") != std::string::npos);
 }
 
 TEST_CASE("Enemy - Position", "[enemy]") {

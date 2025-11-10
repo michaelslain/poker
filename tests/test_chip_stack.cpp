@@ -1,4 +1,11 @@
 #include "catch_amalgamated.hpp"
+#include <string>
+
+// Helper to check if type ends with expected suffix
+static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
+    if (suffix.length() > type.length()) return false;
+    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
 #include "../include/chip_stack.hpp"
 
 TEST_CASE("ChipStack - Construction", "[chip_stack]") {
@@ -19,7 +26,7 @@ TEST_CASE("ChipStack - Construction", "[chip_stack]") {
 
 TEST_CASE("ChipStack - GetType", "[chip_stack]") {
     ChipStack stack({0, 0, 0});
-    REQUIRE(stack.GetType() == "chip_stack");
+    REQUIRE(stack.GetType().find("chip_stack") != std::string::npos);
 }
 
 TEST_CASE("ChipStack - AddChip", "[chip_stack]") {

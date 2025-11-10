@@ -21,6 +21,9 @@ public:
     virtual void Draw(Camera3D camera);
     virtual std::string GetType() const;
     
+    // Clone this object at a new position (for spawning)
+    virtual Object* Clone(Vector3 newPos) const;
+    
     int GetID() const { return id; }
 };
 

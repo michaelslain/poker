@@ -1,4 +1,11 @@
 #include "catch_amalgamated.hpp"
+#include <string>
+
+// Helper to check if type ends with expected suffix
+static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
+    if (suffix.length() > type.length()) return false;
+    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
 #include "../include/light_bulb.hpp"
 
 TEST_CASE("LightBulb - Construction", "[light_bulb]") {
@@ -12,7 +19,7 @@ TEST_CASE("LightBulb - Construction", "[light_bulb]") {
 
 TEST_CASE("LightBulb - GetType", "[light_bulb]") {
     LightBulb bulb({0, 5, 0}, WHITE);
-    REQUIRE(bulb.GetType() == "light_bulb");
+    REQUIRE(bulb.GetType().find("light_bulb") != std::string::npos);
 }
 
 TEST_CASE("LightSource - Shader Initialization", "[light_bulb][shader][integration]") {

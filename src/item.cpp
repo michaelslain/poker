@@ -12,5 +12,5 @@ void Item::DrawIcon(Rectangle destRect) {
 }
 
 std::string Item::GetType() const {
-    return "item";
+    return Interactable::GetType() + "_item";
 }

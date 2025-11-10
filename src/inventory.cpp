@@ -24,7 +24,7 @@ bool Inventory::AddItem(Item* item) {
     }
     
     // Pistols and cards don't stack (each is a unique object) - always create new slot
-    if (itemType == "pistol" || itemType.substr(0, 5) == "card_") {
+    if (itemType.find("pistol") != std::string::npos || itemType.find("card") != std::string::npos) {
         stacks.push_back(ItemStack(item, 1, itemType));
         Sort();  // Sort after adding
         return true;
@@ -73,16 +73,16 @@ void Inventory::Sort() {
         // Safety check: ensure items are valid
         if (!a.item || !b.item) return false;
         
-        const char* typeA = a.typeString.c_str();
-        const char* typeB = b.typeString.c_str();
+        const std::string& typeA = a.typeString;
+        const std::string& typeB = b.typeString;
 
         // Determine categories
-        bool aIsWeapon = (strncmp(typeA, "pistol", 6) == 0);
-        bool bIsWeapon = (strncmp(typeB, "pistol", 6) == 0);
-        bool aIsCard = (strncmp(typeA, "card_", 5) == 0);
-        bool bIsCard = (strncmp(typeB, "card_", 5) == 0);
-        bool aIsChip = (strncmp(typeA, "chip_", 5) == 0);
-        bool bIsChip = (strncmp(typeB, "chip_", 5) == 0);
+        bool aIsWeapon = (typeA.find("pistol") != std::string::npos);
+        bool bIsWeapon = (typeB.find("pistol") != std::string::npos);
+        bool aIsCard = (typeA.find("card") != std::string::npos);
+        bool bIsCard = (typeB.find("card") != std::string::npos);
+        bool aIsChip = (typeA.find("chip") != std::string::npos);
+        bool bIsChip = (typeB.find("chip") != std::string::npos);
 
         // Category ordering: weapons < cards < chips
         // If one is a weapon and the other isn't, weapon comes first

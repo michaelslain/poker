@@ -5,9 +5,17 @@
 #include "player.hpp"
 #include "light.hpp"
 #include "raylib.h"
+#include <string>
 
 // Global debug flag
 bool g_showCollisionDebug = false;
+
+// Helper function to check if a type hierarchy contains a component
+inline bool TypeContains(const std::string& type, const std::string& component) {
+    return type.find("_" + component) != std::string::npos || 
+           type.find(component + "_") != std::string::npos ||
+           type == component;
+}
 
 int main(void)
 {
@@ -43,7 +51,7 @@ int main(void)
     // Get player reference for rendering
     Player* player = nullptr;
     for (int i = 0; i < dom.GetCount(); i++) {
-        if (dom.GetObject(i)->GetType() == "player") {
+        if (TypeContains(dom.GetObject(i)->GetType(), "player")) {
             player = static_cast<Player*>(dom.GetObject(i));
             break;
         }
@@ -80,7 +88,7 @@ int main(void)
         // Update all light sources
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
-            if (obj->GetType() == "light_bulb") {
+            if (TypeContains(obj->GetType(), "light_bulb")) {
                 LightSource* light = static_cast<LightSource*>(obj);
                 light->UpdateLight();
             }
@@ -114,9 +122,8 @@ int main(void)
                     std::string type = obj->GetType();
 
                     // Skip unlit objects and closest interactable
-                    if (type == "light_bulb" || type.substr(0, 5) == "chip_" ||
-                        type.substr(0, 5) == "card_" || type == "enemy" ||
-                        type == "person" || type == "player") continue;
+                    if (TypeContains(type, "light_bulb") || TypeContains(type, "chip") ||
+                        TypeContains(type, "card") || TypeContains(type, "person")) continue;
                     if (closestInteractable && obj == closestInteractable) continue;
 
                     obj->Draw(*camera);
@@ -130,9 +137,8 @@ int main(void)
                 if (obj == closestInteractable) continue;
 
                 std::string type = obj->GetType();
-                if (type == "light_bulb" || type.substr(0, 5) == "chip_" ||
-                    type.substr(0, 5) == "card_" || type == "enemy" ||
-                    type == "person" || type == "player") {
+                if (TypeContains(type, "light_bulb") || TypeContains(type, "chip") ||
+                    TypeContains(type, "card") || TypeContains(type, "person")) {
                     obj->Draw(*camera);
                 }
             }

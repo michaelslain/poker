@@ -70,5 +70,5 @@ void LightBulb::Draw(Camera3D camera) {
 }
 
 std::string LightBulb::GetType() const {
-    return "light_bulb";
+    return Object::GetType() + "_light_bulb";
 }

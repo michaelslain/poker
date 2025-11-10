@@ -99,8 +99,9 @@ void Chip::DrawIcon(Rectangle destRect) {
 }
 
 std::string Chip::GetType() const {
-    static char typeBuffer[32];
-    snprintf(typeBuffer, sizeof(typeBuffer), "chip_%d", value);
+    static char typeBuffer[64];
+    std::string base = Item::GetType();
+    snprintf(typeBuffer, sizeof(typeBuffer), "%s_chip_%d", base.c_str(), value);
     return typeBuffer;
 }
 
@@ -113,4 +114,9 @@ Color Chip::GetColorFromValue(int value) {
     if (value == 1) return WHITE;
     // Invalid chip value - throw error
     throw std::invalid_argument("Invalid chip value: " + std::to_string(value));
+}
+
+Object* Chip::Clone(Vector3 newPos) const {
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
+    return new Chip(value, newPos, physics);
 }

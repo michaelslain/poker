@@ -11,7 +11,7 @@ Enemy::Enemy(Vector3 pos, const std::string& enemyName)
 }
 
 std::string Enemy::GetType() const {
-    return "enemy";
+    return Person::GetType() + "_enemy";
 }
 
 void Enemy::Update(float deltaTime) {

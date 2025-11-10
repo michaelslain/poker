@@ -132,5 +132,10 @@ void Pistol::Shoot() {
 }
 
 std::string Pistol::GetType() const {
-    return "pistol";
+    return Item::GetType() + "_pistol";
+}
+
+Object* Pistol::Clone(Vector3 newPos) const {
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
+    return new Pistol(newPos, physics);
 }
