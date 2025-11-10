@@ -22,10 +22,10 @@ int main(int argc, char* argv[]) {
     
     int result = Catch::Session().run(argc, argv);
     
-    // Cleanup
+    // Cleanup (must cleanup shader BEFORE closing window)
     DOM::SetGlobal(nullptr);
     LightSource::CleanupLightingSystem();
-    
     CloseWindow();
+    
     return result;
 }

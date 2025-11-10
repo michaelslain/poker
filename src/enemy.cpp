@@ -35,7 +35,7 @@ int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise,
         thinkingDuration = 2.0f + ((rand() % 200) / 100.0f);
         pendingAction = -1;
         
-        TraceLog(LOG_INFO, "Enemy %s: Started thinking (%.1f seconds)...", name.c_str(), thinkingDuration);
+
         return -1;  // Still thinking
     }
     
@@ -52,7 +52,6 @@ int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise,
         // Count total chip value in inventory
         Inventory* inv = GetInventory();
         if (!inv) {
-            TraceLog(LOG_INFO, "Enemy %s: ERROR - Null inventory, folding", name.c_str());
             pendingAction = 0;  // Fold if no inventory
             isThinking = false;
             return 0;
@@ -72,28 +71,22 @@ int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise,
         
         // If we can't afford to call, must fold
         if (callAmount > totalChipValue && decision != 0) {
-            TraceLog(LOG_INFO, "Enemy %s: Can't afford call (%d), only have %d chips, folding", 
-                     name.c_str(), callAmount, totalChipValue);
             pendingAction = 0;  // Fold
         }
         else if (decision == 2) {  // Raise
             // Can we afford minimum raise?
             if (minRaise > maxRaise) {
-                TraceLog(LOG_INFO, "Enemy %s: Can't afford raise, calling instead", name.c_str());
                 pendingAction = 1;  // Call instead
             } else {
                 // Choose random raise amount between minRaise and maxRaise
                 int raiseRange = maxRaise - minRaise;
                 raiseAmount = minRaise + (rand() % (raiseRange + 1));
                 
-                TraceLog(LOG_INFO, "Enemy %s: Raises to %d", name.c_str(), raiseAmount);
                 pendingAction = 2;  // Raise
             }
         } else if (decision == 1) {
-            TraceLog(LOG_INFO, "Enemy %s: Calls %d", name.c_str(), callAmount);
             pendingAction = 1;  // Call
         } else {
-            TraceLog(LOG_INFO, "Enemy %s: Folds", name.c_str());
             pendingAction = 0;  // Fold
         }
     }

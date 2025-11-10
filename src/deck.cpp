@@ -5,7 +5,6 @@
 #include <random>
 
 Deck::Deck(Vector3 pos) : Object(pos) {
-    TraceLog(LOG_INFO, "Deck: Creating deck at position (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
     
     // Generate all 52 cards
     for (int suit = SUIT_HEARTS; suit <= SUIT_SPADES; suit++) {
@@ -21,7 +20,6 @@ Deck::Deck(Vector3 pos) : Object(pos) {
         }
     }
     
-    TraceLog(LOG_INFO, "Deck: Created %d cards and added to stack", (int)cards.size());
 }
 
 Deck::~Deck() {
@@ -104,7 +102,6 @@ void Deck::Reset() {
         }
     }
     
-    TraceLog(LOG_INFO, "Deck: Reset to %d cards, re-added to stack", (int)cards.size());
 }
 
 void Deck::Cleanup() {

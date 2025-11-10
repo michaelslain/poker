@@ -128,7 +128,6 @@ void Pistol::Shoot() {
     if (ammo > 0) {
         int oldAmmo = ammo;
         ammo--;
-        TraceLog(LOG_INFO, "Pistol::Shoot() called - ammo changed from %d to %d", oldAmmo, ammo);
     }
 }
 

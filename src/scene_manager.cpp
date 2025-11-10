@@ -25,7 +25,6 @@ void SceneManager::DestroyInstance() {
 
 void SceneManager::RegisterSceneFactory(const std::string& name, SceneFactory factory) {
     sceneFactories[name] = factory;
-    TraceLog(LOG_INFO, "SCENE_MANAGER: Registered scene factory '%s'", name.c_str());
 }
 
 Scene* SceneManager::CreateScene(const std::string& name, PhysicsWorld* physics) {
@@ -36,7 +35,6 @@ Scene* SceneManager::CreateScene(const std::string& name, PhysicsWorld* physics)
         }
         currentScene = it->second(physics);  // Call factory function
         currentSceneName = name;
-        TraceLog(LOG_INFO, "SCENE_MANAGER: Created scene '%s'", name.c_str());
         return currentScene;
     } else {
         TraceLog(LOG_ERROR, "SCENE_MANAGER: Scene factory '%s' not found!", name.c_str());
@@ -54,5 +52,4 @@ void SceneManager::Cleanup() {
         currentScene = nullptr;
     }
     sceneFactories.clear();
-    TraceLog(LOG_INFO, "SCENE_MANAGER: Cleaned up");
 }

@@ -810,12 +810,11 @@ void PokerTable::DealRiver() {
     DOM::GetGlobal()->AddObject(card);
     communityCards.push_back(card);
     
-    TraceLog(LOG_INFO, "Dealt river");
+
     StartBettingRound(NextOccupiedSeat(smallBlindSeat));  // Start from first seat after rotation
 }
 
 void PokerTable::Showdown() {
-    TraceLog(LOG_INFO, "=== Showdown ===");
     
     // First, check if any players have 3+ cards and need to select
     for (int i = 0; i < MAX_SEATS; i++) {
@@ -881,7 +880,7 @@ void PokerTable::Showdown() {
     
     if (winnerIndex != -1 && seats[winnerIndex].occupant) {
         std::string winnerName = seats[winnerIndex].occupant->GetName();
-        TraceLog(LOG_INFO, "*** %s wins with hand rank %d! ***", winnerName.c_str(), bestHand.rank);
+        TraceLog(LOG_INFO, "%s wins!", winnerName.c_str());
         GiveChips(seats[winnerIndex].occupant, potValue);
     }
     
@@ -889,7 +888,6 @@ void PokerTable::Showdown() {
 }
 
 void PokerTable::EndHand() {
-    TraceLog(LOG_INFO, "=== Hand ended ===");
     
     // If only one player left (everyone else folded), award pot
     if (bettingActive) {
@@ -901,7 +899,7 @@ void PokerTable::EndHand() {
                     seats[i].isOccupied = false;
                     continue;
                 }
-                TraceLog(LOG_INFO, "*** %s wins (others folded)! ***", seats[i].occupant->GetName().c_str());
+                TraceLog(LOG_INFO, "%s wins (others folded)", seats[i].occupant->GetName().c_str());
                 GiveChips(seats[i].occupant, potValue);
                 break;
             }
@@ -970,7 +968,7 @@ void PokerTable::EndHand() {
     handActive = false;
     bettingActive = false;
     
-    TraceLog(LOG_INFO, "Hand ended, blinds will rotate next hand");
+
 }
 
 // ========== HAND EVALUATION ==========

@@ -5,7 +5,6 @@
 DOM* DOM::globalInstance = nullptr;
 
 DOM::DOM() {
-    TraceLog(LOG_INFO, "DOM: Initialized");
 }
 
 DOM::~DOM() {

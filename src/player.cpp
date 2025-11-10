@@ -106,7 +106,7 @@ void Player::HandleInteraction() {
             dom->RemoveObject(item);
         }
 
-        TraceLog(LOG_INFO, "Item picked up: %s, Inventory stacks: %d", typeStr.c_str(), inventory.GetStackCount());
+        // Item picked up
     }
 }
 
@@ -309,7 +309,6 @@ void Player::Update(float deltaTime) {
 
     // Handle inventory selection with X key
     if (IsKeyPressed(KEY_X)) {
-        TraceLog(LOG_INFO, "X key pressed! Current selected: %d, Stack count: %d", selectedItemIndex, inventory.GetStackCount());
         if (selectedItemIndex == -1) {
             if (inventory.GetStackCount() > 0) {
                 if (lastHeldItemIndex >= 0 && lastHeldItemIndex < inventory.GetStackCount()) {
@@ -317,12 +316,10 @@ void Player::Update(float deltaTime) {
                 } else {
                     selectedItemIndex = 0;
                 }
-                TraceLog(LOG_INFO, "Selected item index: %d", selectedItemIndex);
             }
         } else {
             lastHeldItemIndex = selectedItemIndex;
             selectedItemIndex = -1;
-            TraceLog(LOG_INFO, "Deselected item. Last held: %d", lastHeldItemIndex);
         }
     }
 
@@ -435,10 +432,7 @@ void Player::HandleShooting() {
         return;
     }
 
-    GAME_LOG(LOG_INFO, "=== MOUSE CLICKED - HandleShooting called ===");
-
     if (selectedItemIndex < 0 || selectedItemIndex >= inventory.GetStackCount()) {
-        GAME_LOG(LOG_INFO, "Invalid selectedItemIndex, returning");
         return;
     }
 
@@ -454,16 +448,11 @@ void Player::HandleShooting() {
 
     // Check if we can shoot
     if (!pistol->CanShoot()) {
-        GAME_LOG(LOG_INFO, "Out of ammo!");
         return;
     }
 
-    GAME_LOG(LOG_INFO, "Before shoot - Ammo: %d", pistol->GetAmmo());
-
     // Shoot the pistol (decrements ammo)
     pistol->Shoot();
-
-    GAME_LOG(LOG_INFO, "After shoot - Ammo: %d", pistol->GetAmmo());
 
 
     // Instant raycast from camera
@@ -529,7 +518,7 @@ void Player::HandleShooting() {
         
         // If we hit someone, kill them
         if (hitPerson) {
-            GAME_LOG(LOG_INFO, "*** SHOT HIT %s at distance %.2f! ***", hitPerson->GetName().c_str(), closestHit);
+            TraceLog(LOG_INFO, "Shot hit %s", hitPerson->GetName().c_str());
             
             // If person is sitting, unseat them from all poker tables
             if (hitPerson->IsSeated()) {
@@ -547,13 +536,10 @@ void Player::HandleShooting() {
             
             // Remove person from DOM and delete
             DOM::GetGlobal()->RemoveAndDelete(hitPerson);
-        } else {
-            GAME_LOG(LOG_INFO, "Shot missed!");
         }
     }
     // Check if pistol is out of ammo after shooting
     if (pistol->GetAmmo() <= 0) {
-        GAME_LOG(LOG_INFO, "Pistol out of ammo! Removing from inventory and deleting.");
 
         // Remove from inventory
         inventory.RemoveItem(selectedItemIndex);
@@ -653,8 +639,6 @@ void Player::StandUp() {
 }
 
 int Player::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) {
-    GAME_LOG(LOG_INFO, "Player::PromptBet called - bettingUIActive=%d, bettingChoice=%d", bettingUIActive, bettingChoice);
-    
     // First call: Initialize UI
     if (!bettingUIActive) {
         bettingUIActive = true;
@@ -664,7 +648,6 @@ int Player::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise
         raiseSliderValue = minRaise;  // Default to minimum raise
         storedCurrentBet = currentBet;
         storedCallAmount = callAmount;
-        GAME_LOG(LOG_INFO, "Initialized betting UI");
     }
     
     // Wait for player to make a choice (poker table will call this repeatedly each frame)

@@ -17,7 +17,7 @@
 #define BIG_BLIND_AMOUNT 10
 
 // Game logging control - bypasses raylib's SetTraceLogLevel
-#define GAME_LOG_ENABLED true
+#define GAME_LOG_ENABLED false
 #define GAME_LOG(level, ...) do { if (GAME_LOG_ENABLED) { printf("[GAME] "); printf(__VA_ARGS__); printf("\n"); } } while(0)
 // Legacy alias for poker table code
 #define POKER_LOG GAME_LOG

@@ -17,7 +17,6 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "Poker - First Person");
 
     SetTraceLogLevel(LOG_WARNING);
-    TraceLog(LOG_INFO, "=== GAME STARTING ===");
     DisableCursor();
 
     // Initialize core systems
