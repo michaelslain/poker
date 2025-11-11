@@ -1,15 +1,24 @@
 #include "light_bulb.hpp"
+#include "lighting_manager.hpp"
 #include "raymath.h"
 
 LightBulb::LightBulb(Vector3 position, Color lightColor)
-    : LightSource(position), color(lightColor)
+    : Light(position), color(lightColor)
 {
-    // Create point light (radial/omni-directional) using the static shader
-    light = CreateLight(LIGHT_POINT, position, Vector3Zero(), lightColor, lightingShader);
+    // Allocate RaylibLight struct on heap
+    RaylibLight* light = new RaylibLight;
+    
+    // Create point light (radial/omni-directional)
+    *light = LightingManager::CreateLight(LIGHT_POINT, position, Vector3Zero(), lightColor);
+    
+    // Store as opaque pointer
+    raylibLightPtr = light;
 }
 
 LightBulb::~LightBulb() {
-    // Nothing to clean up
+    // Clean up heap-allocated light
+    RaylibLight* light = static_cast<RaylibLight*>(raylibLightPtr);
+    delete light;
 }
 
 void LightBulb::Update(float deltaTime) {
@@ -18,9 +27,10 @@ void LightBulb::Update(float deltaTime) {
 }
 
 void LightBulb::UpdateLight() {
-    // Update light position in shader
-    light.position = position;
-    UpdateLightValues(lightingShader, light);
+    // Cast back to RaylibLight* and update
+    RaylibLight* light = static_cast<RaylibLight*>(raylibLightPtr);
+    light->position = position;
+    LightingManager::UpdateLightValues(*light);
 }
 
 void LightBulb::Draw(Camera3D camera) {
@@ -70,5 +80,5 @@ void LightBulb::Draw(Camera3D camera) {
 }
 
 std::string LightBulb::GetType() const {
-    return Object::GetType() + "_light_bulb";
+    return Light::GetType() + "_light_bulb";
 }

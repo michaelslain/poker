@@ -1,5 +1,5 @@
 #include "ceiling.hpp"
-#include "light.hpp"
+#include "lighting_manager.hpp"
 
 Ceiling::Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor, PhysicsWorld* physicsWorld)
     : Object(position), size(ceilingSize), color(ceilingColor)
@@ -12,7 +12,7 @@ Ceiling::Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor, Phys
     
     // Create model with proper normals for lighting
     model = LoadModelFromMesh(GenMeshPlane(size.x, size.y, 10, 10));
-    model.materials[0].shader = LightSource::GetLightingShader();
+    model.materials[0].shader = LightingManager::GetLightingShader();
 }
 
 Ceiling::~Ceiling() {

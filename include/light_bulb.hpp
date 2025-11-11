@@ -3,11 +3,10 @@
 
 #include "light.hpp"
 #include "raylib.h"
-#include "rlights.h"
 
-class LightBulb : public LightSource {
+class LightBulb : public Light {
 private:
-    Light light;  // raylib Light struct
+    void* raylibLightPtr;  // Opaque pointer to raylib Light struct
     Color color;
 
 public:
@@ -19,11 +18,8 @@ public:
     void Draw(Camera3D camera) override;
     std::string GetType() const override;
     
-    // Override LightSource's pure virtual function
+    // Override Light's pure virtual function
     void UpdateLight() override;
-    
-    // Accessor
-    Light GetLight() const { return light; }
 };
 
 #endif

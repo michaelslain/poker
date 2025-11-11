@@ -1,5 +1,5 @@
 #include "floor.hpp"
-#include "light.hpp"
+#include "lighting_manager.hpp"
 
 Floor::Floor(Vector3 position, Vector2 floorSize, Color floorColor, PhysicsWorld* physicsWorld)
     : Object(position), size(floorSize), color(floorColor)
@@ -12,7 +12,7 @@ Floor::Floor(Vector3 position, Vector2 floorSize, Color floorColor, PhysicsWorld
     
     // Create model with proper normals for lighting
     model = LoadModelFromMesh(GenMeshPlane(size.x, size.y, 10, 10));
-    model.materials[0].shader = LightSource::GetLightingShader();
+    model.materials[0].shader = LightingManager::GetLightingShader();
 }
 
 Floor::~Floor() {

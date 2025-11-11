@@ -35,9 +35,7 @@ make clean  # Clean build artifacts
 - **E** - Interact with objects / Pick up items
 - **X** - Toggle item selection in inventory
 - **Left/Right Arrow** - Navigate inventory selection
-- **[** - Decrease FOV
-- **]** - Inrease FOV
-
+- **Left Mouse** - Shoot (when holding pistol)
 
 ## Architecture
 
@@ -58,11 +56,12 @@ Object (base class)
 │   │   └── Pistol
 │   └── PokerTable
 ├── Person (abstract base with inventory)
-│   ├── Player (human-controlled)
+│   ├── Player (human-controlled with insanity system)
 │   ├── Enemy (AI)
 │   └── Dealer (NPC)
+├── Light (base for lighting)
+│   └── LightBulb (point light with decorative geometry)
 ├── Floor / Ceiling / Wall (geometry)
-├── LightBulb (lighting)
 ├── Spawner (object spawning)
 └── ChipStack (chip management)
 ```
@@ -71,5 +70,7 @@ Object (base class)
 - **Physics** - ODE integration for rigid body dynamics and collision detection
 - **Inventory** - Dynamic item stacking with automatic sorting
 - **Poker game logic** - Complete Texas Hold'em implementation with betting, hand evaluation, and showdown
+- **Lighting** - `LightingManager` static class managing shader-based lighting with up to 4 dynamic lights
+- **Insanity** - Player mental state system affecting FOV based on movement
 - **Scene management** - Scene system for different game states
-- **Testing** - Catch2 v3.5.0 framework with 100+ unit tests covering all classes
+- **Testing** - Catch2 v3.5.0 framework with 114 test cases (725 assertions) covering all classes

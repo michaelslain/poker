@@ -4,6 +4,7 @@
 #include "physics.hpp"
 #include "player.hpp"
 #include "light.hpp"
+#include "lighting_manager.hpp"
 #include "raylib.h"
 #include <string>
 
@@ -29,7 +30,7 @@ int main(void)
 
     // Initialize core systems
     PhysicsWorld physics;
-    LightSource::InitLightingSystem();
+    LightingManager::InitLightingSystem();
 
     // Initialize DOM (main owns this)
     DOM dom;
@@ -82,14 +83,14 @@ int main(void)
         // Update camera in lighting shader
         if (player) {
             Camera3D* cam = player->GetCamera();
-            LightSource::UpdateCameraPosition(cam->position);
+            LightingManager::UpdateCameraPosition(cam->position);
         }
 
         // Update all light sources
         for (int i = 0; i < dom.GetCount(); i++) {
             Object* obj = dom.GetObject(i);
-            if (TypeContains(obj->GetType(), "light_bulb")) {
-                LightSource* light = static_cast<LightSource*>(obj);
+            if (TypeContains(obj->GetType(), "light")) {
+                Light* light = static_cast<Light*>(obj);
                 light->UpdateLight();
             }
         }
@@ -112,7 +113,7 @@ int main(void)
             BeginMode3D(*camera);
 
             // Get lighting shader
-            Shader& lightingShader = LightSource::GetLightingShader();
+            Shader& lightingShader = LightingManager::GetLightingShader();
 
             // Draw objects with lighting
             if (lightingShader.id != 0) {
@@ -163,7 +164,7 @@ int main(void)
     }
     dom.Cleanup();
 
-    LightSource::CleanupLightingSystem();
+    LightingManager::CleanupLightingSystem();
     SceneManager::DestroyInstance();
 
     CloseWindow();

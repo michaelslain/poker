@@ -1,5 +1,5 @@
 #include "wall.hpp"
-#include "light.hpp"
+#include "lighting_manager.hpp"
 
 Wall::Wall(Vector3 position, Vector3 wallSize, PhysicsWorld* physicsWorld)
     : Object(position), size(wallSize), color({25, 30, 10, 255})
@@ -12,7 +12,7 @@ Wall::Wall(Vector3 position, Vector3 wallSize, PhysicsWorld* physicsWorld)
     
     // Create model with proper normals for lighting
     model = LoadModelFromMesh(GenMeshCube(size.x, size.y, size.z));
-    model.materials[0].shader = LightSource::GetLightingShader();
+    model.materials[0].shader = LightingManager::GetLightingShader();
 }
 
 Wall::~Wall() {

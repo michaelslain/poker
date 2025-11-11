@@ -4,23 +4,18 @@
 #include "object.hpp"
 #include "raylib.h"
 
-class LightSource : public Object {
-protected:
-    static Shader lightingShader;
-    static bool shaderInitialized;
-
+// Base class for all light objects in the scene
+// This is a marker class that provides common functionality for all lights
+class Light : public Object {
 public:
-    LightSource(Vector3 position);
-    virtual ~LightSource();
-
-    // Static methods to manage the lighting shader
-    static void InitLightingSystem();
-    static void CleanupLightingSystem();
-    static Shader& GetLightingShader() { return lightingShader; }
-    static void UpdateCameraPosition(Vector3 cameraPos);
+    Light(Vector3 position);
+    virtual ~Light();
     
-    // Virtual method for updating light in shader
-    virtual void UpdateLight() = 0;
+    // Virtual method for updating light in shader (can be overridden by derived classes)
+    virtual void UpdateLight() {}
+    
+    // Override GetType to return hierarchical type
+    std::string GetType() const override;
 };
 
 #endif

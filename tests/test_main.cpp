@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch_amalgamated.hpp"
 #include "raylib.h"
-#include "light.hpp"
+#include "lighting_manager.hpp"
 #include "dom.hpp"
 
 // Global variables needed by the game code
@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
     SetWindowState(FLAG_WINDOW_HIDDEN); // Hide the window
     
     // Initialize lighting system for tests that need shaders
-    LightSource::InitLightingSystem();
+    LightingManager::InitLightingSystem();
     
     // Initialize global DOM for tests that need it (like PokerTable)
     DOM globalDom;
@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     
     // Cleanup (must cleanup shader BEFORE closing window)
     DOM::SetGlobal(nullptr);
-    LightSource::CleanupLightingSystem();
+    LightingManager::CleanupLightingSystem();
     CloseWindow();
     
     return result;

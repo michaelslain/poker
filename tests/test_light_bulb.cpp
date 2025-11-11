@@ -1,71 +1,153 @@
 #include "catch_amalgamated.hpp"
-#include <string>
-
-// Helper to check if type ends with expected suffix
-static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
-    if (suffix.length() > type.length()) return false;
-    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
-}
 #include "../include/light_bulb.hpp"
+#include "../include/lighting_manager.hpp"
+#include "raylib.h"
 
 TEST_CASE("LightBulb - Construction", "[light_bulb]") {
-    SECTION("Create light bulb with color") {
-        LightBulb bulb({0, 5, 0}, YELLOW);
+    SECTION("Constructor creates light bulb at position") {
+        Vector3 position = {0.0f, 5.0f, 0.0f};
+        Color color = WHITE;
+        
+        LightBulb bulb(position, color);
+        
         REQUIRE(bulb.position.x == 0.0f);
         REQUIRE(bulb.position.y == 5.0f);
         REQUIRE(bulb.position.z == 0.0f);
     }
-}
-
-TEST_CASE("LightBulb - GetType", "[light_bulb]") {
-    LightBulb bulb({0, 5, 0}, WHITE);
-    REQUIRE(bulb.GetType().find("light_bulb") != std::string::npos);
-}
-
-TEST_CASE("LightSource - Shader Initialization", "[light_bulb][shader][integration]") {
-    SECTION("InitLightingSystem loads shader") {
-        LightSource::InitLightingSystem();
+    
+    SECTION("Constructor with custom color") {
+        Vector3 position = {0.0f, 5.0f, 0.0f};
+        Color customColor = YELLOW;
         
-        // Verify shader was loaded (id should be non-zero)
-        Shader& shader = LightSource::GetLightingShader();
-        REQUIRE(shader.id != 0);
+        LightBulb bulb(position, customColor);
         
-        LightSource::CleanupLightingSystem();
+        // Light bulb should be created without errors
+        REQUIRE(bulb.position.y == 5.0f);
     }
     
-    SECTION("GetLightingShader returns by reference") {
-        LightSource::InitLightingSystem();
+    SECTION("Light bulb doesn't use lighting") {
+        LightBulb bulb({0, 5, 0}, WHITE);
         
-        Shader& shader1 = LightSource::GetLightingShader();
-        Shader& shader2 = LightSource::GetLightingShader();
-        
-        // Both references should point to the same shader
-        REQUIRE(&shader1 == &shader2);
-        
-        LightSource::CleanupLightingSystem();
-    }
-    
-    SECTION("Multiple init calls are safe") {
-        LightSource::InitLightingSystem();
-        unsigned int firstID = LightSource::GetLightingShader().id;
-        
-        // Calling init again should not reload shader
-        LightSource::InitLightingSystem();
-        REQUIRE(LightSource::GetLightingShader().id == firstID);
-        
-        LightSource::CleanupLightingSystem();
+        REQUIRE(bulb.usesLighting == false);
     }
 }
 
-TEST_CASE("LightBulb - UpdateLight integration", "[light_bulb][integration]") {
-    SECTION("UpdateLight works with initialized shader") {
-        LightSource::InitLightingSystem();
+TEST_CASE("LightBulb - Type System", "[light_bulb]") {
+    SECTION("GetType returns hierarchical type") {
+        LightBulb bulb({0, 5, 0}, WHITE);
+        std::string type = bulb.GetType();
         
-        LightBulb bulb({0, 5, 0}, YELLOW);
+        REQUIRE(type.find("object") != std::string::npos);
+        REQUIRE(type.find("light") != std::string::npos);
+        REQUIRE(type.find("light_bulb") != std::string::npos);
+    }
+}
+
+TEST_CASE("LightBulb - UpdateLight", "[light_bulb]") {
+    SECTION("UpdateLight synchronizes position") {
+        LightBulb bulb({0, 5, 0}, WHITE);
         
-        // This should not crash
+        // Move the bulb
+        bulb.position = {10.0f, 15.0f, 20.0f};
+        
+        // Update should not crash
         REQUIRE_NOTHROW(bulb.UpdateLight());
+    }
+}
+
+TEST_CASE("LightBulb - Update", "[light_bulb]") {
+    SECTION("Update with deltaTime") {
+        LightBulb bulb({0, 5, 0}, WHITE);
         
-        LightSource::CleanupLightingSystem();
+        REQUIRE_NOTHROW(bulb.Update(0.016f));
+    }
+    
+    SECTION("Update with zero deltaTime") {
+        LightBulb bulb({0, 5, 0}, WHITE);
+        
+        REQUIRE_NOTHROW(bulb.Update(0.0f));
+    }
+}
+
+TEST_CASE("LightBulb - Draw", "[light_bulb]") {
+    SECTION("Draw with camera") {
+        LightBulb bulb({0, 5, 0}, WHITE);
+        Camera3D camera = {0};
+        camera.position = {0, 0, -10};
+        camera.target = {0, 0, 0};
+        camera.up = {0, 1, 0};
+        camera.fovy = 45.0f;
+        camera.projection = CAMERA_PERSPECTIVE;
+        
+        // Draw should not crash (even in headless mode)
+        REQUIRE_NOTHROW(bulb.Draw(camera));
+    }
+}
+
+TEST_CASE("LightBulb - Inheritance", "[light_bulb]") {
+    SECTION("LightBulb is a Light") {
+        LightBulb bulb({0, 5, 0}, WHITE);
+        Light* light = &bulb;
+        
+        REQUIRE(light != nullptr);
+        REQUIRE(light->GetType().find("light_bulb") != std::string::npos);
+    }
+    
+    SECTION("LightBulb is an Object") {
+        LightBulb bulb({0, 5, 0}, WHITE);
+        Object* obj = &bulb;
+        
+        REQUIRE(obj != nullptr);
+        REQUIRE(obj->GetType().find("light") != std::string::npos);
+    }
+    
+    SECTION("LightBulb has unique ID") {
+        LightBulb bulb1({0, 5, 0}, WHITE);
+        LightBulb bulb2({1, 6, 1}, YELLOW);
+        
+        REQUIRE(bulb1.GetID() != bulb2.GetID());
+    }
+}
+
+TEST_CASE("LightBulb - Memory Management", "[light_bulb]") {
+    SECTION("Destructor cleans up properly") {
+        // Create bulb in scope
+        {
+            LightBulb bulb({0, 5, 0}, WHITE);
+            REQUIRE(bulb.position.y == 5.0f);
+        }
+        // Destructor should have been called without crashes
+        
+        REQUIRE(true); // If we reach here, destructor worked
+    }
+    
+    SECTION("Multiple bulbs can coexist") {
+        LightBulb bulb1({0, 5, 0}, WHITE);
+        LightBulb bulb2({5, 5, 5}, RED);
+        LightBulb bulb3({-5, 5, -5}, BLUE);
+        
+        REQUIRE(bulb1.GetID() != bulb2.GetID());
+        REQUIRE(bulb2.GetID() != bulb3.GetID());
+        REQUIRE(bulb1.GetID() != bulb3.GetID());
+    }
+}
+
+TEST_CASE("LightBulb - Position Changes", "[light_bulb]") {
+    SECTION("Position can be modified") {
+        LightBulb bulb({0, 5, 0}, WHITE);
+        
+        bulb.position = {10.0f, 15.0f, 20.0f};
+        
+        REQUIRE(bulb.position.x == 10.0f);
+        REQUIRE(bulb.position.y == 15.0f);
+        REQUIRE(bulb.position.z == 20.0f);
+    }
+    
+    SECTION("UpdateLight after position change") {
+        LightBulb bulb({0, 5, 0}, WHITE);
+        bulb.position = {10.0f, 15.0f, 20.0f};
+        
+        // Should synchronize internal light position
+        REQUIRE_NOTHROW(bulb.UpdateLight());
     }
 }
