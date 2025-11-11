@@ -41,6 +41,12 @@ private:
     int raiseMax;           // Maximum raise
     int storedCurrentBet;   // Stored for UI display
     int storedCallAmount;   // Stored for UI display
+    
+    // Insanity system
+    float insanity;         // Current insanity level (0.0 to 1.0)
+    float timeSinceLastMove;  // Time spent not moving
+    Vector3 lastPosition;   // Position from last frame to detect movement
+    float baseFOV;          // Base FOV before insanity effect
 
 public:
     // Card selection UI state (for cheating with 3+ cards) - public so poker table can access
@@ -74,6 +80,9 @@ public:
     // Card selection UI (for cheating with 3+ cards)
     void DrawCardSelectionUI();
     std::vector<Card*> GetSelectedCards();  // Returns the 2 selected cards for hand evaluation
+    
+    // Insanity UI
+    void DrawInsanityMeter();
     
     // Accessors
     Camera3D* GetCamera() { return camera.GetCamera(); }

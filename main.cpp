@@ -12,7 +12,7 @@ bool g_showCollisionDebug = false;
 
 // Helper function to check if a type hierarchy contains a component
 inline bool TypeContains(const std::string& type, const std::string& component) {
-    return type.find("_" + component) != std::string::npos || 
+    return type.find("_" + component) != std::string::npos ||
            type.find(component + "_") != std::string::npos ||
            type == component;
 }
@@ -20,8 +20,8 @@ inline bool TypeContains(const std::string& type, const std::string& component) 
 int main(void)
 {
     // Initialization
-    const int screenWidth = 800;
-    const int screenHeight = 450;
+    const int screenWidth = 1500;
+    const int screenHeight = 900;
     InitWindow(screenWidth, screenHeight, "Poker - First Person");
 
     SetTraceLogLevel(LOG_WARNING);
@@ -119,10 +119,10 @@ int main(void)
                 BeginShaderMode(lightingShader);
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
-                    
+
                     // Skip unlit objects
                     if (!obj->usesLighting) continue;
-                    
+
                     obj->Draw(*camera);
                 }
                 EndShaderMode();
@@ -131,15 +131,15 @@ int main(void)
             // Draw unlit objects
             for (int i = 0; i < dom.GetCount(); i++) {
                 Object* obj = dom.GetObject(i);
-                
+
                 if (!obj->usesLighting) {
                     obj->Draw(*camera);
                 }
             }
-            
+
             // Draw held item (needs to be in 3D mode)
             player->DrawHeldItem();
-            
+
             // Draw closest interactable prompt
             if (closestInteractable) {
                 closestInteractable->DrawPrompt(*camera);
@@ -150,6 +150,7 @@ int main(void)
             // Draw UI
             player->DrawInventoryUI();
             player->DrawBettingUI();
+            player->DrawInsanityMeter();
         }
 
         DrawFPS(10, screenHeight - 30);

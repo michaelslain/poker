@@ -21,6 +21,7 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
       selectedItemIndex(-1), lastHeldItemIndex(-1),
       bettingUIActive(false), bettingChoice(-1), raiseSliderValue(0), raiseMin(0), raiseMax(0),
       storedCurrentBet(0), storedCallAmount(0),
+      insanity(0.0f), timeSinceLastMove(0.0f), lastPosition(pos), baseFOV(60.0f),
       cardSelectionUIActive(false), selectedCardIndices()
 {
     if (physics != nullptr) {
@@ -288,8 +289,36 @@ void Player::Update(float deltaTime) {
         }
     }
 
-    // FOV adjustment
-    camera.AdjustFOV();
+    // Insanity system - detect if player is moving
+    float distanceMoved = Vector3Distance(position, lastPosition);
+    bool isMoving = distanceMoved > 0.01f;  // Threshold to detect movement
+    
+    if (isMoving) {
+        // Player is moving - decrease insanity faster
+        insanity -= deltaTime * 0.3f;  // Decrease rate: 0.3 per second
+        timeSinceLastMove = 0.0f;
+    } else {
+        // Player is standing still - increase insanity slower
+        timeSinceLastMove += deltaTime;
+        if (timeSinceLastMove > 0.5f) {  // Grace period before insanity starts
+            insanity += deltaTime * 0.1f;  // Increase rate: 0.1 per second
+        }
+    }
+    
+    // Clamp insanity between 0.0 and 1.0
+    if (insanity < 0.0f) insanity = 0.0f;
+    if (insanity > 1.0f) insanity = 1.0f;
+    
+    // Update last position for next frame
+    lastPosition = position;
+
+    // FOV adjustment with bracket keys (manual control disabled during insanity)
+    // camera.AdjustFOV();  // Commented out - FOV controlled by insanity
+    
+    // Apply insanity effect to FOV (lerp between min and max based on insanity)
+    float minFOV = 60.0f;   // Normal FOV at 0 insanity
+    float maxFOV = 150.0f;  // Max FOV at 100% insanity
+    camera.camera.fovy = minFOV + (insanity * (maxFOV - minFOV));
 
     // Update camera to follow player
     camera.angle.x = lookPitch;
@@ -928,4 +957,50 @@ std::vector<Card*> Player::GetSelectedCards() {
     }
     
     return cards;
+}
+
+void Player::DrawInsanityMeter() {
+    // Draw N64-style circular power meter in top-right corner
+    int screenWidth = GetScreenWidth();
+    
+    // Position in top-right corner
+    float centerX = screenWidth - 80.0f;
+    float centerY = 80.0f;
+    float radius = 50.0f;
+    
+    // Draw outer circle (border)
+    DrawCircle((int)centerX, (int)centerY, radius + 3.0f, BLACK);
+    DrawCircle((int)centerX, (int)centerY, radius, DARKGRAY);
+    
+    // Draw filled arc representing insanity level (like N64 power meter)
+    // The arc fills clockwise from top
+    int segments = 32;
+    float startAngle = -90.0f;  // Start at top
+    float endAngle = startAngle + (insanity * 360.0f);  // Fill based on insanity
+    
+    // Draw the insanity fill as a pie slice
+    if (insanity > 0.0f) {
+        // Color shifts from yellow to red as insanity increases
+        Color fillColor;
+        if (insanity < 0.5f) {
+            // Yellow to orange (0.0 - 0.5)
+            fillColor = (Color){255, (unsigned char)(255 - (insanity * 2 * 100)), 0, 200};
+        } else {
+            // Orange to red (0.5 - 1.0)
+            fillColor = (Color){255, (unsigned char)(155 - ((insanity - 0.5f) * 2 * 155)), 0, 200};
+        }
+        
+        DrawCircleSector((Vector2){centerX, centerY}, radius - 5.0f, 
+                        startAngle, endAngle, segments, fillColor);
+    }
+    
+    // Draw inner circle (center)
+    DrawCircle((int)centerX, (int)centerY, radius - 10.0f, BLACK);
+    
+    // Draw "INSANITY" text in center
+    const char* text = "INSANITY";
+    int fontSize = 10;
+    int textWidth = MeasureText(text, fontSize);
+    DrawText(text, (int)(centerX - textWidth / 2), (int)(centerY - fontSize / 2), 
+             fontSize, WHITE);
 }
