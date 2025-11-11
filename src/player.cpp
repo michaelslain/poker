@@ -298,9 +298,12 @@ void Player::Update(float deltaTime) {
         insanity -= deltaTime * 0.3f;  // Decrease rate: 0.3 per second
         timeSinceLastMove = 0.0f;
     } else {
-        // Player is standing still - increase insanity immediately (no grace period)
+        // Player is standing still - increase insanity
         timeSinceLastMove += deltaTime;
-        insanity += deltaTime * 0.1f;  // Increase rate: 0.1 per second
+        
+        // If seated at poker table, increase insanity much slower
+        float insanityIncreaseRate = isSeated ? 0.01f : 0.1f;  // 0.01/sec when seated, 0.1/sec when standing
+        insanity += deltaTime * insanityIncreaseRate;
     }
 
     // Clamp insanity between 0.0 and 1.0
