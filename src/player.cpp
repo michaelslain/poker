@@ -28,7 +28,7 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
         // Create dynamic body with mass for gravity
         body = dBodyCreate(physics->world);
         dBodySetPosition(body, pos.x, pos.y + 0.85f, pos.z);
-        
+
         // Set mass for the player (needed for gravity)
         dMass mass;
         float radius = 0.4f;
@@ -36,7 +36,7 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
         float cylinderLength = height - (2.0f * radius);
         dMassSetCapsuleTotal(&mass, 70.0f, 3, radius, cylinderLength); // 70kg player
         dBodySetMass(body, &mass);
-        
+
         // Disable auto-disable so player doesn't "sleep" and fall through floor
         dBodySetAutoDisableFlag(body, 0);
 
@@ -78,7 +78,7 @@ void Player::HandleInteraction() {
     // Handle poker table interaction (sit down or stand up)
     if (typeStr.find("poker_table") != std::string::npos) {
         PokerTable* table = static_cast<PokerTable*>(closestInteractable);
-        
+
         // Check if we're already seated at this table
         int seatIndex = table->FindSeatIndex(this);
         if (seatIndex != -1) {
@@ -99,10 +99,10 @@ void Player::HandleInteraction() {
         Item* item = static_cast<Item*>(closestInteractable);
 
         TraceLog(LOG_WARNING, "PICKUP: Item type = '%s'", typeStr.c_str());
-        
+
         // Add to inventory
         inventory.AddItem(item);
-        
+
         TraceLog(LOG_WARNING, "PICKUP: Item added, inventory count = %d", inventory.GetStackCount());
 
         // Remove from DOM - inventory now owns it
@@ -130,11 +130,11 @@ void Player::Update(float deltaTime) {
     // Body rotation follows camera when turning more than 45 degrees
     float maxHeadTurnAngle = 45.0f * DEG2RAD;  // 45 degrees in radians
     float angleDifference = lookYaw - bodyYaw;
-    
+
     // Normalize angle difference to [-PI, PI]
     while (angleDifference > PI) angleDifference -= 2 * PI;
     while (angleDifference < -PI) angleDifference += 2 * PI;
-    
+
     // If head is turned more than 45 degrees, rotate body to follow
     if (angleDifference > maxHeadTurnAngle) {
         bodyYaw = lookYaw - maxHeadTurnAngle;
@@ -164,7 +164,7 @@ void Player::Update(float deltaTime) {
         position.x = seatPosition.x;
         position.z = seatPosition.z;
         position.y = 0.0f;  // Keep at ground level for consistent camera height
-        
+
         // Lock physics body to ground position at seat XZ
         if (body != nullptr) {
             dBodySetPosition(body, seatPosition.x, 0.85f, seatPosition.z);
@@ -175,7 +175,7 @@ void Player::Update(float deltaTime) {
         if (geom != nullptr) {
             dGeomSetPosition(geom, seatPosition.x, 0.85f, seatPosition.z);
         }
-        
+
         // Skip movement processing when seated
     } else {
         // Only process movement when not seated
@@ -257,7 +257,7 @@ void Player::Update(float deltaTime) {
                 // Collision detected - slide along the surface
                 // Calculate movement vector relative to where we currently are
                 Vector3 movementVec = Vector3Subtract(finalPos, oldPos);
-                
+
                 // Only slide if moving into the surface
                 float dotProduct = Vector3DotProduct(movementVec, collisionNormal);
                 if (dotProduct < 0) {
@@ -273,13 +273,13 @@ void Player::Update(float deltaTime) {
             // Get current Y position from physics (affected by gravity)
             const dReal* physicsPos = dBodyGetPosition(body);
             float currentY = (float)physicsPos[1] - 0.85f;
-            
+
             // Set final XZ position, preserve Y from physics
             finalPos.y = currentY;
             dGeomSetPosition(geom, finalPos.x, finalPos.y + 0.85f, finalPos.z);
             dBodySetPosition(body, finalPos.x, finalPos.y + 0.85f, finalPos.z);
             position = finalPos;
-            
+
             // Reset horizontal velocity to prevent sliding, preserve vertical velocity for gravity
             const dReal* vel = dBodyGetLinearVel(body);
             dBodySetLinearVel(body, 0, vel[1], 0);
@@ -292,29 +292,27 @@ void Player::Update(float deltaTime) {
     // Insanity system - detect if player is moving
     float distanceMoved = Vector3Distance(position, lastPosition);
     bool isMoving = distanceMoved > 0.01f;  // Threshold to detect movement
-    
+
     if (isMoving) {
         // Player is moving - decrease insanity faster
         insanity -= deltaTime * 0.3f;  // Decrease rate: 0.3 per second
         timeSinceLastMove = 0.0f;
     } else {
-        // Player is standing still - increase insanity slower
+        // Player is standing still - increase insanity immediately (no grace period)
         timeSinceLastMove += deltaTime;
-        if (timeSinceLastMove > 0.5f) {  // Grace period before insanity starts
-            insanity += deltaTime * 0.1f;  // Increase rate: 0.1 per second
-        }
+        insanity += deltaTime * 0.1f;  // Increase rate: 0.1 per second
     }
-    
+
     // Clamp insanity between 0.0 and 1.0
     if (insanity < 0.0f) insanity = 0.0f;
     if (insanity > 1.0f) insanity = 1.0f;
-    
+
     // Update last position for next frame
     lastPosition = position;
 
     // FOV adjustment with bracket keys (manual control disabled during insanity)
     // camera.AdjustFOV();  // Commented out - FOV controlled by insanity
-    
+
     // Apply insanity effect to FOV (lerp between min and max based on insanity)
     float minFOV = 60.0f;   // Normal FOV at 0 insanity
     float maxFOV = 150.0f;  // Max FOV at 100% insanity
@@ -331,12 +329,12 @@ void Player::Update(float deltaTime) {
         0.0f,
         cosf(lookYaw)
     };
-    
+
     Vector3 eyePos = position;
     eyePos.y += 1.9f * height;  // Eye level height (scaled by height)
     eyePos.x += forwardDir.x * 0.3f;  // Offset forward slightly
     eyePos.z += forwardDir.z * 0.3f;
-    
+
     camera.SetTarget(eyePos);
     camera.Update({0, 0});
 
@@ -463,16 +461,16 @@ void Player::HandleShooting() {
     // Debug: Check if function is being called
     static int frameCount = 0;
     if (frameCount++ % 60 == 0) {
-        TraceLog(LOG_WARNING, "SHOOT: HandleShooting called, mousePressed=%d, bettingUI=%d", 
+        TraceLog(LOG_WARNING, "SHOOT: HandleShooting called, mousePressed=%d, bettingUI=%d",
                  IsMouseButtonPressed(MOUSE_LEFT_BUTTON), bettingUIActive);
     }
-    
+
     // Only shoot if left mouse button is pressed and we have an item selected
     if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;
     }
 
-    TraceLog(LOG_WARNING, "SHOOT: Mouse clicked, selectedIndex=%d, inventoryCount=%d", 
+    TraceLog(LOG_WARNING, "SHOOT: Mouse clicked, selectedIndex=%d, inventoryCount=%d",
              selectedItemIndex, inventory.GetStackCount());
 
     if (selectedItemIndex < 0 || selectedItemIndex >= inventory.GetStackCount()) {
@@ -489,14 +487,14 @@ void Player::HandleShooting() {
 
     // Check if it's a pistol (use substring check due to type hierarchy)
     std::string itemType = stack->item->GetType();
-    TraceLog(LOG_WARNING, "SHOOT: Item type = '%s', contains pistol = %d", 
+    TraceLog(LOG_WARNING, "SHOOT: Item type = '%s', contains pistol = %d",
              itemType.c_str(), itemType.find("pistol") != std::string::npos);
-    
+
     if (itemType.find("pistol") == std::string::npos) {
         TraceLog(LOG_WARNING, "SHOOT: Not a pistol, aborting");
         return;
     }
-    
+
     TraceLog(LOG_WARNING, "SHOOT: Found pistol, attempting to shoot");
 
     Pistol* pistol = static_cast<Pistol*>(stack->item);
@@ -518,32 +516,32 @@ void Player::HandleShooting() {
         cam->target.y - cam->position.y,
         cam->target.z - cam->position.z
     });
-    
+
     // Cast ray through all people in the DOM
     DOM* dom = DOM::GetGlobal();
     if (dom) {
         float maxDistance = 1000.0f;  // Max shooting range
         Person* hitPerson = nullptr;
         float closestHit = maxDistance;
-        
+
         for (int i = 0; i < dom->GetCount(); i++) {
             Object* obj = dom->GetObject(i);
             if (!obj) continue;
-            
+
             std::string type = obj->GetType();
             if (type.find("person") != std::string::npos) {
-                
+
                 Person* person = static_cast<Person*>(obj);
-                
+
                 // Don't shoot yourself!
                 if (person == this) continue;
-                
+
                 // Cylinder collision: check if ray intersects the person's hitbox
                 float personHeight = person->GetHeight();
                 float personTopY = person->position.y + 2.4f * personHeight;
                 float personBottomY = person->position.y;
                 float hitRadius = 0.5f;
-                
+
                 // For each point along the ray, check cylinder intersection
                 for (float dist = 0; dist < maxDistance; dist += 0.1f) {
                     Vector3 rayPoint = {
@@ -551,14 +549,14 @@ void Player::HandleShooting() {
                         rayStart.y + direction.y * dist,
                         rayStart.z + direction.z * dist
                     };
-                    
+
                     // Check if within height range
                     if (rayPoint.y >= personBottomY && rayPoint.y <= personTopY) {
                         // Check horizontal distance
                         float dx = rayPoint.x - person->position.x;
                         float dz = rayPoint.z - person->position.z;
                         float horizontalDist = sqrtf(dx*dx + dz*dz);
-                        
+
                         if (horizontalDist < hitRadius && dist < closestHit) {
                             hitPerson = person;
                             closestHit = dist;
@@ -568,14 +566,14 @@ void Player::HandleShooting() {
                 }
             }
         }
-        
+
         // If we hit someone, kill them
         if (hitPerson) {
             TraceLog(LOG_INFO, "Shot hit %s", hitPerson->GetName().c_str());
-            
+
             // Check if we killed a dealer
             bool killedDealer = (hitPerson->GetType().find("dealer") != std::string::npos);
-            
+
             // If person is sitting, unseat them from all poker tables
             if (hitPerson->IsSeated()) {
                 for (int j = 0; j < dom->GetCount(); j++) {
@@ -589,7 +587,7 @@ void Player::HandleShooting() {
                     }
                 }
             }
-            
+
             // If we killed a dealer, make all pot items interactable
             if (killedDealer) {
                 for (int j = 0; j < dom->GetCount(); j++) {
@@ -603,7 +601,7 @@ void Player::HandleShooting() {
                     }
                 }
             }
-            
+
             // Remove person from DOM and delete
             DOM::GetGlobal()->RemoveAndDelete(hitPerson);
         }
@@ -626,12 +624,12 @@ void Player::HandleShooting() {
 void Player::Draw(Camera3D camera) {
     // Call parent's draw (draws the person model)
     Person::Draw(camera);
-    
+
     // Draw player's capsule collision geometry if debug mode is on
     if (g_showCollisionDebug && geom) {
         dReal radius, length;
         dGeomCapsuleGetParams(geom, &radius, &length);
-        
+
         // Draw wireframe capsule at player position
         Vector3 topPos = {position.x, position.y + (float)length, position.z};
         DrawCapsuleWires(position, topPos, (float)radius, 8, 8, LIME);
@@ -640,7 +638,7 @@ void Player::Draw(Camera3D camera) {
 
 void Player::DrawInventoryUI() {
     InventoryUI_Draw(&inventory, selectedItemIndex);
-    
+
     // Draw card selection UI if active
     DrawCardSelectionUI();
 }
@@ -658,13 +656,13 @@ void Player::DrawHeldItem() {
 
     // Check if it's a pistol (use substring check due to type hierarchy)
     std::string itemType = stack->item->GetType();
-    TraceLog(LOG_WARNING, "DRAWHELD: Item type = '%s', contains pistol = %d", 
+    TraceLog(LOG_WARNING, "DRAWHELD: Item type = '%s', contains pistol = %d",
              itemType.c_str(), itemType.find("pistol") != std::string::npos);
-    
+
     if (itemType.empty()) {
         return;  // Safety check - GetType() returned null
     }
-    
+
     if (itemType.find("pistol") != std::string::npos) {
         TraceLog(LOG_WARNING, "DRAWHELD: Drawing pistol!");
         Pistol* pistol = static_cast<Pistol*>(stack->item);
@@ -679,7 +677,7 @@ void Player::DrawHeldItem() {
 void Player::SitDown(Vector3 seatPos) {
     // Call base class to set seating state
     Person::SitDown(seatPos);
-    
+
     // Update physics body position and reset velocity
     if (body != nullptr) {
         dBodySetPosition(body, seatPos.x, seatPos.y + 0.85f, seatPos.z);
@@ -695,11 +693,11 @@ void Player::SitDown(Vector3 seatPos) {
 void Player::StandUp() {
     // Call base class to clear seating state
     Person::StandUp();
-    
+
     // Move player to ground level when standing (prevents clipping through table)
     // Seat positions are at table height, we need to move to ground
     position.y = 0.0f;  // Reset to ground level
-    
+
     // Update physics body to ground position
     if (body != nullptr) {
         dBodySetPosition(body, position.x, position.y + 0.85f, position.z);
@@ -723,20 +721,20 @@ int Player::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise
         storedCurrentBet = currentBet;
         storedCallAmount = callAmount;
     }
-    
+
     // Wait for player to make a choice (poker table will call this repeatedly each frame)
     // Returns -1 while waiting, returns choice when made
     if (bettingChoice == -1) {
         return -1;  // Still waiting for input
     }
-    
+
     // Choice was made
     bettingUIActive = false;
-    
+
     if (bettingChoice == 2) {  // Raise
         raiseAmount = raiseSliderValue;
     }
-    
+
     int choice = bettingChoice;
     bettingChoice = -1;  // Reset for next time
     return choice;
@@ -744,23 +742,23 @@ int Player::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise
 
 void Player::DrawBettingUI() {
     if (!bettingUIActive) return;
-    
+
     int screenWidth = GetScreenWidth();
     int screenHeight = GetScreenHeight();
-    
+
     // Draw semi-transparent background
     DrawRectangle(0, screenHeight - 200, screenWidth, 200, (Color){0, 0, 0, 200});
-    
+
     // Draw title
     DrawText("YOUR TURN TO BET", screenWidth / 2 - 100, screenHeight - 190, 20, WHITE);
     DrawText(TextFormat("Current Bet: %d | To Call: %d", storedCurrentBet, storedCallAmount), screenWidth / 2 - 120, screenHeight - 160, 16, YELLOW);
-    
+
     // Draw options
     int buttonY = screenHeight - 120;
     int buttonWidth = 150;
     int buttonHeight = 40;
     int spacing = 20;
-    
+
     // Fold button (1)
     Rectangle foldButton = {(float)(screenWidth / 2 - buttonWidth - spacing - buttonWidth / 2), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
     Color foldColor = DARKGRAY;
@@ -770,7 +768,7 @@ void Player::DrawBettingUI() {
     DrawRectangleRec(foldButton, foldColor);
     DrawText("FOLD", (int)foldButton.x + 45, (int)foldButton.y + 10, 20, WHITE);
     DrawText("1", (int)foldButton.x + 65, (int)foldButton.y + 32, 10, LIGHTGRAY);
-    
+
     // Call/Check button (2)
     Rectangle callButton = {(float)(screenWidth / 2 - buttonWidth / 2), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
     Color callColor = GREEN;
@@ -778,7 +776,7 @@ void Player::DrawBettingUI() {
         bettingChoice = 1;
     }
     DrawRectangleRec(callButton, callColor);
-    
+
     // Show "CHECK" if call amount is 0, otherwise show "CALL X"
     if (storedCallAmount == 0) {
         DrawText("CHECK", (int)callButton.x + 40, (int)callButton.y + 10, 20, WHITE);
@@ -786,23 +784,23 @@ void Player::DrawBettingUI() {
         DrawText(TextFormat("CALL %d", storedCallAmount), (int)callButton.x + 30, (int)callButton.y + 10, 20, WHITE);
     }
     DrawText("2", (int)callButton.x + 65, (int)callButton.y + 32, 10, LIGHTGRAY);
-    
+
     // Raise button (3)
     Rectangle raiseButton = {(float)(screenWidth / 2 + spacing + buttonWidth / 2), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
     Color raiseColor = RED;
     DrawRectangleRec(raiseButton, raiseColor);
     DrawText("RAISE", (int)raiseButton.x + 40, (int)raiseButton.y + 10, 20, WHITE);
     DrawText("3", (int)raiseButton.x + 65, (int)raiseButton.y + 32, 10, LIGHTGRAY);
-    
+
     // Always show slider for raise option
     {
         int sliderY = screenHeight - 60;
         int sliderX = screenWidth / 2 - 200;
         int sliderWidth = 400;
-        
+
         // Draw slider background
         DrawRectangle(sliderX, sliderY, sliderWidth, 20, DARKGRAY);
-        
+
         // Handle left/right arrow keys to adjust raise amount
         if (IsKeyPressed(KEY_LEFT) || IsKeyDown(KEY_LEFT)) {
             raiseSliderValue -= 5;
@@ -812,24 +810,24 @@ void Player::DrawBettingUI() {
             raiseSliderValue += 5;
             if (raiseSliderValue > raiseMax) raiseSliderValue = raiseMax;
         }
-        
+
         // Calculate slider position (avoid division by zero)
         float sliderPercent = 0.0f;
         if (raiseMax > raiseMin) {
             sliderPercent = (float)(raiseSliderValue - raiseMin) / (float)(raiseMax - raiseMin);
         }
         int sliderPos = sliderX + (int)(sliderPercent * sliderWidth);
-        
+
         // Draw slider
         DrawRectangle(sliderX, sliderY, (int)(sliderPercent * sliderWidth), 20, RED);
         DrawCircle(sliderPos, sliderY + 10, 12, ORANGE);
-        
+
         // Draw raise amount
         DrawText(TextFormat("Raise to: %d (Min: %d, Max: %d)", raiseSliderValue, raiseMin, raiseMax),
                  sliderX, sliderY - 25, 16, WHITE);
         DrawText("Use LEFT/RIGHT arrows to adjust, press 3 to confirm", sliderX + 40, sliderY + 25, 12, LIGHTGRAY);
     }
-    
+
     // Confirm raise with KEY_THREE
     if (IsKeyPressed(KEY_THREE)) {
         bettingChoice = 2;
@@ -838,10 +836,10 @@ void Player::DrawBettingUI() {
 
 void Player::DrawCardSelectionUI() {
     if (!cardSelectionUIActive) return;
-    
+
     int screenWidth = GetScreenWidth();
     int screenHeight = GetScreenHeight();
-    
+
     // Count cards in inventory
     std::vector<int> cardIndices;
     for (int i = 0; i < inventory.GetStackCount(); i++) {
@@ -850,34 +848,34 @@ void Player::DrawCardSelectionUI() {
             cardIndices.push_back(i);
         }
     }
-    
+
     // Draw semi-transparent background
     DrawRectangle(0, screenHeight / 2 - 150, screenWidth, 300, (Color){0, 0, 0, 220});
-    
+
     // Draw title
     DrawText("SELECT 2 CARDS FOR YOUR HAND", screenWidth / 2 - 200, screenHeight / 2 - 140, 24, YELLOW);
     DrawText(TextFormat("Selected: %d/2", (int)selectedCardIndices.size()), screenWidth / 2 - 80, screenHeight / 2 - 110, 20, WHITE);
     DrawText("Click on cards to select/deselect. Press ENTER when done.", screenWidth / 2 - 240, screenHeight / 2 - 85, 16, LIGHTGRAY);
-    
+
     // Draw cards as clickable boxes
     int cardWidth = 80;
     int cardHeight = 120;
     int spacing = 20;
     int startX = screenWidth / 2 - ((cardWidth + spacing) * cardIndices.size()) / 2;
     int startY = screenHeight / 2 - 40;
-    
+
     for (size_t i = 0; i < cardIndices.size(); i++) {
         int invIndex = cardIndices[i];
         ItemStack* stack = inventory.GetStack(invIndex);
         if (!stack || !stack->item) continue;
-        
+
         Card* card = static_cast<Card*>(stack->item);
-        
+
         int x = startX + i * (cardWidth + spacing);
         int y = startY;
-        
+
         Rectangle cardRect = {(float)x, (float)y, (float)cardWidth, (float)cardHeight};
-        
+
         // Check if this card is selected
         bool isSelected = false;
         for (int selIdx : selectedCardIndices) {
@@ -886,7 +884,7 @@ void Player::DrawCardSelectionUI() {
                 break;
             }
         }
-        
+
         // Handle mouse click
         if (CheckCollisionPointRec(GetMousePosition(), cardRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (isSelected) {
@@ -904,30 +902,30 @@ void Player::DrawCardSelectionUI() {
                 }
             }
         }
-        
+
         // Draw card
         Color borderColor = isSelected ? GOLD : WHITE;
         int borderWidth = isSelected ? 4 : 2;
-        
+
         DrawRectangleRec(cardRect, WHITE);
         DrawRectangleLinesEx(cardRect, borderWidth, borderColor);
-        
+
         // Draw card icon (simplified - just show rank and suit)
         const char* rankStr = Card::GetRankString(card->rank);
         const char* suitSymbol = Card::GetSuitSymbol(card->suit);
         Color suitColor = Card::GetSuitColor(card->suit);
-        
+
         DrawText(rankStr, x + 10, y + 10, 20, BLACK);
         DrawText(suitSymbol, x + 10, y + 35, 30, suitColor);
     }
-    
+
     // Draw confirm button
     Rectangle confirmButton = {(float)(screenWidth / 2 - 100), (float)(screenHeight / 2 + 100), 200.0f, 40.0f};
     Color confirmColor = selectedCardIndices.size() == 2 ? GREEN : DARKGRAY;
     DrawRectangleRec(confirmButton, confirmColor);
     DrawText("CONFIRM", (int)confirmButton.x + 50, (int)confirmButton.y + 10, 20, WHITE);
     DrawText("ENTER", (int)confirmButton.x + 70, (int)confirmButton.y + 32, 10, LIGHTGRAY);
-    
+
     // Confirm with ENTER
     if (IsKeyPressed(KEY_ENTER) && selectedCardIndices.size() == 2) {
         cardSelectionUIActive = false;
@@ -936,7 +934,7 @@ void Player::DrawCardSelectionUI() {
 
 std::vector<Card*> Player::GetSelectedCards() {
     std::vector<Card*> cards;
-    
+
     // If no selection active or not enough cards selected, return all cards
     if (!cardSelectionUIActive && selectedCardIndices.empty()) {
         for (int i = 0; i < inventory.GetStackCount(); i++) {
@@ -947,7 +945,7 @@ std::vector<Card*> Player::GetSelectedCards() {
         }
         return cards;
     }
-    
+
     // Return only selected cards
     for (int idx : selectedCardIndices) {
         ItemStack* stack = inventory.GetStack(idx);
@@ -955,29 +953,29 @@ std::vector<Card*> Player::GetSelectedCards() {
             cards.push_back(static_cast<Card*>(stack->item));
         }
     }
-    
+
     return cards;
 }
 
 void Player::DrawInsanityMeter() {
     // Draw N64-style circular power meter in top-right corner
     int screenWidth = GetScreenWidth();
-    
+
     // Position in top-right corner
     float centerX = screenWidth - 80.0f;
     float centerY = 80.0f;
     float radius = 50.0f;
-    
+
     // Draw outer circle (border)
     DrawCircle((int)centerX, (int)centerY, radius + 3.0f, BLACK);
     DrawCircle((int)centerX, (int)centerY, radius, DARKGRAY);
-    
+
     // Draw filled arc representing insanity level (like N64 power meter)
     // The arc fills clockwise from top
     int segments = 32;
     float startAngle = -90.0f;  // Start at top
     float endAngle = startAngle + (insanity * 360.0f);  // Fill based on insanity
-    
+
     // Draw the insanity fill as a pie slice
     if (insanity > 0.0f) {
         // Color shifts from yellow to red as insanity increases
@@ -989,18 +987,18 @@ void Player::DrawInsanityMeter() {
             // Orange to red (0.5 - 1.0)
             fillColor = (Color){255, (unsigned char)(155 - ((insanity - 0.5f) * 2 * 155)), 0, 200};
         }
-        
-        DrawCircleSector((Vector2){centerX, centerY}, radius - 5.0f, 
+
+        DrawCircleSector((Vector2){centerX, centerY}, radius - 5.0f,
                         startAngle, endAngle, segments, fillColor);
     }
-    
+
     // Draw inner circle (center)
     DrawCircle((int)centerX, (int)centerY, radius - 10.0f, BLACK);
-    
+
     // Draw "INSANITY" text in center
     const char* text = "INSANITY";
     int fontSize = 10;
     int textWidth = MeasureText(text, fontSize);
-    DrawText(text, (int)(centerX - textWidth / 2), (int)(centerY - fontSize / 2), 
+    DrawText(text, (int)(centerX - textWidth / 2), (int)(centerY - fontSize / 2),
              fontSize, WHITE);
 }
