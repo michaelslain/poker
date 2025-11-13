@@ -3,32 +3,13 @@
 #include "raymath.h"
 
 Pistol::Pistol(Vector3 pos, PhysicsWorld* physics)
-    : Item(pos), ammo(12), maxAmmo(12), rigidBody(nullptr)
+    : Weapon(pos, 6, 6, physics)  // 6 rounds in a revolver
 {
-    // Initialize physics if provided
-    if (physics) {
-        Vector3 pistolSize = {0.3f, 0.2f, 0.5f};  // Width, height, length
-        rigidBody = new RigidBody(pos);
-        rigidBody->InitBox(physics, pos, pistolSize, 0.5f);  // Moderate mass
-    }
+    // All ammo/physics logic handled by Weapon base class
 }
 
 Pistol::~Pistol() {
-    if (rigidBody) {
-        delete rigidBody;
-        rigidBody = nullptr;
-    }
-}
-
-void Pistol::Update(float deltaTime) {
-    (void)deltaTime;
-    
-    // Only sync if physics is attached
-    if (rigidBody && rigidBody->body) {
-        rigidBody->Update(deltaTime);
-        position = rigidBody->position;
-        rotation = rigidBody->rotation;
-    }
+    // Cleanup handled by Weapon base class
 }
 
 void Pistol::Draw(Camera3D camera) {
@@ -124,15 +105,8 @@ void Pistol::DrawHeld(Camera3D camera) {
     rlPopMatrix();
 }
 
-void Pistol::Shoot() {
-    if (ammo > 0) {
-        int oldAmmo = ammo;
-        ammo--;
-    }
-}
-
 std::string Pistol::GetType() const {
-    return Item::GetType() + "_pistol";
+    return Weapon::GetType() + "_pistol";
 }
 
 Object* Pistol::Clone(Vector3 newPos) const {

@@ -1,29 +1,19 @@
 #ifndef PISTOL_HPP
 #define PISTOL_HPP
 
-#include "item.hpp"
-#include "rigidbody.hpp"
-#include "physics.hpp"
+#include "weapon.hpp"
 
-class Pistol : public Item {
+class Pistol : public Weapon {
 public:
-    int ammo;
-    int maxAmmo;
-    RigidBody* rigidBody;
-
     Pistol(Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
     virtual ~Pistol();
 
-    void Update(float deltaTime) override;
+    // Override virtual functions
     void Draw(Camera3D camera) override;
     void DrawIcon(Rectangle destRect) override;
-    void DrawHeld(Camera3D camera);  // Draw when player is holding it
+    void DrawHeld(Camera3D camera) override;
     std::string GetType() const override;
     Object* Clone(Vector3 newPos) const override;
-    
-    bool CanShoot() const { return ammo > 0; }
-    void Shoot();  // Decrements ammo
-    int GetAmmo() const { return ammo; }
 };
 
 #endif
