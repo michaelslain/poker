@@ -4,7 +4,6 @@
 #include "poker_table.hpp"
 #include "wall.hpp"
 #include "weapon.hpp"
-#include "pistol.hpp"
 #include "substance.hpp"
 #include "person.hpp"
 #include "dom.hpp"
@@ -549,11 +548,18 @@ void Player::HandleUseItem() {
     }
     // Handle substance consumption (remove from inventory after use)
     else if (itemType.find("substance") != std::string::npos) {
+        // Check if this is the last one in the stack before removing
+        bool wasLastInStack = (stack->count <= 1);
+        Item* substancePtr = stack->item;  // Save pointer before RemoveItem
+
         // Remove from inventory (already consumed via Use())
+        // This decrements count or removes the stack if count reaches 0
         inventory.RemoveItem(selectedItemIndex);
 
-        // Delete the substance object
-        delete stack->item;
+        // Only delete the substance object if the stack is now empty
+        if (wasLastInStack) {
+            delete substancePtr;
+        }
 
         // Clear selection if inventory is now empty
         if (inventory.GetStackCount() == 0) {
