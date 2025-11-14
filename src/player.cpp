@@ -473,16 +473,16 @@ void Player::HandleUseItem() {
     if (!stack->item->usable) {
         return;  // Can't use cards or chips
     }
-    
+
     // Use the item (weapons shoot, substances consume)
     stack->item->Use();
-    
+
     // Handle weapon-specific logic (raycast and ammo management)
     std::string itemType = stack->item->GetType();
     if (itemType.find("weapon") != std::string::npos) {
         Weapon* weapon = static_cast<Weapon*>(stack->item);
 
-        // Raycast to check if we hit anyone
+        // Get camera ray for weapon raycast
         Camera3D* cam = GetCamera();
         Vector3 rayStart = cam->position;
         Vector3 direction = Vector3Normalize({
@@ -491,92 +491,48 @@ void Player::HandleUseItem() {
             cam->target.z - cam->position.z
         });
 
-        // Cast ray through all people in the DOM
-        DOM* dom = DOM::GetGlobal();
-        if (dom) {
-            float maxDistance = 1000.0f;  // Max shooting range
-            Person* hitPerson = nullptr;
-            float closestHit = maxDistance;
+        // Perform raycast through weapon (pass this as shooter to avoid self-hits)
+        Person* hitPerson = weapon->PerformRaycast(rayStart, direction, this);
 
-            for (int i = 0; i < dom->GetCount(); i++) {
-                Object* obj = dom->GetObject(i);
-                if (!obj) continue;
+        // If we hit someone, kill them
+        if (hitPerson) {
+            TraceLog(LOG_INFO, "Shot hit %s", hitPerson->GetName().c_str());
 
-                std::string type = obj->GetType();
-                if (type.find("person") != std::string::npos) {
-                    Person* person = static_cast<Person*>(obj);
+            // Check if we killed a dealer
+            bool killedDealer = (hitPerson->GetType().find("dealer") != std::string::npos);
 
-                    // Don't shoot yourself!
-                    if (person == this) continue;
-
-                    // Cylinder collision: check if ray intersects the person's hitbox
-                    float personHeight = person->GetHeight();
-                    float personTopY = person->position.y + 2.4f * personHeight;
-                    float personBottomY = person->position.y;
-                    float hitRadius = 0.5f;
-
-                    // For each point along the ray, check cylinder intersection
-                    for (float dist = 0; dist < maxDistance; dist += 0.1f) {
-                        Vector3 rayPoint = {
-                            rayStart.x + direction.x * dist,
-                            rayStart.y + direction.y * dist,
-                            rayStart.z + direction.z * dist
-                        };
-
-                        // Check if within height range
-                        if (rayPoint.y >= personBottomY && rayPoint.y <= personTopY) {
-                            // Check horizontal distance
-                            float dx = rayPoint.x - person->position.x;
-                            float dz = rayPoint.z - person->position.z;
-                            float horizontalDist = sqrtf(dx*dx + dz*dz);
-
-                            if (horizontalDist < hitRadius && dist < closestHit) {
-                                hitPerson = person;
-                                closestHit = dist;
-                                break;  // Hit this person, stop checking this person
-                            }
+            // If person is sitting, unseat them from all poker tables
+            DOM* dom = DOM::GetGlobal();
+            if (dom && hitPerson->IsSeated()) {
+                for (int j = 0; j < dom->GetCount(); j++) {
+                    Object* tableObj = dom->GetObject(j);
+                    if (tableObj) {
+                        std::string tableType = tableObj->GetType();
+                        if (tableType.find("poker_table") != std::string::npos) {
+                            PokerTable* table = static_cast<PokerTable*>(tableObj);
+                            table->UnseatPerson(hitPerson);
                         }
                     }
                 }
             }
 
-            // If we hit someone, kill them
-            if (hitPerson) {
-                TraceLog(LOG_INFO, "Shot hit %s", hitPerson->GetName().c_str());
-
-                // Check if we killed a dealer
-                bool killedDealer = (hitPerson->GetType().find("dealer") != std::string::npos);
-
-                // If person is sitting, unseat them from all poker tables
-                if (hitPerson->IsSeated()) {
-                    for (int j = 0; j < dom->GetCount(); j++) {
-                        Object* tableObj = dom->GetObject(j);
-                        if (tableObj) {
-                            std::string tableType = tableObj->GetType();
-                            if (tableType.find("poker_table") != std::string::npos) {
-                                PokerTable* table = static_cast<PokerTable*>(tableObj);
-                                table->UnseatPerson(hitPerson);
-                            }
+            // If we killed a dealer, make all pot items interactable
+            if (dom && killedDealer) {
+                for (int j = 0; j < dom->GetCount(); j++) {
+                    Object* tableObj = dom->GetObject(j);
+                    if (tableObj) {
+                        std::string tableType = tableObj->GetType();
+                        if (tableType.find("poker_table") != std::string::npos) {
+                            PokerTable* table = static_cast<PokerTable*>(tableObj);
+                            table->MakePotItemsInteractable();
                         }
                     }
                 }
+            }
 
-                // If we killed a dealer, make all pot items interactable
-                if (killedDealer) {
-                    for (int j = 0; j < dom->GetCount(); j++) {
-                        Object* tableObj = dom->GetObject(j);
-                        if (tableObj) {
-                            std::string tableType = tableObj->GetType();
-                            if (tableType.find("poker_table") != std::string::npos) {
-                                PokerTable* table = static_cast<PokerTable*>(tableObj);
-                                table->MakePotItemsInteractable();
-                            }
-                        }
-                    }
-                }
-
-                // Remove person from DOM and delete
-                DOM::GetGlobal()->RemoveAndDelete(hitPerson);
+            // Remove person from DOM and delete
+            if (dom) {
+                dom->RemoveAndDelete(hitPerson);
             }
         }
 
@@ -584,10 +540,8 @@ void Player::HandleUseItem() {
         if (weapon->GetAmmo() <= 0) {
             // Remove from inventory
             inventory.RemoveItem(selectedItemIndex);
-
             // Delete the weapon immediately (inventory no longer references it)
             delete weapon;
-
             // Deselect item since it's gone
             selectedItemIndex = -1;
             lastHeldItemIndex = -1;
@@ -597,10 +551,10 @@ void Player::HandleUseItem() {
     else if (itemType.find("substance") != std::string::npos) {
         // Remove from inventory (already consumed via Use())
         inventory.RemoveItem(selectedItemIndex);
-        
+
         // Delete the substance object
         delete stack->item;
-        
+
         // Clear selection if inventory is now empty
         if (inventory.GetStackCount() == 0) {
             selectedItemIndex = -1;
@@ -645,20 +599,9 @@ void Player::DrawHeldItem() {
         return;
     }
 
-    // Check if it's a pistol (use substring check due to type hierarchy)
-    std::string itemType = stack->item->GetType();
-    if (itemType.empty()) {
-        return;  // Safety check - GetType() returned null
-    }
-
-    if (itemType.find("pistol") != std::string::npos) {
-        Pistol* pistol = static_cast<Pistol*>(stack->item);
-        if (!pistol) {
-            return;  // Safety check - cast failed
-        }
-        Camera3D* cam = GetCamera();
-        pistol->DrawHeld(*cam);
-    }
+    // Call DrawHeld on the item - it will do nothing if not overridden
+    Camera3D* cam = GetCamera();
+    stack->item->DrawHeld(*cam);
 }
 
 void Player::SitDown(Vector3 seatPos) {

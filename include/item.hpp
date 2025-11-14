@@ -24,6 +24,10 @@ public:
     // Virtual method for using the item (weapons shoot, substances consume)
     // Default: does nothing. Override in Weapon and Substance.
     virtual void Use() {}
+
+    // Virtual method for drawing the item in first-person (when held by player)
+    // Default: does nothing. Override in items that should be visible when held.
+    virtual void DrawHeld(Camera3D camera) { (void)camera; }
 };
 
 #endif

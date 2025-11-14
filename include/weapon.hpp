@@ -23,10 +23,15 @@ public:
     Object* Clone(Vector3 newPos) const override = 0;  // Pure virtual - subclasses must specify concrete type
 
     // Weapon-specific methods
-    virtual void DrawHeld(Camera3D camera) = 0;  // Pure virtual - subclasses must implement mesh
-    void Use() override;  // Shoot the weapon (decrements ammo)
+    void DrawHeld(Camera3D camera) override = 0;  // Pure virtual - subclasses must implement mesh
+    void Use() override;  // Shoot the weapon (decrements ammo) - called by Item::Use()
     void Shoot();  // Legacy method - calls Use()
     bool CanShoot() const { return ammo > 0; }
+    
+    // Raycast from the weapon to check for hits
+    // Returns the Person* that was hit, or nullptr if no hit
+    // shooter parameter prevents hitting yourself
+    class Person* PerformRaycast(Vector3 rayStart, Vector3 rayDirection, class Person* shooter = nullptr);
 
     // Accessors
     int GetAmmo() const { return ammo; }
