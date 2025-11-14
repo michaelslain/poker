@@ -14,6 +14,7 @@ TEST_CASE("Item - Construction", "[item]") {
         REQUIRE(item.position.x == 0.0f);
         REQUIRE(item.position.y == 0.0f);
         REQUIRE(item.position.z == 0.0f);
+        REQUIRE(item.usable == false);  // Items are not usable by default
     }
     
     SECTION("Create at custom position") {
@@ -21,6 +22,7 @@ TEST_CASE("Item - Construction", "[item]") {
         REQUIRE(item.position.x == 5.0f);
         REQUIRE(item.position.y == 10.0f);
         REQUIRE(item.position.z == 15.0f);
+        REQUIRE(item.usable == false);  // Items are not usable by default
     }
 }
 

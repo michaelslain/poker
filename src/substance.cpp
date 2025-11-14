@@ -5,6 +5,7 @@
 Substance::Substance(Vector3 pos, Color substanceColor, PhysicsWorld* physics)
     : Item(pos), rigidBody(nullptr), color(substanceColor)
 {
+    usable = true;  // Substances can be consumed
     // Initialize physics if provided
     if (physics) {
         Vector3 substanceSize = {0.2f, 0.2f, 0.2f};  // Small cube for substances
@@ -66,4 +67,8 @@ void Substance::DrawIcon(Rectangle destRect) {
 
 std::string Substance::GetType() const {
     return Item::GetType() + "_substance";
+}
+
+void Substance::Use() {
+    Consume();  // Call the substance-specific consume effect
 }

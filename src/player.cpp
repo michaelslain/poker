@@ -3,7 +3,9 @@
 #include "interactable.hpp"
 #include "poker_table.hpp"
 #include "wall.hpp"
+#include "weapon.hpp"
 #include "pistol.hpp"
+#include "substance.hpp"
 #include "person.hpp"
 #include "dom.hpp"
 #include "inventory_ui.hpp"
@@ -395,7 +397,7 @@ void Player::Update(float deltaTime) {
     HandleInteraction();
 
     // Handle shooting (left click)
-    HandleShooting();
+    HandleUseItem();
 }
 
 Interactable* Player::GetClosestInteractable() {
@@ -449,7 +451,7 @@ Interactable* Player::GetClosestInteractable() {
     return closestInteractable;
 }
 
-void Player::HandleShooting() {
+void Player::HandleUseItem() {
 
 
     // Only shoot if left mouse button is pressed and we have an item selected
@@ -467,134 +469,146 @@ void Player::HandleShooting() {
         return;
     }
 
-    // Check if it's a pistol (use substring check due to type hierarchy)
+    // Check if item is usable (weapons, substances)
+    if (!stack->item->usable) {
+        return;  // Can't use cards or chips
+    }
+    
+    // Use the item (weapons shoot, substances consume)
+    stack->item->Use();
+    
+    // Handle weapon-specific logic (raycast and ammo management)
     std::string itemType = stack->item->GetType();
+    if (itemType.find("weapon") != std::string::npos) {
+        Weapon* weapon = static_cast<Weapon*>(stack->item);
 
-    if (itemType.find("pistol") == std::string::npos) {
-        return;
-    }
+        // Raycast to check if we hit anyone
+        Camera3D* cam = GetCamera();
+        Vector3 rayStart = cam->position;
+        Vector3 direction = Vector3Normalize({
+            cam->target.x - cam->position.x,
+            cam->target.y - cam->position.y,
+            cam->target.z - cam->position.z
+        });
 
-    Pistol* pistol = static_cast<Pistol*>(stack->item);
+        // Cast ray through all people in the DOM
+        DOM* dom = DOM::GetGlobal();
+        if (dom) {
+            float maxDistance = 1000.0f;  // Max shooting range
+            Person* hitPerson = nullptr;
+            float closestHit = maxDistance;
 
-    // Check if we can shoot
-    if (!pistol->CanShoot()) {
-        return;
-    }
+            for (int i = 0; i < dom->GetCount(); i++) {
+                Object* obj = dom->GetObject(i);
+                if (!obj) continue;
 
-    // Shoot the pistol (decrements ammo)
-    pistol->Shoot();
+                std::string type = obj->GetType();
+                if (type.find("person") != std::string::npos) {
+                    Person* person = static_cast<Person*>(obj);
 
+                    // Don't shoot yourself!
+                    if (person == this) continue;
 
-    // Instant raycast from camera
-    Camera3D* cam = GetCamera();
-    Vector3 rayStart = cam->position;
-    Vector3 direction = Vector3Normalize({
-        cam->target.x - cam->position.x,
-        cam->target.y - cam->position.y,
-        cam->target.z - cam->position.z
-    });
+                    // Cylinder collision: check if ray intersects the person's hitbox
+                    float personHeight = person->GetHeight();
+                    float personTopY = person->position.y + 2.4f * personHeight;
+                    float personBottomY = person->position.y;
+                    float hitRadius = 0.5f;
 
-    // Cast ray through all people in the DOM
-    DOM* dom = DOM::GetGlobal();
-    if (dom) {
-        float maxDistance = 1000.0f;  // Max shooting range
-        Person* hitPerson = nullptr;
-        float closestHit = maxDistance;
+                    // For each point along the ray, check cylinder intersection
+                    for (float dist = 0; dist < maxDistance; dist += 0.1f) {
+                        Vector3 rayPoint = {
+                            rayStart.x + direction.x * dist,
+                            rayStart.y + direction.y * dist,
+                            rayStart.z + direction.z * dist
+                        };
 
-        for (int i = 0; i < dom->GetCount(); i++) {
-            Object* obj = dom->GetObject(i);
-            if (!obj) continue;
+                        // Check if within height range
+                        if (rayPoint.y >= personBottomY && rayPoint.y <= personTopY) {
+                            // Check horizontal distance
+                            float dx = rayPoint.x - person->position.x;
+                            float dz = rayPoint.z - person->position.z;
+                            float horizontalDist = sqrtf(dx*dx + dz*dz);
 
-            std::string type = obj->GetType();
-            if (type.find("person") != std::string::npos) {
-
-                Person* person = static_cast<Person*>(obj);
-
-                // Don't shoot yourself!
-                if (person == this) continue;
-
-                // Cylinder collision: check if ray intersects the person's hitbox
-                float personHeight = person->GetHeight();
-                float personTopY = person->position.y + 2.4f * personHeight;
-                float personBottomY = person->position.y;
-                float hitRadius = 0.5f;
-
-                // For each point along the ray, check cylinder intersection
-                for (float dist = 0; dist < maxDistance; dist += 0.1f) {
-                    Vector3 rayPoint = {
-                        rayStart.x + direction.x * dist,
-                        rayStart.y + direction.y * dist,
-                        rayStart.z + direction.z * dist
-                    };
-
-                    // Check if within height range
-                    if (rayPoint.y >= personBottomY && rayPoint.y <= personTopY) {
-                        // Check horizontal distance
-                        float dx = rayPoint.x - person->position.x;
-                        float dz = rayPoint.z - person->position.z;
-                        float horizontalDist = sqrtf(dx*dx + dz*dz);
-
-                        if (horizontalDist < hitRadius && dist < closestHit) {
-                            hitPerson = person;
-                            closestHit = dist;
-                            break;  // Hit this person, stop checking this person
+                            if (horizontalDist < hitRadius && dist < closestHit) {
+                                hitPerson = person;
+                                closestHit = dist;
+                                break;  // Hit this person, stop checking this person
+                            }
                         }
                     }
                 }
+            }
+
+            // If we hit someone, kill them
+            if (hitPerson) {
+                TraceLog(LOG_INFO, "Shot hit %s", hitPerson->GetName().c_str());
+
+                // Check if we killed a dealer
+                bool killedDealer = (hitPerson->GetType().find("dealer") != std::string::npos);
+
+                // If person is sitting, unseat them from all poker tables
+                if (hitPerson->IsSeated()) {
+                    for (int j = 0; j < dom->GetCount(); j++) {
+                        Object* tableObj = dom->GetObject(j);
+                        if (tableObj) {
+                            std::string tableType = tableObj->GetType();
+                            if (tableType.find("poker_table") != std::string::npos) {
+                                PokerTable* table = static_cast<PokerTable*>(tableObj);
+                                table->UnseatPerson(hitPerson);
+                            }
+                        }
+                    }
+                }
+
+                // If we killed a dealer, make all pot items interactable
+                if (killedDealer) {
+                    for (int j = 0; j < dom->GetCount(); j++) {
+                        Object* tableObj = dom->GetObject(j);
+                        if (tableObj) {
+                            std::string tableType = tableObj->GetType();
+                            if (tableType.find("poker_table") != std::string::npos) {
+                                PokerTable* table = static_cast<PokerTable*>(tableObj);
+                                table->MakePotItemsInteractable();
+                            }
+                        }
+                    }
+                }
+
+                // Remove person from DOM and delete
+                DOM::GetGlobal()->RemoveAndDelete(hitPerson);
             }
         }
 
-        // If we hit someone, kill them
-        if (hitPerson) {
-            TraceLog(LOG_INFO, "Shot hit %s", hitPerson->GetName().c_str());
+        // Check if weapon is out of ammo after shooting
+        if (weapon->GetAmmo() <= 0) {
+            // Remove from inventory
+            inventory.RemoveItem(selectedItemIndex);
 
-            // Check if we killed a dealer
-            bool killedDealer = (hitPerson->GetType().find("dealer") != std::string::npos);
+            // Delete the weapon immediately (inventory no longer references it)
+            delete weapon;
 
-            // If person is sitting, unseat them from all poker tables
-            if (hitPerson->IsSeated()) {
-                for (int j = 0; j < dom->GetCount(); j++) {
-                    Object* tableObj = dom->GetObject(j);
-                    if (tableObj) {
-                        std::string tableType = tableObj->GetType();
-                        if (tableType.find("poker_table") != std::string::npos) {
-                            PokerTable* table = static_cast<PokerTable*>(tableObj);
-                            table->UnseatPerson(hitPerson);
-                        }
-                    }
-                }
-            }
-
-            // If we killed a dealer, make all pot items interactable
-            if (killedDealer) {
-                for (int j = 0; j < dom->GetCount(); j++) {
-                    Object* tableObj = dom->GetObject(j);
-                    if (tableObj) {
-                        std::string tableType = tableObj->GetType();
-                        if (tableType.find("poker_table") != std::string::npos) {
-                            PokerTable* table = static_cast<PokerTable*>(tableObj);
-                            table->MakePotItemsInteractable();
-                        }
-                    }
-                }
-            }
-
-            // Remove person from DOM and delete
-            DOM::GetGlobal()->RemoveAndDelete(hitPerson);
+            // Deselect item since it's gone
+            selectedItemIndex = -1;
+            lastHeldItemIndex = -1;
         }
     }
-    // Check if pistol is out of ammo after shooting
-    if (pistol->GetAmmo() <= 0) {
-
-        // Remove from inventory
+    // Handle substance consumption (remove from inventory after use)
+    else if (itemType.find("substance") != std::string::npos) {
+        // Remove from inventory (already consumed via Use())
         inventory.RemoveItem(selectedItemIndex);
-
-        // Delete the pistol immediately (inventory no longer references it)
-        delete pistol;
-
-        // Deselect item since it's gone
-        selectedItemIndex = -1;
-        lastHeldItemIndex = -1;
+        
+        // Delete the substance object
+        delete stack->item;
+        
+        // Clear selection if inventory is now empty
+        if (inventory.GetStackCount() == 0) {
+            selectedItemIndex = -1;
+        }
+        // Adjust selection if it's now out of bounds
+        else if (selectedItemIndex >= inventory.GetStackCount()) {
+            selectedItemIndex = inventory.GetStackCount() - 1;
+        }
     }
 }
 

@@ -22,6 +22,7 @@ public:
     Object* Clone(Vector3 newPos) const override = 0;  // Pure virtual - subclasses must specify concrete type
 
     // Substance-specific methods
+    void Use() override final;  // Consume the substance (calls Consume())
     virtual void Consume() = 0;  // Pure virtual - each substance has unique effects
     virtual const char* GetName() const = 0;  // Pure virtual - each substance has a name
 };

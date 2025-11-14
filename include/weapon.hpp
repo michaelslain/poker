@@ -24,7 +24,8 @@ public:
 
     // Weapon-specific methods
     virtual void DrawHeld(Camera3D camera) = 0;  // Pure virtual - subclasses must implement mesh
-    void Shoot();  // Decrements ammo
+    void Use() override;  // Shoot the weapon (decrements ammo)
+    void Shoot();  // Legacy method - calls Use()
     bool CanShoot() const { return ammo > 0; }
 
     // Accessors

@@ -3,6 +3,7 @@
 Weapon::Weapon(Vector3 pos, int initialAmmo, int maxAmmoCapacity, PhysicsWorld* physics)
     : Item(pos), ammo(initialAmmo), maxAmmo(maxAmmoCapacity), rigidBody(nullptr)
 {
+    usable = true;  // Weapons can be used
     // Initialize physics if provided
     if (physics) {
         Vector3 weaponSize = {0.3f, 0.2f, 0.5f};  // Default weapon size
@@ -33,10 +34,14 @@ std::string Weapon::GetType() const {
     return Item::GetType() + "_weapon";
 }
 
-void Weapon::Shoot() {
+void Weapon::Use() {
     if (ammo > 0) {
         ammo--;
     }
+}
+
+void Weapon::Shoot() {
+    Use();  // Legacy method - just call Use()
 }
 
 const char* Weapon::GetDisplayCount(int stackCount) const {

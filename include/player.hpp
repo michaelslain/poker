@@ -60,7 +60,7 @@ public:
 
     // Player-specific methods
     void HandleInteraction();
-    void HandleShooting();
+    void HandleUseItem();
     Interactable* GetClosestInteractable();
     void Draw(Camera3D camera) override;
     void DrawInventoryUI();

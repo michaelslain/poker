@@ -1,7 +1,7 @@
 #include "item.hpp"
 
 Item::Item(Vector3 pos)
-    : Interactable(pos)
+    : Interactable(pos), usable(false)
 {
 }
 

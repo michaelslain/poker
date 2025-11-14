@@ -57,12 +57,18 @@ $(TARGET): $(OBJS)
 	@echo "Linking $(TARGET)..."
 	@$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
-# Build and run tests
+# Build and run tests (always in debug mode for better error messages)
+test: CXXFLAGS += -O0 -g -DDEBUG
 test: $(TEST_TARGET)
 	./$(TEST_TARGET)
 
 $(TEST_TARGET): $(TEST_ALL_OBJS)
-	$(CXX) $(TEST_ALL_OBJS) -o $(TEST_TARGET) $(LDFLAGS)
+	@echo "Linking $(TEST_TARGET)..."
+	@$(CXX) $(TEST_ALL_OBJS) -o $(TEST_TARGET) $(LDFLAGS)
+
+# Clean only test artifacts
+clean-test:
+	rm -f tests/*.o $(TEST_TARGET)
 
 # Test file compilation (must come before generic %.o rule)
 tests/%.o: tests/%.cpp
