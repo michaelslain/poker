@@ -98,12 +98,8 @@ void Player::HandleInteraction() {
     else if (typeStr.find("item") != std::string::npos) {
         Item* item = static_cast<Item*>(closestInteractable);
 
-        TraceLog(LOG_WARNING, "PICKUP: Item type = '%s'", typeStr.c_str());
-
         // Add to inventory
         inventory.AddItem(item);
-
-        TraceLog(LOG_WARNING, "PICKUP: Item added, inventory count = %d", inventory.GetStackCount());
 
         // Remove from DOM - inventory now owns it
         DOM* dom = DOM::GetGlobal();
@@ -454,44 +450,29 @@ Interactable* Player::GetClosestInteractable() {
 }
 
 void Player::HandleShooting() {
-    // Debug: Check if function is being called
-    static int frameCount = 0;
-    if (frameCount++ % 60 == 0) {
-        TraceLog(LOG_WARNING, "SHOOT: HandleShooting called, mousePressed=%d, bettingUI=%d",
-                 IsMouseButtonPressed(MOUSE_LEFT_BUTTON), bettingUIActive);
-    }
+
 
     // Only shoot if left mouse button is pressed and we have an item selected
     if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;
     }
 
-    TraceLog(LOG_WARNING, "SHOOT: Mouse clicked, selectedIndex=%d, inventoryCount=%d",
-             selectedItemIndex, inventory.GetStackCount());
-
     if (selectedItemIndex < 0 || selectedItemIndex >= inventory.GetStackCount()) {
-        TraceLog(LOG_WARNING, "SHOOT: No valid selection");
         return;
     }
 
     // Get the selected item
     ItemStack* stack = inventory.GetStack(selectedItemIndex);
     if (!stack || !stack->item) {
-        TraceLog(LOG_WARNING, "SHOOT: Stack or item is null");
         return;
     }
 
     // Check if it's a pistol (use substring check due to type hierarchy)
     std::string itemType = stack->item->GetType();
-    TraceLog(LOG_WARNING, "SHOOT: Item type = '%s', contains pistol = %d",
-             itemType.c_str(), itemType.find("pistol") != std::string::npos);
 
     if (itemType.find("pistol") == std::string::npos) {
-        TraceLog(LOG_WARNING, "SHOOT: Not a pistol, aborting");
         return;
     }
-
-    TraceLog(LOG_WARNING, "SHOOT: Found pistol, attempting to shoot");
 
     Pistol* pistol = static_cast<Pistol*>(stack->item);
 
@@ -652,15 +633,11 @@ void Player::DrawHeldItem() {
 
     // Check if it's a pistol (use substring check due to type hierarchy)
     std::string itemType = stack->item->GetType();
-    TraceLog(LOG_WARNING, "DRAWHELD: Item type = '%s', contains pistol = %d",
-             itemType.c_str(), itemType.find("pistol") != std::string::npos);
-
     if (itemType.empty()) {
         return;  // Safety check - GetType() returned null
     }
 
     if (itemType.find("pistol") != std::string::npos) {
-        TraceLog(LOG_WARNING, "DRAWHELD: Drawing pistol!");
         Pistol* pistol = static_cast<Pistol*>(stack->item);
         if (!pistol) {
             return;  // Safety check - cast failed

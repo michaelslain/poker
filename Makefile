@@ -1,5 +1,12 @@
 # Use C++ compiler
 CXX = g++
+# Use ccache for faster compilation
+CXX = ccache g++
+
+# Enable parallel compilation (use all CPU cores)
+MAKEFLAGS += -j$(shell sysctl -n hw.ncpu)
+
+# Base compiler flags
 CXXFLAGS = -Wall -Wextra -std=c++17 -I/opt/homebrew/opt/raylib/include -I/opt/homebrew/opt/ode/include -Iinclude
 LDFLAGS = -L/opt/homebrew/opt/raylib/lib -L/opt/homebrew/opt/ode/lib -lraylib -lode -lm
 
@@ -33,11 +40,22 @@ TEST_SRCS = tests/catch_amalgamated.cpp tests/test_main.cpp tests/test_object.cp
 TEST_OBJS = src/object.o src/person.o src/enemy.o src/dealer.o src/camera.o src/player.o src/interactable.o src/item.o src/weapon.o src/pistol.o src/substance.o src/adrenaline.o src/salvia.o src/cocaine.o src/shrooms.o src/vodka.o src/weed.o src/molly.o src/card.o src/chip.o src/chip_stack.o src/deck.o src/poker_table.o src/dom.o src/inventory.o src/inventory_ui.o src/render_utils.o src/floor.o src/ceiling.o src/wall.o src/light.o src/lighting_manager.o src/light_bulb.o src/collider.o src/physics.o src/rigidbody.o src/spawner.o src/scene.o src/scene_manager.o scenes/game_scene.o
 TEST_ALL_OBJS = $(TEST_SRCS:.cpp=.o) $(TEST_OBJS)
 
-# Build target
-all: $(TARGET)
+# Build targets
+all: release
+
+# Debug build (fast compilation, slower runtime, better error messages)
+debug: CXXFLAGS += -O0 -g -DDEBUG
+debug: $(TARGET)
+	@echo "✓ Debug build complete - use './game' to run"
+
+# Release build (slower compilation, faster runtime, optimized)
+release: CXXFLAGS += -O2
+release: $(TARGET)
+	@echo "✓ Release build complete - use './game' to run"
 
 $(TARGET): $(OBJS)
-	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
+	@echo "Linking $(TARGET)..."
+	@$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 # Build and run tests
 test: $(TEST_TARGET)
@@ -62,8 +80,21 @@ scenes/%.o: scenes/%.cpp
 clean:
 	rm -f $(OBJS) $(TARGET) src/*.o tests/*.o scenes/*.o $(TEST_TARGET)
 
-# Run the game
-run: $(TARGET)
+# Run the game (builds in release mode by default)
+run: release
 	./$(TARGET)
 
-.PHONY: all clean run test
+# Run in debug mode (faster compilation)
+run-debug: debug
+	./$(TARGET)
+
+# Show ccache statistics
+ccache-stats:
+	@ccache -s
+
+# Clear ccache
+ccache-clear:
+	@ccache -C
+	@echo "✓ ccache cleared"
+
+.PHONY: all debug release clean run run-debug test ccache-stats ccache-clear

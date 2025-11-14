@@ -12,20 +12,36 @@
 
 ### Prerequisites
 
-Install raylib and ODE:
+Install raylib, ODE, and ccache:
 ```bash
 brew install raylib
 brew install ode
+brew install ccache  # For faster compilation
 ```
 
 ### Build and Run
 
+The project uses **ccache** for compilation caching, **parallel compilation** for speed, and supports both debug and release builds.
+
 ```bash
-make        # Compile the project
-make run    # Build and run
-make test   # Run all unit tests
-make clean  # Clean build artifacts
+# Development (fast compilation, best for iteration)
+make run-debug    # Build in debug mode and run (2-5x faster compile)
+make debug        # Just build debug mode
+
+# Release (optimized for performance)
+make run          # Build in release mode and run (default)
+make release      # Just build release mode
+
+# Testing
+make test         # Run all unit tests
+
+# Utilities
+make clean        # Clean build artifacts
+make ccache-stats # Show compilation cache statistics
+make ccache-clear # Clear compilation cache
 ```
+
+**Recommended workflow**: Use `make run-debug` during development for fastest iteration (like TypeScript hot-reload). Use `make run` when testing final performance.
 
 ### Controls
 
@@ -53,7 +69,16 @@ Object (base class)
 │   ├── Item (pickupable objects)
 │   │   ├── Card
 │   │   ├── Chip
-│   │   └── Pistol
+│   │   ├── Weapon (abstract base)
+│   │   │   └── Pistol (6-round revolver)
+│   │   └── Substance (abstract base)
+│   │       ├── Weed
+│   │       ├── Cocaine
+│   │       ├── Molly
+│   │       ├── Adrenaline
+│   │       ├── Salvia
+│   │       ├── Shrooms
+│   │       └── Vodka
 │   └── PokerTable
 ├── Person (abstract base with inventory)
 │   ├── Player (human-controlled with insanity system)
@@ -62,8 +87,19 @@ Object (base class)
 ├── Light (base for lighting)
 │   └── LightBulb (point light with decorative geometry)
 ├── Floor / Ceiling / Wall (geometry)
+├── RigidBody (physics-enabled objects)
 ├── Spawner (object spawning)
 └── ChipStack (chip management)
+
+Standalone Classes:
+├── GameCamera (first-person camera)
+├── PhysicsWorld (ODE wrapper)
+├── DOM (scene graph manager)
+├── Inventory (item storage)
+├── Deck (card deck)
+├── Collider (physics collision component)
+├── Scene (scene data)
+└── SceneManager (singleton scene switching)
 ```
 
 ### Key Systems
