@@ -1,4 +1,5 @@
 #include "shrooms.hpp"
+#include "psychedelic_manager.hpp"
 
 Shrooms::Shrooms(Vector3 pos, PhysicsWorld* physics)
     : Substance(pos, (Color){150, 100, 200, 255}, physics)  // Purple color for shrooms
@@ -10,8 +11,8 @@ Shrooms::~Shrooms() {
 }
 
 void Shrooms::Consume() {
-    // TODO: Implement shrooms effects (visual distortions, etc.)
-    // For now, just placeholder
+    // Start psychedelic trip with full intensity
+    PsychedelicManager::StartTrip(1.0f);
 }
 
 std::string Shrooms::GetType() const {

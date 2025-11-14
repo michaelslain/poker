@@ -21,27 +21,14 @@ brew install ccache  # For faster compilation
 
 ### Build and Run
 
-The project uses **ccache** for compilation caching, **parallel compilation** for speed, and supports both debug and release builds.
-
 ```bash
-# Development (fast compilation, best for iteration)
-make run-debug    # Build in debug mode and run (2-5x faster compile)
+make run-debug    # Build in debug mode and run
 make debug        # Just build debug mode
-
-# Release (optimized for performance)
-make run          # Build in release mode and run (default)
+make run          # Build in release mode and run
 make release      # Just build release mode
-
-# Testing
 make test         # Run all unit tests
-
-# Utilities
 make clean        # Clean build artifacts
-make ccache-stats # Show compilation cache statistics
-make ccache-clear # Clear compilation cache
 ```
-
-**Recommended workflow**: Use `make run-debug` during development for fastest iteration (like TypeScript hot-reload). Use `make run` when testing final performance.
 
 ### Controls
 
@@ -107,6 +94,7 @@ Standalone Classes:
 - **Inventory** - Dynamic item stacking with automatic sorting
 - **Poker game logic** - Complete Texas Hold'em implementation with betting, hand evaluation, and showdown
 - **Lighting** - `LightingManager` static class managing shader-based lighting with up to 4 dynamic lights
+- **Psychedelic system** - `PsychedelicManager` with post-processing shaders for shrooms trips (5-minute duration with come-up, peak, and come-down stages)
 - **Insanity** - Player mental state system affecting FOV based on movement
 - **Scene management** - Scene system for different game states
 - **Testing** - Catch2 v3.5.0 framework with 114 test cases (725 assertions) covering all classes

@@ -1,10 +1,13 @@
-#include "scene_manager.hpp"
-#include "scenes/game_scene.hpp"
 #include "dom.hpp"
 #include "physics.hpp"
 #include "player.hpp"
 #include "light.hpp"
 #include "lighting_manager.hpp"
+#include "psychedelic_manager.hpp"
+#include "interactable.hpp"
+#include "scene.hpp"
+#include "scene_manager.hpp"
+#include "scenes/game_scene.hpp"
 #include "raylib.h"
 #include <string>
 
@@ -23,14 +26,15 @@ int main(void)
     // Initialization
     const int screenWidth = 1500;
     const int screenHeight = 900;
-    InitWindow(screenWidth, screenHeight, "Poker - First Person");
 
+    InitWindow(screenWidth, screenHeight, "Poker - First Person");
     SetTraceLogLevel(LOG_WARNING);
     DisableCursor();
 
     // Initialize core systems
     PhysicsWorld physics;
     LightingManager::InitLightingSystem();
+    PsychedelicManager::InitPsychedelicSystem();
 
     // Initialize DOM (main owns this)
     DOM dom;
@@ -57,6 +61,9 @@ int main(void)
             break;
         }
     }
+
+    // Create render texture for psychedelic post-processing
+    RenderTexture2D renderTarget = LoadRenderTexture(screenWidth, screenHeight);
 
     SetTargetFPS(60);
 
@@ -100,16 +107,19 @@ int main(void)
             dom.GetObject(i)->Update(deltaTime);
         }
 
+        // Update psychedelic effect
+        PsychedelicManager::Update(deltaTime);
+
         // Get closest interactable
         Interactable* closestInteractable = player ? player->GetClosestInteractable() : nullptr;
 
         // Rendering
-        BeginDrawing();
-        ClearBackground(BLACK);
-
         if (player) {
             Camera3D* camera = player->GetCamera();
-
+            
+            // Step 1: Render 3D scene to texture
+            BeginTextureMode(renderTarget);
+            ClearBackground(BLACK);
             BeginMode3D(*camera);
 
             // Get lighting shader
@@ -120,10 +130,8 @@ int main(void)
                 BeginShaderMode(lightingShader);
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
-
                     // Skip unlit objects
                     if (!obj->usesLighting) continue;
-
                     obj->Draw(*camera);
                 }
                 EndShaderMode();
@@ -132,7 +140,6 @@ int main(void)
             // Draw unlit objects
             for (int i = 0; i < dom.GetCount(); i++) {
                 Object* obj = dom.GetObject(i);
-
                 if (!obj->usesLighting) {
                     obj->Draw(*camera);
                 }
@@ -147,26 +154,62 @@ int main(void)
             }
 
             EndMode3D();
+            EndTextureMode();
 
-            // Draw UI
+            // Step 2: Draw to screen with optional psychedelic shader
+            BeginDrawing();
+            ClearBackground(BLACK);
+
+            // Apply psychedelic shader if tripping
+            if (PsychedelicManager::IsTripping()) {
+                Shader& psychShader = PsychedelicManager::GetPsychedelicShader();
+                
+                // Update shader uniforms
+                float tripTime = PsychedelicManager::GetTripTime();
+                float intensity = PsychedelicManager::GetCurrentIntensity();
+                SetShaderValue(psychShader, GetShaderLocation(psychShader, "time"), &tripTime, SHADER_UNIFORM_FLOAT);
+                SetShaderValue(psychShader, GetShaderLocation(psychShader, "intensity"), &intensity, SHADER_UNIFORM_FLOAT);
+                
+                BeginShaderMode(psychShader);
+            }
+
+            // Draw the render texture to screen
+            DrawTextureRec(renderTarget.texture, 
+                          (Rectangle){ 0, 0, (float)renderTarget.texture.width, -(float)renderTarget.texture.height },
+                          (Vector2){ 0, 0 }, WHITE);
+
+            if (PsychedelicManager::IsTripping()) {
+                EndShaderMode();
+            }
+
+            // Draw UI on top (not affected by psychedelic shader)
             player->DrawInventoryUI();
             player->DrawBettingUI();
             player->DrawInsanityMeter();
-        }
+            DrawFPS(10, screenHeight - 30);
 
-        DrawFPS(10, screenHeight - 30);
-        EndDrawing();
+            EndDrawing();
+        } else {
+            BeginDrawing();
+            ClearBackground(BLACK);
+            DrawFPS(10, screenHeight - 30);
+            EndDrawing();
+        }
     }
 
     // Cleanup
+    UnloadRenderTexture(renderTarget);
+    
     for (int i = 0; i < dom.GetCount(); i++) {
         delete dom.GetObject(i);
     }
     dom.Cleanup();
 
+    PsychedelicManager::CleanupPsychedelicSystem();
     LightingManager::CleanupLightingSystem();
     SceneManager::DestroyInstance();
 
     CloseWindow();
+
     return 0;
 }
