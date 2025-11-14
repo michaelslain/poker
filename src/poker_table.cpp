@@ -290,6 +290,28 @@ void PokerTable::MakePotItemsInteractable() {
 
 // ========== SEAT NAVIGATION ==========
 
+Person* PokerTable::GetValidOccupant(int seatIndex) {
+    // Validate seat index
+    if (seatIndex < 0 || seatIndex >= MAX_SEATS) {
+        return nullptr;
+    }
+    
+    // Check if seat is occupied
+    if (!seats[seatIndex].isOccupied) {
+        return nullptr;
+    }
+    
+    // Safety check - verify occupant pointer is valid
+    Person* occupant = seats[seatIndex].occupant;
+    if (!occupant) {
+        POKER_LOG(LOG_INFO, "ERROR: Seat %d marked occupied but has null occupant!", seatIndex);
+        seats[seatIndex].isOccupied = false;
+        return nullptr;
+    }
+    
+    return occupant;
+}
+
 int PokerTable::NextOccupiedSeat(int index) {
     for (int i = 1; i <= MAX_SEATS; i++) {
         int next = (index + i) % MAX_SEATS;
@@ -324,15 +346,7 @@ int PokerTable::CountChips(Person* p) {
     if (!p) return 0;
     Inventory* inv = p->GetInventory();
     if (!inv) return 0;
-    int total = 0;
-    for (int i = 0; i < inv->GetStackCount(); i++) {
-        ItemStack* stack = inv->GetStack(i);
-        if (stack && stack->item && stack->item->GetType().find("chip") != std::string::npos) {
-            Chip* chip = static_cast<Chip*>(stack->item);
-            total += chip->value * stack->count;
-        }
-    }
-    return total;
+    return inv->GetTotalChipValue();
 }
 
 
@@ -840,13 +854,7 @@ void PokerTable::Showdown() {
             if (!inv) continue;
             
             // Count cards in inventory
-            int cardCount = 0;
-            for (int j = 0; j < inv->GetStackCount(); j++) {
-                ItemStack* stack = inv->GetStack(j);
-                if (stack && stack->item && stack->item->GetType().find("card") != std::string::npos) {
-                    cardCount++;
-                }
-            }
+            int cardCount = inv->CountItemsByType("card");
             
             // If player has 3+ cards, show selection UI
             if (cardCount >= 3) {

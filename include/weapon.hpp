@@ -32,6 +32,12 @@ public:
     int GetMaxAmmo() const { return maxAmmo; }
     void SetAmmo(int newAmmo) { ammo = newAmmo > maxAmmo ? maxAmmo : (newAmmo < 0 ? 0 : newAmmo); }
     void Reload() { ammo = maxAmmo; }
+    
+    // Weapons don't stack - each weapon is unique
+    bool CanStack() const override { return false; }
+    
+    // Display ammo count instead of stack count
+    const char* GetDisplayCount(int stackCount) const override;
 };
 
 #endif

@@ -38,3 +38,8 @@ void Weapon::Shoot() {
         ammo--;
     }
 }
+
+const char* Weapon::GetDisplayCount(int stackCount) const {
+    (void)stackCount;  // Unused - weapons show ammo, not stack count
+    return TextFormat("%d", ammo);
+}

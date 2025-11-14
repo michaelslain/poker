@@ -23,8 +23,8 @@ bool Inventory::AddItem(Item* item) {
         return false;
     }
     
-    // Pistols and cards don't stack (each is a unique object) - always create new slot
-    if (itemType.find("pistol") != std::string::npos || itemType.find("card") != std::string::npos) {
+    // Non-stackable items (cards, weapons, etc.) - always create new slot
+    if (!item->CanStack()) {
         stacks.push_back(ItemStack(item, 1, itemType));
         Sort();  // Sort after adding
         return true;
@@ -119,4 +119,35 @@ void Inventory::Sort() {
         // Default: maintain existing order
         return false;
     });
+}
+
+int Inventory::CountItemsByType(const std::string& typeSubstring) const {
+    int count = 0;
+    for (size_t i = 0; i < stacks.size(); i++) {
+        if (stacks[i].item && stacks[i].item->GetType().find(typeSubstring) != std::string::npos) {
+            count += stacks[i].count;
+        }
+    }
+    return count;
+}
+
+std::vector<int> Inventory::GetIndicesByType(const std::string& typeSubstring) const {
+    std::vector<int> indices;
+    for (size_t i = 0; i < stacks.size(); i++) {
+        if (stacks[i].item && stacks[i].item->GetType().find(typeSubstring) != std::string::npos) {
+            indices.push_back(i);
+        }
+    }
+    return indices;
+}
+
+int Inventory::GetTotalChipValue() const {
+    int totalValue = 0;
+    for (size_t i = 0; i < stacks.size(); i++) {
+        if (stacks[i].item && stacks[i].item->GetType().find("chip") != std::string::npos) {
+            Chip* chip = static_cast<Chip*>(stacks[i].item);
+            totalValue += chip->value * stacks[i].count;
+        }
+    }
+    return totalValue;
 }

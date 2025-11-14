@@ -46,7 +46,6 @@ private:
     float insanity;         // Current insanity level (0.0 to 1.0)
     float timeSinceLastMove;  // Time spent not moving
     Vector3 lastPosition;   // Position from last frame to detect movement
-    float baseFOV;          // Base FOV before insanity effect
 
 public:
     // Card selection UI state (for cheating with 3+ cards) - public so poker table can access

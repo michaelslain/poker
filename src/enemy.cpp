@@ -59,17 +59,7 @@ int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise,
             return 0;
         }
         
-        int totalChipValue = 0;
-        for (int i = 0; i < inv->GetStackCount(); i++) {
-            ItemStack* stack = inv->GetStack(i);
-            if (stack && stack->item) {
-                std::string type = stack->item->GetType();
-                if (type.find("chip") != std::string::npos) {
-                    Chip* chip = static_cast<Chip*>(stack->item);
-                    totalChipValue += chip->value * stack->count;
-                }
-            }
-        }
+        int totalChipValue = inv->GetTotalChipValue();
         
         // If we can't afford to call, must fold
         if (callAmount > totalChipValue && decision != 0) {

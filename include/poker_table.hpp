@@ -100,6 +100,7 @@ private:
     
     // Helper functions - Seat navigation
     int NextOccupiedSeat(int index);
+    Person* GetValidOccupant(int seatIndex);  // Safety check for valid occupant
     int NextActiveSeat(int index);  // Next seat that's occupied and not folded
     int GetOccupiedSeatCount();
     

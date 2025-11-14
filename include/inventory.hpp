@@ -38,6 +38,11 @@ public:
         return &stacks[index]; 
     }
     const std::vector<ItemStack>& GetStacks() const { return stacks; }
+    
+    // Helper methods to reduce code duplication
+    int CountItemsByType(const std::string& typeSubstring) const;
+    std::vector<int> GetIndicesByType(const std::string& typeSubstring) const;
+    int GetTotalChipValue() const;  // Get total value of all chips in inventory
 };
 
 #endif

@@ -21,7 +21,7 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
       selectedItemIndex(-1), lastHeldItemIndex(-1),
       bettingUIActive(false), bettingChoice(-1), raiseSliderValue(0), raiseMin(0), raiseMax(0),
       storedCurrentBet(0), storedCallAmount(0),
-      insanity(0.0f), timeSinceLastMove(0.0f), lastPosition(pos), baseFOV(60.0f),
+      insanity(0.0f), timeSinceLastMove(0.0f), lastPosition(pos),
       cardSelectionUIActive(false), selectedCardIndices()
 {
     if (physics != nullptr) {
@@ -94,8 +94,8 @@ void Player::HandleInteraction() {
             }
         }
     }
-    // Handle item pickup
-    else if (typeStr.find("card") != std::string::npos || typeStr.find("chip") != std::string::npos || typeStr.find("pistol") != std::string::npos) {
+    // Handle item pickup (any object that inherits from Item)
+    else if (typeStr.find("item") != std::string::npos) {
         Item* item = static_cast<Item*>(closestInteractable);
 
         TraceLog(LOG_WARNING, "PICKUP: Item type = '%s'", typeStr.c_str());
@@ -424,17 +424,10 @@ Interactable* Player::GetClosestInteractable() {
         Object* obj = dom->GetObject(i);
         std::string typeStr = obj->GetType();
 
-        bool isItem = (typeStr.find("card") != std::string::npos || typeStr.find("chip") != std::string::npos || typeStr.find("pistol") != std::string::npos);
-        bool isPokerTable = (typeStr.find("poker_table") != std::string::npos);
+        // Check if this object is an interactable
+        if (typeStr.find("interactable") == std::string::npos) continue;
 
-        if (!isItem && !isPokerTable) continue;
-
-        Interactable* interactable = nullptr;
-        if (isItem) {
-            interactable = static_cast<Interactable*>(obj);
-        } else if (isPokerTable) {
-            interactable = static_cast<Interactable*>(obj);
-        }
+        Interactable* interactable = static_cast<Interactable*>(obj);
 
 
 

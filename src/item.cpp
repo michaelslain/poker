@@ -14,3 +14,10 @@ void Item::DrawIcon(Rectangle destRect) {
 std::string Item::GetType() const {
     return Interactable::GetType() + "_item";
 }
+
+const char* Item::GetDisplayCount(int stackCount) const {
+    if (stackCount > 1) {
+        return TextFormat("%d", stackCount);
+    }
+    return nullptr;  // No count display for single items
+}

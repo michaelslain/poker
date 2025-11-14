@@ -36,19 +36,8 @@ void InventoryUI_Draw(Inventory* inventory, int selectedIndex) {
             DrawRectangleLinesEx(destRect, 2, LIGHTGRAY);
         }
         
-        // Draw count in bottom-right corner
-        // For pistols, show ammo count instead of stack count
-        const char* countText = nullptr;
-        std::string itemType = item->GetType();
-        
-        if (itemType.find("pistol") != std::string::npos) {
-            // Show ammo count for pistols
-            Pistol* pistol = static_cast<Pistol*>(item);
-            countText = TextFormat("%d", pistol->GetAmmo());
-        } else if (stack->count > 1) {
-            // Show stack count for other items
-            countText = TextFormat("%d", stack->count);
-        }
+        // Draw count in bottom-right corner (uses polymorphic GetDisplayCount)
+        const char* countText = item->GetDisplayCount(stack->count);
         
         if (countText != nullptr) {
             int textWidth = MeasureText(countText, 16);

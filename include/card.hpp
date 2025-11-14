@@ -48,6 +48,9 @@ public:
     std::string GetType() const override;
     Object* Clone(Vector3 newPos) const override;
     
+    // Cards don't stack - each card is unique
+    bool CanStack() const override { return false; }
+    
     static const char* GetSuitSymbol(Suit s);
     static const char* GetRankString(Rank r);
     static Color GetSuitColor(Suit s);

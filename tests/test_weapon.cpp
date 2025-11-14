@@ -27,6 +27,10 @@ public:
     std::string GetType() const override {
         return Weapon::GetType() + "_test_weapon";
     }
+    
+    Object* Clone(Vector3 newPos) const override {
+        return new TestWeapon(newPos, GetAmmo(), GetMaxAmmo());
+    }
 };
 
 TEST_CASE("Weapon - Construction", "[weapon]") {
