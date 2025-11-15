@@ -1,6 +1,6 @@
 #include "catch_amalgamated.hpp"
-#include "../include/inventory_ui.hpp"
-#include "../include/inventory.hpp"
+#include "rendering/inventory_ui.hpp"
+#include "items/inventory.hpp"
 
 TEST_CASE("InventoryUI - Draw with empty inventory", "[inventory_ui]") {
     Inventory inv;

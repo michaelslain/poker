@@ -1,6 +1,6 @@
 #include "catch_amalgamated.hpp"
-#include "../include/light_bulb.hpp"
-#include "../include/lighting_manager.hpp"
+#include "rendering/light_bulb.hpp"
+#include "rendering/lighting_manager.hpp"
 #include "raylib.h"
 
 TEST_CASE("LightBulb - Construction", "[light_bulb]") {
@@ -72,7 +72,7 @@ TEST_CASE("LightBulb - Update", "[light_bulb]") {
 TEST_CASE("LightBulb - Draw", "[light_bulb]") {
     SECTION("Draw with camera") {
         LightBulb bulb({0, 5, 0}, WHITE);
-        Camera3D camera = {0};
+        Camera3D camera = {};
         camera.position = {0, 0, -10};
         camera.target = {0, 0, 0};
         camera.up = {0, 1, 0};

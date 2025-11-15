@@ -1,10 +1,10 @@
 #include "catch_amalgamated.hpp"
-#include "../include/render_utils.hpp"
+#include "rendering/render_utils.hpp"
 
 TEST_CASE("RenderUtils - DrawTextBillboard", "[render_utils]") {
     // These functions use MeasureText which requires raylib to be initialized
     // We test that they don't crash - actual rendering is tested in gameplay
-    Camera3D camera = {0};
+    Camera3D camera = {};
     camera.position = {0, 2, -5};
     camera.target = {0, 0, 0};
     camera.up = {0, 1, 0};

@@ -1,13 +1,13 @@
 #include "catch_amalgamated.hpp"
-#include "../include/substance.hpp"
-#include "../include/adrenaline.hpp"
-#include "../include/salvia.hpp"
-#include "../include/cocaine.hpp"
-#include "../include/shrooms.hpp"
-#include "../include/vodka.hpp"
-#include "../include/weed.hpp"
-#include "../include/molly.hpp"
-#include "../include/inventory.hpp"
+#include "substances/substance.hpp"
+#include "substances/adrenaline.hpp"
+#include "substances/salvia.hpp"
+#include "substances/cocaine.hpp"
+#include "substances/shrooms.hpp"
+#include "substances/vodka.hpp"
+#include "substances/weed.hpp"
+#include "substances/molly.hpp"
+#include "items/inventory.hpp"
 
 TEST_CASE("Adrenaline - Construction", "[substance][adrenaline]") {
     SECTION("Create adrenaline") {

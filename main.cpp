@@ -1,15 +1,18 @@
-#include "dom.hpp"
-#include "physics.hpp"
-#include "player.hpp"
-#include "light.hpp"
-#include "lighting_manager.hpp"
-#include "psychedelic_manager.hpp"
-#include "interactable.hpp"
-#include "scene.hpp"
-#include "scene_manager.hpp"
+#include "core/dom.hpp"
+#include "core/physics.hpp"
+#include "entities/player.hpp"
+#include "rendering/light.hpp"
+#include "rendering/lighting_manager.hpp"
+#include "rendering/psychedelic_manager.hpp"
+#include "items/interactable.hpp"
+#include "core/scene.hpp"
+#include "core/scene_manager.hpp"
 #include "scenes/game_scene.hpp"
 #include "raylib.h"
 #include <string>
+
+// Forward declaration of death scene factory
+Scene* CreateDeathScene(PhysicsWorld* physics);
 
 // Global debug flag
 bool g_showCollisionDebug = false;
@@ -43,6 +46,7 @@ int main(void)
     // Initialize scene manager and register scenes
     SceneManager* sceneManager = SceneManager::GetInstance();
     sceneManager->RegisterSceneFactory("game", CreateGameScene);
+    sceneManager->RegisterSceneFactory("death", CreateDeathScene);
 
     // Load initial scene
     Scene* currentScene = sceneManager->CreateScene("game", &physics);
@@ -110,7 +114,7 @@ int main(void)
         // Update psychedelic effect
         PsychedelicManager::Update(deltaTime);
 
-        // Get closest interactable
+        // Get closest interactable (before potential scene switch)
         Interactable* closestInteractable = player ? player->GetClosestInteractable() : nullptr;
 
         // Rendering
@@ -186,14 +190,58 @@ int main(void)
             player->DrawInventoryUI();
             player->DrawBettingUI();
             player->insanityManager.DrawMeter();
+            
+            // Draw death vignette on top of everything
+            player->insanityManager.DrawDeathVignette();
+            
             DrawFPS(10, screenHeight - 30);
 
             EndDrawing();
         } else {
+            // No player - render death scene or other non-player scenes
             BeginDrawing();
             ClearBackground(BLACK);
+            
+            // Draw death scene objects (they handle their own 2D rendering)
+            for (int i = 0; i < dom.GetCount(); i++) {
+                Object* obj = dom.GetObject(i);
+                // Death scene objects draw in 2D, so we pass a dummy camera
+                Camera3D dummyCamera = { 0 };
+                obj->Draw(dummyCamera);
+            }
+            
             DrawFPS(10, screenHeight - 30);
             EndDrawing();
+        }
+        
+        // Check if player has died from insanity (AFTER rendering)
+        if (player && player->IsDead()) {
+            TraceLog(LOG_INFO, "DEATH: Player died, switching to death scene");
+            
+            // Clear player reference FIRST before cleanup
+            player = nullptr;
+            closestInteractable = nullptr;
+            
+            // Clean up current scene objects
+            for (int i = 0; i < dom.GetCount(); i++) {
+                Object* obj = dom.GetObject(i);
+                delete obj;
+            }
+            dom.Cleanup();
+            
+            TraceLog(LOG_INFO, "DEATH: Scene cleaned up, creating death scene");
+            
+            // Switch to death scene
+            currentScene = sceneManager->CreateScene("death", &physics);
+            if (currentScene) {
+                for (Object* obj : currentScene->GetInitialObjects()) {
+                    dom.AddObject(obj);
+                }
+                TraceLog(LOG_INFO, "DEATH: Death scene loaded successfully");
+            }
+            
+            // Continue to next frame - don't try to update/render with nullptr player
+            continue;
         }
     }
 

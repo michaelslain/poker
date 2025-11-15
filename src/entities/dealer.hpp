@@ -1,0 +1,17 @@
+#ifndef DEALER_HPP
+#define DEALER_HPP
+
+#include "entities/person.hpp"
+
+class PhysicsWorld;
+
+class Dealer : public Person {
+public:
+    Dealer(Vector3 pos, const std::string& name = "Dealer");
+    ~Dealer();
+    
+    void Update(float deltaTime) override;
+    std::string GetType() const override;
+};
+
+#endif

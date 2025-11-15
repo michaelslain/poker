@@ -1,19 +1,14 @@
 #include "catch_amalgamated.hpp"
 #include <string>
 
-// Helper to check if type ends with expected suffix
-static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
-    if (suffix.length() > type.length()) return false;
-    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
-}
-#include "../include/poker_table.hpp"
-#include "../include/player.hpp"
-#include "../include/enemy.hpp"
-#include "../include/chip.hpp"
-#include "../include/card.hpp"
-#include "../include/pistol.hpp"
-#include "../include/inventory.hpp"
-#include "../include/dom.hpp"
+#include "gameplay/poker_table.hpp"
+#include "entities/player.hpp"
+#include "entities/enemy.hpp"
+#include "items/chip.hpp"
+#include "items/card.hpp"
+#include "weapons/pistol.hpp"
+#include "items/inventory.hpp"
+#include "core/dom.hpp"
 
 TEST_CASE("PokerTable - Construction", "[poker_table]") {
     SECTION("Create poker table") {
@@ -436,7 +431,6 @@ TEST_CASE("PokerTable - Community Cards Memory Management", "[poker_table][regre
         PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
         dom.AddObject(&table);
 
-        int initialDOMCount = dom.GetCount();
 
         // Create and seat players
         Enemy enemy1({0, 0, 0}, "Player1");

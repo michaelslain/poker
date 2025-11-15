@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/object.hpp"
+#include "core/object.hpp"
 
 TEST_CASE("Object - Construction", "[object]") {
     SECTION("Create object with default position") {

@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/chip.hpp"
+#include "items/chip.hpp"
 #include <string>
 
 // Helper to check if type ends with expected suffix

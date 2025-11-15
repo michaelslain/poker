@@ -100,4 +100,4 @@ Standalone Classes:
 - **Psychedelic system** - `PsychedelicManager` with post-processing shaders for shrooms trips (5-minute duration with come-up, peak, and come-down stages)
 - **Insanity system** - `InsanityManager` tracking player mental state based on movement, seating, kills, and psychedelic trips; affects FOV (60°-150°) and compounds with trip intensity
 - **Scene management** - Scene system for different game states
-- **Testing** - Catch2 v3.5.0 framework with 137 test cases (865 assertions) covering all classes
+- **Testing** - Catch2 v3.5.0 framework with 144 test cases (894 assertions) covering all classes

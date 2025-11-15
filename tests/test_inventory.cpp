@@ -1,14 +1,7 @@
 #include "catch_amalgamated.hpp"
-#include <string>
-
-// Helper to check if type ends with expected suffix
-static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
-    if (suffix.length() > type.length()) return false;
-    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
-}
-#include "../include/inventory.hpp"
-#include "../include/card.hpp"
-#include "../include/chip.hpp"
+#include "items/inventory.hpp"
+#include "items/card.hpp"
+#include "items/chip.hpp"
 #include <string>
 
 TEST_CASE("Inventory - Construction", "[inventory]") {

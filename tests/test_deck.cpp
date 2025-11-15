@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/deck.hpp"
+#include "items/deck.hpp"
 #include <set>
 #include <string>
 

@@ -1,6 +1,6 @@
 #include "catch_amalgamated.hpp"
-#include "../include/dom.hpp"
-#include "../include/object.hpp"
+#include "core/dom.hpp"
+#include "core/object.hpp"
 
 TEST_CASE("DOM - Construction", "[dom]") {
     DOM dom;

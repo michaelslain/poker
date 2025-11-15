@@ -1,12 +1,7 @@
 #include "catch_amalgamated.hpp"
 #include <string>
 
-// Helper to check if type ends with expected suffix
-static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
-    if (suffix.length() > type.length()) return false;
-    return type.compare(type.length() - suffix.length(), suffix.length(), suffix) == 0;
-}
-#include "../include/dealer.hpp"
+#include "entities/dealer.hpp"
 
 TEST_CASE("Dealer - Construction", "[dealer]") {
     SECTION("Create with default name") {

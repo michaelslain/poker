@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/physics.hpp"
+#include "core/physics.hpp"
 
 TEST_CASE("PhysicsWorld - Construction", "[physics]") {
     SECTION("Create physics world") {

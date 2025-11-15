@@ -1,7 +1,7 @@
 #include "catch_amalgamated.hpp"
-#include "../include/weapon.hpp"
-#include "../include/pistol.hpp"
-#include "../include/physics.hpp"
+#include "weapons/weapon.hpp"
+#include "weapons/pistol.hpp"
+#include "core/physics.hpp"
 
 // Concrete test weapon class for testing abstract Weapon class
 class TestWeapon : public Weapon {

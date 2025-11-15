@@ -8,9 +8,10 @@ The project uses a Makefile with macOS-specific paths:
 - ODE include path: `/opt/homebrew/opt/ode/include`
 - ODE library path: `/opt/homebrew/opt/ode/lib`
 - Compiler: `g++` with `-std=c++17`
-- Compiler flags: `-Wall -Wextra -std=c++17 -Iinclude`
+- Compiler flags: `-Wall -Wextra -std=c++17 -Isrc`
 - Target executable: `game`
 - Links against: `-lraylib -lode -lm -framework OpenGL -framework Cocoa -framework IOKit -framework CoreAudio -framework CoreVideo`
+- **Auto-detection**: Source files automatically detected via `$(shell find src -name '*.cpp')`
 
 ### Build Commands
 ```bash
@@ -44,7 +45,7 @@ This command compiles all test files and executes them, showing which tests pass
 - **Location**: All tests are in the `tests/` directory
 - **Framework**: Catch2 v3.5.0 (header-only)
 - **Test files**: One `test_*.cpp` file for each class (e.g., `test_card.cpp`, `test_player.cpp`)
-- **Coverage**: 27 test files covering all game classes
+- **Coverage**: 28 test files covering all game classes
 
 ### Test Organization
 
@@ -52,7 +53,7 @@ Each test file follows this structure:
 
 ```cpp
 #include "catch_amalgamated.hpp"
-#include "../include/class_name.hpp"
+#include "category/class_name.hpp"
 
 TEST_CASE("ClassName - Feature", "[tag]") {
     SECTION("Specific test scenario") {
@@ -100,6 +101,7 @@ TEST_CASE("ClassName - Feature", "[tag]") {
 - `test_inventory_ui.cpp` - Inventory rendering
 - `test_render_utils.cpp` - 3D text rendering
 - `test_insanity_manager.cpp` - Insanity system (movement, kills, psychedelic integration)
+- `test_death_scene.cpp` - Death scene (factory function, rendering, memory management)
 
 ### Test Categories
 
@@ -135,7 +137,7 @@ Example:
 
 ```cpp
 #include "catch_amalgamated.hpp"
-#include "../include/my_class.hpp"
+#include "category/my_class.hpp"
 
 TEST_CASE("MyClass - Construction", "[myclass]") {
     SECTION("Default constructor") {
@@ -183,7 +185,7 @@ The test suite includes specific regression tests for bugs found during gameplay
 A `.clangd` file is configured with:
 - Raylib include path
 - ODE include path
-- Project include path (`-I/Users/michaelslain/Documents/dev/poker/include`)
+- Project src path (`-I/Users/michaelslain/Documents/dev/poker/src`)
 - C++ language mode (`-x c++`)
 
 ### Prerequisites
@@ -196,6 +198,9 @@ brew install ode
 ## Code Architecture
 
 ### Object-Oriented Class Hierarchy
+
+**Note**: This shows the C++ inheritance relationships, NOT the file/folder structure. See "Directory Structure" below for file organization.
+
 The game uses C++ inheritance with virtual functions for polymorphism:
 
 ```
@@ -254,48 +259,88 @@ InsanityManager (player mental state system)
 - Proper encapsulation with public/private members
 
 ### Directory Structure
+
+**Note**: This shows the file/folder organization on disk, NOT the C++ class hierarchy. Files are organized by functional category for maintainability.
+
 ```
 poker/
-├── include/          # Header files (.hpp)
-│   ├── object.hpp
-│   ├── camera.hpp
-│   ├── player.hpp
-│   ├── interactable.hpp
-│   ├── item.hpp
-│   ├── weapon.hpp
-│   ├── pistol.hpp
-│   ├── card.hpp
-│   ├── chip.hpp
-│   ├── deck.hpp
-│   ├── poker_table.hpp
-│   ├── inventory.hpp
-│   ├── inventory_ui.hpp
-│   ├── render_utils.hpp
-│   ├── dom.hpp
-│   ├── spawner.hpp
-│   ├── physics.hpp
-│   ├── rigidbody.hpp
-│   └── plane.hpp
-├── src/              # Implementation files (.cpp)
-│   ├── object.cpp
-│   ├── camera.cpp
-│   ├── player.cpp
-│   ├── interactable.cpp
-│   ├── item.cpp
-│   ├── weapon.cpp
-│   ├── pistol.cpp
-│   ├── card.cpp
-│   ├── chip.cpp
-│   ├── deck.cpp
-│   ├── poker_table.cpp
-│   ├── inventory.cpp
-│   ├── inventory_ui.cpp
-│   ├── render_utils.cpp
-│   ├── spawner.cpp
-│   ├── physics.cpp
-│   ├── rigidbody.cpp
-│   └── plane.cpp
-└── main.cpp          # Game entry point with DOM
+├── src/                    # All source files organized by category
+│   ├── core/              # Core engine systems
+│   │   ├── object.hpp/cpp           # Base Object class
+│   │   ├── dom.hpp/cpp              # Scene graph manager
+│   │   ├── physics.hpp/cpp          # ODE wrapper
+│   │   ├── rigidbody.hpp/cpp        # Physics bodies
+│   │   ├── collider.hpp/cpp         # Collision components
+│   │   ├── scene.hpp/cpp            # Scene data container
+│   │   ├── scene_manager.hpp/cpp    # Scene switching
+│   │   └── debug.hpp                # Debug utilities
+│   │
+│   ├── entities/          # Game characters
+│   │   ├── person.hpp/cpp           # Abstract base for characters
+│   │   ├── player.hpp/cpp           # Human player
+│   │   ├── enemy.hpp/cpp            # AI opponent
+│   │   └── dealer.hpp/cpp           # Dealer NPC
+│   │
+│   ├── items/             # Inventory items
+│   │   ├── interactable.hpp/cpp     # Base for interactable objects
+│   │   ├── item.hpp/cpp             # Pickupable item base
+│   │   ├── card.hpp/cpp             # Playing cards
+│   │   ├── chip.hpp/cpp             # Poker chips
+│   │   ├── chip_stack.hpp/cpp       # Chip stack management
+│   │   ├── deck.hpp/cpp             # Card deck
+│   │   └── inventory.hpp/cpp        # Inventory system
+│   │
+│   ├── weapons/           # Weapon classes
+│   │   ├── weapon.hpp/cpp           # Abstract weapon base
+│   │   └── pistol.hpp/cpp           # 6-round revolver
+│   │
+│   ├── substances/        # Consumable substances
+│   │   ├── substance.hpp/cpp        # Abstract substance base
+│   │   ├── weed.hpp/cpp
+│   │   ├── cocaine.hpp/cpp
+│   │   ├── molly.hpp/cpp
+│   │   ├── adrenaline.hpp/cpp
+│   │   ├── salvia.hpp/cpp
+│   │   ├── shrooms.hpp/cpp
+│   │   └── vodka.hpp/cpp
+│   │
+│   ├── rendering/         # Rendering systems
+│   │   ├── camera.hpp/cpp           # First-person camera
+│   │   ├── light.hpp/cpp            # Light base class
+│   │   ├── light_bulb.hpp/cpp       # Point light with geometry
+│   │   ├── lighting_manager.hpp/cpp # Static lighting system
+│   │   ├── psychedelic_manager.hpp/cpp # Trip shader system
+│   │   ├── inventory_ui.hpp/cpp     # Inventory rendering
+│   │   └── render_utils.hpp/cpp     # 3D text utilities
+│   │
+│   ├── gameplay/          # Game logic
+│   │   ├── poker_table.hpp/cpp      # Texas Hold'em implementation
+│   │   └── insanity_manager.hpp/cpp # Player mental state
+│   │
+│   ├── world/             # World geometry
+│   │   ├── floor.hpp/cpp            # Floor with collision
+│   │   ├── ceiling.hpp/cpp          # Ceiling geometry
+│   │   ├── wall.hpp/cpp             # Wall with collision
+│   │   └── spawner.hpp/cpp          # Object spawning
+│   │
+│   └── scenes/            # Scene definitions
+│       ├── game_scene.hpp/cpp       # Main game scene
+│       └── death_scene.hpp/cpp      # Death/end scene
+│
+├── tests/              # Catch2 v3.5.0 unit tests
+│   ├── catch_amalgamated.hpp/cpp    # Test framework
+│   ├── test_main.cpp                # Test entry point
+│   └── test_*.cpp                   # Test files (28 total)
+│
+├── shaders/            # GLSL shaders
+│   ├── lighting.vs/fs               # Lighting shader
+│   ├── psychedelic.vs/fs            # Trip effect shader
+│   └── vignette.vs/fs               # Vignette shader
+│
+├── main.cpp            # Game entry point
+├── Makefile            # Build system
+├── CLAUDE.md           # Technical documentation (this file)
+└── README.md           # User-facing documentation
 ```
 
 ### Core Components
@@ -759,6 +804,41 @@ poker/
   - Player owns public `InsanityManager insanityManager` member
   - `OnKillPerson()` delegates to manager
   - FOV warping driven by `insanityManager.GetInsanity()`
+
+### Death Scene System
+
+**DeathScene** (`src/scenes/death_scene.hpp/cpp`):
+- **Purpose**: End-game scene displayed when player dies from insanity
+- **Architecture**: Factory function pattern (`CreateDeathScene(PhysicsWorld*)`)
+- **Components**:
+  - `DeathSceneObject`: Simple Object subclass that renders "THE END" text
+  - Renders in 2D (ignores camera parameter)
+  - No physics or game logic
+- **Integration**:
+  - Registered in SceneManager as "death" scene factory
+  - Main loop checks `player->IsDead()` after rendering each frame
+  - On death: cleans up game scene, switches to death scene via SceneManager
+  - Player pointer nullified before cleanup to prevent use-after-free
+- **Rendering**:
+  - White text centered on black background
+  - Font size: 60px
+  - Text: "THE END"
+  - Draw() method uses raylib 2D functions (DrawText)
+- **Type system**: Returns `"object_death_scene_renderer"`
+- **Memory management**: Scene owns and deletes DeathSceneObject
+- **Testing**: Comprehensive tests in `test_death_scene.cpp` (29 assertions)
+
+**Death Transition Flow** (in `main.cpp`):
+1. Each frame: Check `player->IsDead()` after rendering
+2. On death:
+   - Log death event
+   - Nullify `player` and `closestInteractable` pointers
+   - Delete all DOM objects (cleanup game scene)
+   - Call `dom.Cleanup()` to clear vector
+   - Create death scene via `sceneManager->CreateScene("death", &physics)`
+   - Add death scene objects to DOM
+   - `continue` to next frame (skip rest of loop)
+3. Subsequent frames render death scene (no player check needed)
 
 ### Rendering Utilities
 

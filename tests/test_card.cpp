@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/card.hpp"
+#include "items/card.hpp"
 #include <cmath>
 #include <string>
 

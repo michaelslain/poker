@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/pistol.hpp"
+#include "weapons/pistol.hpp"
 #include <string>
 
 TEST_CASE("Pistol - Construction", "[pistol]") {

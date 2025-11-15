@@ -1,6 +1,6 @@
 #include "catch_amalgamated.hpp"
-#include "../include/spawner.hpp"
-#include "../include/dom.hpp"
+#include "world/spawner.hpp"
+#include "core/dom.hpp"
 
 TEST_CASE("Spawner - Basic functionality", "[spawner]") {
     // Note: We can't easily test spawning in unit tests because Card/Chip constructors

@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/lighting_manager.hpp"
+#include "rendering/lighting_manager.hpp"
 #include "raylib.h"
 
 TEST_CASE("LightingManager - Initialization", "[lighting_manager]") {
@@ -7,9 +7,10 @@ TEST_CASE("LightingManager - Initialization", "[lighting_manager]") {
         // Shader should already be initialized by test_main.cpp
         Shader& shader = LightingManager::GetLightingShader();
         
-        // Shader ID should be non-zero if loaded successfully
-        // Note: In headless mode, shader might fail to load, so we just check it returns
-        REQUIRE(&shader != nullptr);
+        // In headless mode, shader might fail to load (id would be 0)
+        // Just verify we can get a reference without crashing
+        (void)shader; // Suppress unused variable warning
+        REQUIRE(true); // Test passes if we got here without crashing
     }
 }
 

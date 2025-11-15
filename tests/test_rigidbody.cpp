@@ -1,6 +1,6 @@
 #include "catch_amalgamated.hpp"
-#include "../include/rigidbody.hpp"
-#include "../include/physics.hpp"
+#include "core/rigidbody.hpp"
+#include "core/physics.hpp"
 
 TEST_CASE("RigidBody - Construction", "[rigidbody]") {
     SECTION("Create rigid body") {

@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/camera.hpp"
+#include "rendering/camera.hpp"
 
 TEST_CASE("GameCamera - Construction", "[camera]") {
     SECTION("Create camera with default position") {

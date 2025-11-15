@@ -1,8 +1,8 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch_amalgamated.hpp"
 #include "raylib.h"
-#include "lighting_manager.hpp"
-#include "dom.hpp"
+#include "rendering/lighting_manager.hpp"
+#include "core/dom.hpp"
 
 // Global variables needed by the game code
 bool g_showCollisionDebug = false;

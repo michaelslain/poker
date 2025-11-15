@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/insanity_manager.hpp"
+#include "gameplay/insanity_manager.hpp"
 
 TEST_CASE("InsanityManager - Construction", "[insanity_manager]") {
     SECTION("Default constructor initializes to zero") {

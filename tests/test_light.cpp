@@ -1,5 +1,5 @@
 #include "catch_amalgamated.hpp"
-#include "../include/light.hpp"
+#include "rendering/light.hpp"
 #include "raylib.h"
 
 TEST_CASE("Light - Construction", "[light]") {
