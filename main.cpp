@@ -69,7 +69,10 @@ int main(void)
     // Create render texture for psychedelic post-processing
     RenderTexture2D renderTarget = LoadRenderTexture(screenWidth, screenHeight);
 
-    SetTargetFPS(60);
+    // Set FPS to match monitor refresh rate
+    int monitorRefreshRate = GetMonitorRefreshRate(GetCurrentMonitor());
+    SetTargetFPS(monitorRefreshRate);
+    TraceLog(LOG_INFO, "Set target FPS to monitor refresh rate: %d", monitorRefreshRate);
 
     // Main game loop
     while (!WindowShouldClose())
@@ -120,7 +123,7 @@ int main(void)
         // Rendering
         if (player) {
             Camera3D* camera = player->GetCamera();
-            
+
             // Step 1: Render 3D scene to texture
             BeginTextureMode(renderTarget);
             ClearBackground(BLACK);
@@ -167,18 +170,18 @@ int main(void)
             // Apply psychedelic shader if tripping
             if (PsychedelicManager::IsTripping()) {
                 Shader& psychShader = PsychedelicManager::GetPsychedelicShader();
-                
+
                 // Update shader uniforms
                 float tripTime = PsychedelicManager::GetTripTime();
                 float intensity = PsychedelicManager::GetCurrentIntensity();
                 SetShaderValue(psychShader, GetShaderLocation(psychShader, "time"), &tripTime, SHADER_UNIFORM_FLOAT);
                 SetShaderValue(psychShader, GetShaderLocation(psychShader, "intensity"), &intensity, SHADER_UNIFORM_FLOAT);
-                
+
                 BeginShaderMode(psychShader);
             }
 
             // Draw the render texture to screen
-            DrawTextureRec(renderTarget.texture, 
+            DrawTextureRec(renderTarget.texture,
                           (Rectangle){ 0, 0, (float)renderTarget.texture.width, -(float)renderTarget.texture.height },
                           (Vector2){ 0, 0 }, WHITE);
 
@@ -190,10 +193,10 @@ int main(void)
             player->DrawInventoryUI();
             player->DrawBettingUI();
             player->insanityManager.DrawMeter();
-            
+
             // Draw death vignette on top of everything
             player->insanityManager.DrawDeathVignette();
-            
+
             DrawFPS(10, screenHeight - 30);
 
             EndDrawing();
@@ -201,7 +204,7 @@ int main(void)
             // No player - render death scene or other non-player scenes
             BeginDrawing();
             ClearBackground(BLACK);
-            
+
             // Draw death scene objects (they handle their own 2D rendering)
             for (int i = 0; i < dom.GetCount(); i++) {
                 Object* obj = dom.GetObject(i);
@@ -209,28 +212,28 @@ int main(void)
                 Camera3D dummyCamera = {{0, 0, 0}, {0, 0, 0}, {0, 1, 0}, 0, 0};
                 obj->Draw(dummyCamera);
             }
-            
+
             DrawFPS(10, screenHeight - 30);
             EndDrawing();
         }
-        
+
         // Check if player has died from insanity (AFTER rendering)
         if (player && player->IsDead()) {
             TraceLog(LOG_INFO, "DEATH: Player died, switching to death scene");
-            
+
             // Clear player reference FIRST before cleanup
             player = nullptr;
             closestInteractable = nullptr;
-            
+
             // Clean up current scene objects
             for (int i = 0; i < dom.GetCount(); i++) {
                 Object* obj = dom.GetObject(i);
                 delete obj;
             }
             dom.Cleanup();
-            
+
             TraceLog(LOG_INFO, "DEATH: Scene cleaned up, creating death scene");
-            
+
             // Switch to death scene
             currentScene = sceneManager->CreateScene("death", &physics);
             if (currentScene) {
@@ -239,7 +242,7 @@ int main(void)
                 }
                 TraceLog(LOG_INFO, "DEATH: Death scene loaded successfully");
             }
-            
+
             // Continue to next frame - don't try to update/render with nullptr player
             continue;
         }
@@ -247,7 +250,7 @@ int main(void)
 
     // Cleanup
     UnloadRenderTexture(renderTarget);
-    
+
     for (int i = 0; i < dom.GetCount(); i++) {
         delete dom.GetObject(i);
     }
