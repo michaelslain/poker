@@ -4,7 +4,6 @@
 #include "gameplay/poker_table.hpp"
 #include "world/wall.hpp"
 #include "weapons/weapon.hpp"
-#include "substances/substance.hpp"
 #include "entities/person.hpp"
 #include "core/dom.hpp"
 #include "rendering/inventory_ui.hpp"
@@ -23,8 +22,8 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
       selectedItemIndex(-1), lastHeldItemIndex(-1),
       bettingUIActive(false), bettingChoice(-1), raiseSliderValue(0), raiseMin(0), raiseMax(0),
       storedCurrentBet(0), storedCallAmount(0),
-      insanityManager(pos),
-      cardSelectionUIActive(false), selectedCardIndices()
+      cardSelectionUIActive(false), selectedCardIndices(),
+      insanityManager(pos)
 {
     if (physics != nullptr) {
         // Create dynamic body with mass for gravity
@@ -691,7 +690,7 @@ void Player::DrawBettingUI() {
     int spacing = 20;
 
     // Fold button (1)
-    Rectangle foldButton = {(float)(screenWidth / 2 - buttonWidth - spacing - buttonWidth / 2), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
+    Rectangle foldButton = {(float)(screenWidth / 2.0f - buttonWidth - spacing - buttonWidth / 2.0f), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
     Color foldColor = DARKGRAY;
     if (IsKeyPressed(KEY_ONE)) {
         bettingChoice = 0;
@@ -701,7 +700,7 @@ void Player::DrawBettingUI() {
     DrawText("1", (int)foldButton.x + 65, (int)foldButton.y + 32, 10, LIGHTGRAY);
 
     // Call/Check button (2)
-    Rectangle callButton = {(float)(screenWidth / 2 - buttonWidth / 2), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
+    Rectangle callButton = {(float)(screenWidth / 2.0f - buttonWidth / 2.0f), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
     Color callColor = GREEN;
     if (IsKeyPressed(KEY_TWO)) {
         bettingChoice = 1;
@@ -717,7 +716,7 @@ void Player::DrawBettingUI() {
     DrawText("2", (int)callButton.x + 65, (int)callButton.y + 32, 10, LIGHTGRAY);
 
     // Raise button (3)
-    Rectangle raiseButton = {(float)(screenWidth / 2 + spacing + buttonWidth / 2), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
+    Rectangle raiseButton = {(float)(screenWidth / 2.0f + spacing + buttonWidth / 2.0f), (float)buttonY, (float)buttonWidth, (float)buttonHeight};
     Color raiseColor = RED;
     DrawRectangleRec(raiseButton, raiseColor);
     DrawText("RAISE", (int)raiseButton.x + 40, (int)raiseButton.y + 10, 20, WHITE);
@@ -851,7 +850,7 @@ void Player::DrawCardSelectionUI() {
     }
 
     // Draw confirm button
-    Rectangle confirmButton = {(float)(screenWidth / 2 - 100), (float)(screenHeight / 2 + 100), 200.0f, 40.0f};
+    Rectangle confirmButton = {(float)(screenWidth / 2.0f - 100), (float)(screenHeight / 2.0f + 100), 200.0f, 40.0f};
     Color confirmColor = selectedCardIndices.size() == 2 ? GREEN : DARKGRAY;
     DrawRectangleRec(confirmButton, confirmColor);
     DrawText("CONFIRM", (int)confirmButton.x + 50, (int)confirmButton.y + 10, 20, WHITE);

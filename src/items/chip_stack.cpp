@@ -1,7 +1,6 @@
 #include "items/chip_stack.hpp"
 #include "core/dom.hpp"
 #include "raylib.h"
-#include <algorithm>
 
 ChipStack::ChipStack(Vector3 pos) : Object(pos) {
 }
@@ -37,41 +36,41 @@ std::string ChipStack::GetType() const {
 
 void ChipStack::AddChip(Chip* chip) {
     if (!chip) return;
-    
+
     chips.push_back(chip);
     chipsByValue[chip->value].push_back(chip);
-    
+
     // Make chip non-interactable (it's in the pot)
     chip->canInteract = false;
-    
+
     // Add chip to DOM so it renders
     DOM* dom = DOM::GetGlobal();
     if (dom) {
         dom->AddObject(chip);
     }
-    
+
     // Reorganize positions
     OrganizeChips();
 }
 
 void ChipStack::AddChips(const std::vector<Chip*>& newChips) {
     DOM* dom = DOM::GetGlobal();
-    
+
     for (Chip* chip : newChips) {
         if (chip) {
             chips.push_back(chip);
             chipsByValue[chip->value].push_back(chip);
-            
+
             // Make chip non-interactable (it's in the pot)
             chip->canInteract = false;
-            
+
             // Add chip to DOM so it renders
             if (dom) {
                 dom->AddObject(chip);
             }
         }
     }
-    
+
     // Reorganize positions
     OrganizeChips();
 }
@@ -86,7 +85,7 @@ void ChipStack::Clear() {
             }
         }
     }
-    
+
     chips.clear();
     chipsByValue.clear();
 }
@@ -101,7 +100,7 @@ std::vector<Chip*> ChipStack::RemoveAll() {
             }
         }
     }
-    
+
     std::vector<Chip*> result = chips;
     chips.clear();
     chipsByValue.clear();
@@ -129,21 +128,21 @@ int ChipStack::GetTotalValue() const {
 void ChipStack::OrganizeChips() {
     // Stack chips by denomination in separate piles
     // Denominations: 100 (BLACK), 25 (GREEN), 10 (BLUE), 5 (RED), 1 (WHITE)
-    
+
     float chipHeight = 0.03f;  // Height of one chip
     float pileSpacing = 0.25f;  // Space between different denomination piles
-    
+
     // Sort denominations in descending order
     std::vector<int> denoms = {100, 25, 10, 5, 1};
-    
+
     float currentX = position.x;
-    
+
     for (int denom : denoms) {
         if (chipsByValue.find(denom) == chipsByValue.end()) continue;
         if (chipsByValue[denom].empty()) continue;
-        
+
         std::vector<Chip*>& pile = chipsByValue[denom];
-        
+
         // Stack chips vertically
         for (size_t i = 0; i < pile.size(); i++) {
             Chip* chip = pile[i];
@@ -156,7 +155,7 @@ void ChipStack::OrganizeChips() {
                 chip->rotation = {0, 0, 0};  // Chips lie flat
             }
         }
-        
+
         // Move to next pile position
         currentX += pileSpacing;
     }

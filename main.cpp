@@ -206,7 +206,7 @@ int main(void)
             for (int i = 0; i < dom.GetCount(); i++) {
                 Object* obj = dom.GetObject(i);
                 // Death scene objects draw in 2D, so we pass a dummy camera
-                Camera3D dummyCamera = { 0 };
+                Camera3D dummyCamera = {{0, 0, 0}, {0, 0, 0}, {0, 1, 0}, 0, 0};
                 obj->Draw(dummyCamera);
             }
             

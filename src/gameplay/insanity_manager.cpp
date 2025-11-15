@@ -134,7 +134,7 @@ void InsanityManager::DrawMeter() {
     const char* text = "INSANITY";
     int fontSize = 10;
     int textWidth = MeasureText(text, fontSize);
-    DrawText(text, (int)(centerX - textWidth / 2), (int)(centerY - fontSize / 2),
+    DrawText(text, (int)(centerX - textWidth / 2.0f), (int)(centerY - fontSize / 2.0f),
              fontSize, WHITE);
 }
 

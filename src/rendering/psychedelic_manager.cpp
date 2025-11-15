@@ -2,7 +2,7 @@
 #include <raymath.h>
 
 // Static member initialization
-Shader PsychedelicManager::psychedelicShader = {0};
+Shader PsychedelicManager::psychedelicShader = {0, nullptr};
 bool PsychedelicManager::shaderInitialized = false;
 int PsychedelicManager::timeLoc = -1;
 int PsychedelicManager::intensityLoc = -1;

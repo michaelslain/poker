@@ -60,8 +60,8 @@ void Substance::DrawIcon(Rectangle destRect) {
     int fontSize = 10;
     int textWidth = MeasureText(name, fontSize);
     DrawText(name, 
-             (int)(destRect.x + destRect.width / 2 - textWidth / 2),
-             (int)(destRect.y + destRect.height / 2 - fontSize / 2),
+             (int)(destRect.x + destRect.width / 2.0f - textWidth / 2.0f),
+             (int)(destRect.y + destRect.height / 2.0f - fontSize / 2.0f),
              fontSize, WHITE);
 }
 

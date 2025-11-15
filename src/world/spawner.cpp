@@ -1,6 +1,5 @@
 #include "world/spawner.hpp"
 #include "core/dom.hpp"
-#include "core/physics.hpp"
 #include <cmath>
 #include <cstdlib>
 

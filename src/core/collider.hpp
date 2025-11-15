@@ -18,25 +18,25 @@ class Collider {
 public:
     Collider();
     ~Collider();
-    
+
     // Static collision (walls, tables, etc.)
     void InitStatic(PhysicsWorld* physics, CollisionShape shape, Vector3 size, Vector3 offset = {0, 0, 0});
-    
+
     // Dynamic collision (items, player, etc.)
     void InitDynamic(PhysicsWorld* physics, CollisionShape shape, Vector3 size, float mass, Vector3 offset = {0, 0, 0});
-    
+
     // Update position/rotation from parent object or physics body
     void UpdateFromObject(Object* obj);
     void UpdateObjectFromPhysics(Object* obj);
-    
+
     // Collision filtering
     void SetCollisionBits(unsigned long category, unsigned long collideMask);
-    
+
     // Accessors
     dGeomID GetGeom() const { return geom; }
     dBodyID GetBody() const { return body; }
     bool IsDynamic() const { return body != nullptr; }
-    
+
 private:
     dGeomID geom;
     dBodyID body;

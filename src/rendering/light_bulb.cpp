@@ -3,7 +3,7 @@
 #include "raymath.h"
 
 LightBulb::LightBulb(Vector3 position, Color lightColor)
-    : Light(position), color(lightColor)
+    : Light(position)
 {
     // Allocate RaylibLight struct on heap
     RaylibLight* light = new RaylibLight;

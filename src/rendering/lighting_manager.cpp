@@ -1,7 +1,7 @@
 #include "rendering/lighting_manager.hpp"
 
 // Initialize static members
-Shader LightingManager::lightingShader = { 0 };
+Shader LightingManager::lightingShader = {0, nullptr};
 bool LightingManager::shaderInitialized = false;
 int LightingManager::lightsCount = 0;
 
@@ -44,7 +44,7 @@ void LightingManager::UpdateCameraPosition(Vector3 cameraPos) {
 
 // Create a light and get shader locations
 RaylibLight LightingManager::CreateLight(int type, Vector3 position, Vector3 target, Color color) {
-    RaylibLight light = { 0 };
+    RaylibLight light = {0, 0, {0, 0, 0}, {0, 0, 0}, {0, 0, 0, 0}, 0.0f, 0, 0, 0, 0, 0, 0};
 
     if (lightsCount < MAX_LIGHTS && shaderInitialized) {
         light.enabled = true;

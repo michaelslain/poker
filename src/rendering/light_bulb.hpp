@@ -7,7 +7,6 @@
 class LightBulb : public Light {
 private:
     void* raylibLightPtr;  // Opaque pointer to raylib Light struct
-    Color color;
 
 public:
     LightBulb(Vector3 position, Color lightColor);
