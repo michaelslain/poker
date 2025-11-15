@@ -167,20 +167,27 @@ void main()
     texelColor = texture(texture0, warpedUV);
 
     // ===== EFFECT 4: Color Shifting =====
-    vec3 hsv = rgb2hsv(texelColor.rgb);
+    // Only apply color shifting during peak and come down (stage >= 1.0)
+    vec3 shiftedColor = texelColor.rgb;
 
-    // Hue rotation - speed increases with stage
-    float hueShift = time * (0.1 + stage * 0.1) + fbm(uv * 5.0) * localIntensity * 0.5;
-    hsv.x = fract(hsv.x + hueShift * localIntensity);
+    if (stage >= 1.0) {
+        vec3 hsv = rgb2hsv(texelColor.rgb);
 
-    // Saturation boost
-    hsv.y = clamp(hsv.y + localIntensity * 0.3, 0.0, 1.0);
+        // Calculate color shift intensity (ramps up during peak)
+        float colorShiftIntensity = smoothstep(1.0, 1.5, stage) * localIntensity;
 
-    // Brightness oscillation
-    float brightnessWave = sin(time * 1.5 + uv.x * 10.0) * 0.1 + 0.9;
-    hsv.z *= mix(1.0, brightnessWave, localIntensity * 0.5);
+        // Subtle hue rotation - reduced speed and intensity
+        float hueShift = time * 0.05 + fbm(uv * 5.0) * colorShiftIntensity * 0.15;
+        hsv.x = fract(hsv.x + hueShift * colorShiftIntensity * 0.3);
 
-    vec3 shiftedColor = hsv2rgb(hsv);
+        // Saturation boost - restored to original strength
+        hsv.y = clamp(hsv.y + colorShiftIntensity * 0.3, 0.0, 1.0);
+
+        // Brightness boost - scales with intensity (no oscillation)
+        hsv.z *= 1.0 + colorShiftIntensity * 0.1;
+
+        shiftedColor = hsv2rgb(hsv);
+    }
 
     // ===== EFFECT 5: Geometric Pattern Overlay =====
     if (stage > 0.5) {

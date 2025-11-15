@@ -185,7 +185,7 @@ int main(void)
             // Draw UI on top (not affected by psychedelic shader)
             player->DrawInventoryUI();
             player->DrawBettingUI();
-            player->DrawInsanityMeter();
+            player->insanityManager.DrawMeter();
             DrawFPS(10, screenHeight - 30);
 
             EndDrawing();

@@ -5,6 +5,7 @@
 #include "person.hpp"
 #include "camera.hpp"
 #include "physics.hpp"
+#include "insanity_manager.hpp"
 #include <ode/ode.h>
 #include <vector>
 
@@ -41,16 +42,14 @@ private:
     int raiseMax;           // Maximum raise
     int storedCurrentBet;   // Stored for UI display
     int storedCallAmount;   // Stored for UI display
-    
-    // Insanity system
-    float insanity;         // Current insanity level (0.0 to 1.0)
-    float timeSinceLastMove;  // Time spent not moving
-    Vector3 lastPosition;   // Position from last frame to detect movement
 
 public:
     // Card selection UI state (for cheating with 3+ cards) - public so poker table can access
     bool cardSelectionUIActive;     // Is card selection UI shown
     std::vector<int> selectedCardIndices;  // Indices of selected cards (max 2)
+    
+    // Insanity system - public so main.cpp can access DrawMeter
+    InsanityManager insanityManager;
     Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName = "Player");
     virtual ~Player();
 
@@ -80,8 +79,9 @@ public:
     void DrawCardSelectionUI();
     std::vector<Card*> GetSelectedCards();  // Returns the 2 selected cards for hand evaluation
     
-    // Insanity UI
-    void DrawInsanityMeter();
+    // Insanity management
+    void OnKillPerson();  // Called when player kills someone
+    float GetInsanity() const;  // Get current insanity level
     
     // Accessors
     Camera3D* GetCamera() { return camera.GetCamera(); }
