@@ -2,6 +2,7 @@
 #include "raymath.h"
 #include "rlgl.h"
 #include <math.h>
+#include <string>
 
 void DrawTextBillboard(Camera3D camera, const char* text, Vector3 position, float fontSize, Color color) {
     int textWidth = MeasureText(text, (int)fontSize);
@@ -26,6 +27,27 @@ void DrawTextBillboard(Camera3D camera, const char* text, Vector3 position, floa
         // Draw the text centered
         DrawText(text, -textWidth/2, 0, (int)fontSize, color);
     rlPopMatrix();
+}
+
+void DrawLevelUI(int level, int dimension) {
+    // Draw level counter in top-left corner
+    std::string levelText = "LEVEL " + std::to_string(level);
+    
+    // If in alternate dimension, show that
+    if (dimension > 0) {
+        levelText += " (ALT DIM " + std::to_string(dimension) + ")";
+    }
+    
+    // Draw with semi-transparent background
+    int textWidth = MeasureText(levelText.c_str(), 30);
+    DrawRectangle(5, 5, textWidth + 20, 45, Fade(BLACK, 0.7f));
+    
+    // Special color for alternate dimensions
+    if (dimension > 0) {
+        DrawText(levelText.c_str(), 15, 15, 30, PURPLE);
+    } else {
+        DrawText(levelText.c_str(), 15, 15, 30, WHITE);
+    }
 }
 
 void DrawText3D(const char* text, Vector3 position, float fontSize, Color color) {

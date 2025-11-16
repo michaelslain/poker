@@ -1,4 +1,5 @@
 #include "substances/salvia.hpp"
+#include "core/level_manager.hpp"
 
 Salvia::Salvia(Vector3 pos, PhysicsWorld* physics)
     : Substance(pos, (Color){100, 200, 100, 255}, physics)  // Green color for salvia
@@ -10,8 +11,16 @@ Salvia::~Salvia() {
 }
 
 void Salvia::Consume() {
-    // TODO: Implement salvia effects (hallucinations, etc.)
-    // For now, just placeholder
+    // Salvia triggers alternate dimension transition
+    // Option B: Enter alternate dimension (parallel universe)
+    // Player will be in same level number but alternate dimension
+    // When they beat that level (reach stairs), they do option C (random jump)
+    
+    LevelManager* levelManager = LevelManager::GetInstance();
+    levelManager->EnterAlternateDimension();
+    
+    // TODO: Trigger level regeneration to create alternate dimension version
+    // This will be handled in main.cpp when we detect dimension change
 }
 
 std::string Salvia::GetType() const {

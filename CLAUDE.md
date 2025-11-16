@@ -45,7 +45,7 @@ This command compiles all test files and executes them, showing which tests pass
 - **Location**: All tests are in the `tests/` directory
 - **Framework**: Catch2 v3.5.0 (header-only)
 - **Test files**: One `test_*.cpp` file for each class (e.g., `test_card.cpp`, `test_player.cpp`)
-- **Coverage**: 28 test files covering all game classes
+- **Coverage**: 32 test files covering all game classes
 
 ### Test Organization
 
@@ -102,6 +102,10 @@ TEST_CASE("ClassName - Feature", "[tag]") {
 - `test_render_utils.cpp` - 3D text rendering
 - `test_insanity_manager.cpp` - Insanity system (movement, kills, psychedelic integration)
 - `test_death_scene.cpp` - Death scene (factory function, rendering, memory management)
+- `test_level_manager.cpp` - Level progression and difficulty scaling
+- `test_level_generator.cpp` - Procedural level generation
+- `test_hospital_scene.cpp` - Hospital starting scene
+- `test_stairs.cpp` - Stairs collision and level transitions
 
 ### Test Categories
 
@@ -229,6 +233,7 @@ Object (base class with virtual functions)
 ├── Floor (floor geometry)
 ├── Ceiling (ceiling geometry)
 ├── Wall (wall geometry)
+├── Stairs (level transition trigger)
 ├── Plane (ground plane with physics collision)
 ├── RigidBody (physics-enabled objects)
 ├── ChipStack (chip management)
@@ -246,6 +251,9 @@ SceneManager (singleton scene switching)
 LightingManager (static lighting shader manager)
 PsychedelicManager (static psychedelic shader manager)
 InsanityManager (player mental state system)
+LevelManager (singleton level progression and difficulty scaling)
+LevelGenerator (procedural casino level generation)
+HospitalScene (hospital starting scene)
 ```
 
 **OOP Features**:
@@ -273,6 +281,7 @@ poker/
 │   │   ├── collider.hpp/cpp         # Collision components
 │   │   ├── scene.hpp/cpp            # Scene data container
 │   │   ├── scene_manager.hpp/cpp    # Scene switching
+│   │   ├── level_manager.hpp/cpp    # Level progression system
 │   │   └── debug.hpp                # Debug utilities
 │   │
 │   ├── entities/          # Game characters
@@ -315,17 +324,20 @@ poker/
 │   │
 │   ├── gameplay/          # Game logic
 │   │   ├── poker_table.hpp/cpp      # Texas Hold'em implementation
-│   │   └── insanity_manager.hpp/cpp # Player mental state
+│   │   ├── insanity_manager.hpp/cpp # Player mental state
+│   │   └── level_generator.hpp/cpp  # Procedural level generation
 │   │
 │   ├── world/             # World geometry
 │   │   ├── floor.hpp/cpp            # Floor with collision
 │   │   ├── ceiling.hpp/cpp          # Ceiling geometry
 │   │   ├── wall.hpp/cpp             # Wall with collision
+│   │   ├── stairs.hpp/cpp           # Stairs for level transitions
 │   │   └── spawner.hpp/cpp          # Object spawning
 │   │
 │   └── scenes/            # Scene definitions
 │       ├── game_scene.hpp/cpp       # Main game scene
-│       └── death_scene.hpp/cpp      # Death/end scene
+│       ├── death_scene.hpp/cpp      # Death/end scene
+│       └── hospital_scene.hpp/cpp   # Hospital starting scene
 │
 ├── tests/              # Catch2 v3.5.0 unit tests
 │   ├── catch_amalgamated.hpp/cpp    # Test framework
@@ -839,6 +851,99 @@ poker/
    - Add death scene objects to DOM
    - `continue` to next frame (skip rest of loop)
 3. Subsequent frames render death scene (no player check needed)
+
+### Level System
+
+The level system provides procedural level generation with difficulty scaling and alternate dimensions.
+
+**LevelManager** (`src/core/level_manager.hpp/cpp`):
+- **Purpose**: Singleton managing level progression, difficulty scaling, and dimension system
+- **Private members**: `currentLevel` (int), `currentDimension` (int), `scaling` (ScalingConfig)
+- **Singleton pattern**: `GetInstance()` returns static instance, `Destroy()` cleans up
+- **Level progression**:
+  - `SetLevel(int)` - Set specific level
+  - `NextLevel()` - Progress to next level (increments by 1)
+  - `JumpToLevel(int)` - Jump to arbitrary level
+- **Difficulty scaling**: `ScalingConfig` struct with exponential scaling formula
+  - `insanityMultiplier` - Increases with level (1.0 + level^1.3 * 0.2)
+  - `minEnemiesPerTable` / `maxEnemiesPerTable` - Scales from 2-3 to 6-7 (capped)
+  - `resourceSpawnRate` - Decreases from 1.0 to 0.3 (fewer resources at high levels)
+  - `enemyAIQuality` - Increases from 1.0 to 3.0 (smarter AI at high levels)
+- **Dimension system** (Salvia mechanic):
+  - `EnterAlternateDimension()` - Increments dimension counter (stays at same level)
+  - `ExitAlternateDimension(int levelJump)` - Returns to dimension 0, applies level jump
+  - `IsInAlternateDimension()` - Returns true if dimension > 0
+  - `GenerateRandomLevelJump()` - Weighted random: 70% up, 20% same, 10% down
+- **Level 0**: Hospital scene (starting area)
+- **Level 1+**: Procedurally generated casino levels
+
+**LevelGenerator** (`src/gameplay/level_generator.hpp/cpp`):
+- **Purpose**: Procedural generation of casino levels with rooms, poker tables, enemies
+- **Private members**: `physics` (PhysicsWorld*), `dom` (DOM*), `rooms` (vector), `hallways` (vector)
+- **Generation constants**:
+  - `MIN_ROOMS` (3), `MAX_ROOMS` (8) - Room count scales with level
+  - `ROOM_MIN_SIZE` (8.0f), `ROOM_MAX_SIZE` (15.0f) - Random room dimensions
+  - `HALLWAY_WIDTH` (3.0f), `FLOOR_HEIGHT` (0.0f), `CEILING_HEIGHT` (5.0f)
+- **Room structure**: Contains position, size, flags for poker table, stairs, start room
+- **Generation methods**:
+  - `GenerateLevel(int level)` - Main entry point, creates complete level
+  - `GenerateRooms(int count)` - Creates rooms in linear layout
+  - `GenerateHallways()` - Connects rooms sequentially
+  - `SpawnRoomContents()` - Adds poker tables, stairs, resources
+  - `BuildWalls()`, `BuildFloorAndCeiling()` - Creates geometry
+- **Content spawning**:
+  - First room: Empty start room
+  - Middle rooms: 60% chance of poker table with enemies
+  - Last room: Contains stairs to next level
+  - Resources: Chips, weapons, substances (scaled by difficulty)
+- **Lighting**: One light bulb per room at ceiling height
+- **Helper methods**: `GetPlayerSpawnPosition()`, `Clear()` for cleanup
+- **Uses global DOM and PhysicsWorld** from static accessors
+
+**HospitalScene** (`src/scenes/hospital_scene.hpp/cpp`):
+- **Purpose**: Starting scene (level 0) - empty hospital room
+- **Generation**: Creates 15x15 room with floor, ceiling, 4 walls, light, stairs
+- **Future expansion**: Placeholder for cutscene/narrative intro
+- **Spawn position**: Center of room (0, 1.8, 0)
+- **Stairs**: Lead to level 1 (first casino level)
+- **Atmosphere**: White floor, black ceiling, sterile white light
+
+**Stairs** (`src/world/stairs.hpp/cpp`):
+- **Purpose**: Trigger level transitions via collision detection
+- Inherits from Object
+- **Private members**: `geom` (dGeomID), `physics` (PhysicsWorld*), `size`, `color`, `transitionTriggered` (bool)
+- **Collision system**:
+  - `CheckPlayerCollision(dGeomID playerGeom)` - Detects collision with player
+  - Returns `true` on first collision, sets `transitionTriggered` flag
+  - `ResetTransition()` - Clears flag for reuse
+  - Collision category: `COLLISION_CATEGORY_STAIRS` (1 << 4)
+- **Visual**: Renders as series of 5 steps ascending upward
+- **Static geometry**: No physics body (uses dGeomID only)
+- **Level transition flow** (in `main.cpp`):
+  1. Check stairs collision each frame
+  2. On collision: Clean up level, generate new level, teleport player
+  3. If in alternate dimension: Exit with random jump
+  4. Otherwise: Progress to next level normally
+
+**Salvia Integration** (`src/substances/salvia.cpp`):
+- **Consume()** calls `LevelManager::EnterAlternateDimension()`
+- Triggers level regeneration in main loop (same level, different dimension)
+- Alternate dimensions have different layouts (same seed-based generation but dimension counter affects RNG)
+- Exiting alternate dimension (via stairs) applies random level jump
+
+**Main Loop Integration** (`main.cpp`):
+- **Initialization**:
+  - Create `LevelManager`, `LevelGenerator`, `HospitalScene` instances
+  - Set global physics and DOM for spawners
+  - Start at level 0 (hospital)
+- **Dimension change detection**:
+  - Track `previousDimension`, compare to `GetCurrentDimension()`
+  - On change: Clean up level, regenerate same level number in new dimension
+- **Stairs collision detection**:
+  - Check all stairs objects for player collision
+  - On collision: Progress level, clean up, generate new level
+- **Level UI**: `DrawLevelUI(level, dimension)` in top-left corner
+  - Shows "LEVEL N" or "LEVEL N (ALT DIM M)" in purple for alternate dimensions
 
 ### Rendering Utilities
 

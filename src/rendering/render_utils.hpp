@@ -9,4 +9,7 @@ void DrawTextBillboard(Camera3D camera, const char* text, Vector3 position, floa
 // Draw text in 3D space at a fixed position (no billboarding)
 void DrawText3D(const char* text, Vector3 position, float fontSize, Color color);
 
+// Draw level counter UI in top-left corner
+void DrawLevelUI(int level, int dimension);
+
 #endif

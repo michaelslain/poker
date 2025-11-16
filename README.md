@@ -2,6 +2,22 @@
 
 3D rouge-like puzzle? procedurally generated story game
 
+## Features
+
+- **Procedural Level Generation** - Infinite casino levels with increasing difficulty
+- **Roguelike Progression** - Start in a hospital (level 0), progress through procedurally generated casino levels
+- **Difficulty Scaling** - Exponential difficulty curve affecting enemy count, AI quality, resources, and insanity
+- **Alternate Dimensions** - Consume Salvia to enter parallel dimensions with different layouts and random level jumps
+- **Texas Hold'em Poker** - Complete poker implementation with AI opponents, betting, and hand evaluation
+- **Insanity System** - Mental state affected by movement, seating, kills, and psychedelic trips; warps FOV from 60° to 150°
+- **Psychedelic Trips** - 5-minute shrooms trips with visual shader effects (breathing, warping, color shifting, geometric patterns)
+- **Physics-Based Gameplay** - ODE physics engine for realistic item interactions and collisions
+- **Inventory System** - Dynamic item stacking with automatic sorting by category
+- **Weapon Combat** - 6-round revolver with raycast hit detection
+- **Consumable Substances** - Weed, Cocaine, Molly, Adrenaline, Salvia, Shrooms, Vodka with unique effects
+- **Dynamic Lighting** - Shader-based lighting system supporting up to 4 lights with decorative light bulbs
+- **Death System** - Die from insanity reaching 100% with death vignette effect
+
 ## Stack
 
 - C++ (C++17)
@@ -100,4 +116,5 @@ Standalone Classes:
 - **Psychedelic system** - `PsychedelicManager` with post-processing shaders for shrooms trips (5-minute duration with come-up, peak, and come-down stages)
 - **Insanity system** - `InsanityManager` tracking player mental state based on movement, seating, kills, and psychedelic trips; affects FOV (60°-150°) and compounds with trip intensity
 - **Scene management** - Scene system for different game states
-- **Testing** - Catch2 v3.5.0 framework with 144 test cases (894 assertions) covering all classes
+- **Level system** - Procedural level generation with difficulty scaling and alternate dimensions (Salvia mechanic)
+- **Testing** - Catch2 v3.5.0 framework with 166 test cases (1222 assertions) covering all classes

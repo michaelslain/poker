@@ -10,9 +10,11 @@ Ceiling::Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor, Phys
         collider.InitStatic(physicsWorld, COLLISION_SHAPE_PLANE, {0, -1, 0}, {-position.y, 0, 0});
     }
     
-    // Create model with proper normals for lighting
+    // Create model - ceiling doesn't use lighting (always visible from below)
     model = LoadModelFromMesh(GenMeshPlane(size.x, size.y, 10, 10));
-    model.materials[0].shader = LightingManager::GetLightingShader();
+    
+    // Don't use lighting - ceiling should be visible regardless of light position
+    usesLighting = false;
 }
 
 Ceiling::~Ceiling() {

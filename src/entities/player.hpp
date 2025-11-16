@@ -89,6 +89,7 @@ public:
     Inventory* GetInventory() { return &inventory; }
     Vector3 GetPosition() const { return position; }
     int GetSelectedItemIndex() const { return selectedItemIndex; }
+    dGeomID GetGeom() const { return geom; }
 };
 
 #endif
