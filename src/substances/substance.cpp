@@ -46,7 +46,6 @@ void Substance::Draw(Camera3D camera) {
         
         // Draw small cube representing the substance
         DrawCube({0, 0, 0}, 0.2f, 0.2f, 0.2f, color);
-        DrawCubeWires({0, 0, 0}, 0.2f, 0.2f, 0.2f, BLACK);
     rlPopMatrix();
 }
 

@@ -51,7 +51,6 @@ void Stairs::Draw(Camera3D camera) {
         };
         
         DrawCubeV(stepPos, stepSize, color);
-        DrawCubeWiresV(stepPos, stepSize, BLACK);
     }
 }
 

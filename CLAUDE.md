@@ -1,6 +1,9 @@
 ## Project Overview
 A first-person poker game built with C++ and raylib using object-oriented architecture with inheritance, inventory system, DOM-based object management, and ODE physics engine integration.
 
+## Visual Style
+The game uses a minimalist, flat-shaded visual style with **no wireframe outlines**. All 3D geometry is rendered as solid colors without black edge lines, creating a clean, simple aesthetic.
+
 ## Build System
 The project uses a Makefile with macOS-specific paths:
 - Raylib include path: `/opt/homebrew/opt/raylib/include`
