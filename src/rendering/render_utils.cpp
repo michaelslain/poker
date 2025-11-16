@@ -30,7 +30,7 @@ void DrawTextBillboard(Camera3D camera, const char* text, Vector3 position, floa
 }
 
 void DrawLevelUI(int level, int dimension) {
-    // Draw level counter in top-left corner
+    // Draw level counter in bottom-right corner
     std::string levelText = "LEVEL " + std::to_string(level);
     
     // If in alternate dimension, show that
@@ -38,15 +38,23 @@ void DrawLevelUI(int level, int dimension) {
         levelText += " (ALT DIM " + std::to_string(dimension) + ")";
     }
     
-    // Draw with semi-transparent background
+    // Get screen dimensions
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    // Calculate position for bottom-right corner
     int textWidth = MeasureText(levelText.c_str(), 30);
-    DrawRectangle(5, 5, textWidth + 20, 45, Fade(BLACK, 0.7f));
+    int xPos = screenWidth - textWidth - 25;  // 10px padding inside + 15px text padding
+    int yPos = screenHeight - 50;  // 50px from bottom
+    
+    // Draw with semi-transparent background
+    DrawRectangle(xPos - 10, yPos - 5, textWidth + 20, 45, Fade(BLACK, 0.7f));
     
     // Special color for alternate dimensions
     if (dimension > 0) {
-        DrawText(levelText.c_str(), 15, 15, 30, PURPLE);
+        DrawText(levelText.c_str(), xPos, yPos + 5, 30, PURPLE);
     } else {
-        DrawText(levelText.c_str(), 15, 15, 30, WHITE);
+        DrawText(levelText.c_str(), xPos, yPos + 5, 30, WHITE);
     }
 }
 
