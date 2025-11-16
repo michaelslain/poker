@@ -98,6 +98,7 @@ int main(void)
     // Create player at spawn position
     Vector3 spawnPos = hospitalScene.GetPlayerSpawnPosition();
     Player* player = new Player(spawnPos, &physics);
+    Player::SetGlobal(player);  // Set global player for substances to access
     dom.AddObject(player);
     
     // Create render texture for psychedelic post-processing
@@ -289,7 +290,7 @@ int main(void)
             DrawLevelUI(levelManager->GetCurrentLevel(), levelManager->GetCurrentDimension());
             
             // Draw death vignette on top of everything
-            player->insanityManager.DrawDeathVignette();
+            player->DrawDeathVignette();
             
             DrawFPS(10, screenHeight - 30);
             

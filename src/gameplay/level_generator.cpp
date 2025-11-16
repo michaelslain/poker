@@ -16,6 +16,7 @@
 #include "substances/shrooms.hpp"
 #include "substances/vodka.hpp"
 #include "substances/salvia.hpp"
+#include "substances/fent.hpp"
 #include "world/spawner.hpp"
 #include "rendering/light_bulb.hpp"
 #include <cmath>
@@ -207,7 +208,7 @@ void LevelGenerator::SpawnResources(const Room& room, const ScalingConfig& scali
         };
         
         // Random substance type
-        int substanceType = GetRandomValue(0, 5);
+        int substanceType = GetRandomValue(0, 6);
         Object* substance = nullptr;
         
         switch (substanceType) {
@@ -217,6 +218,7 @@ void LevelGenerator::SpawnResources(const Room& room, const ScalingConfig& scali
             case 3: substance = new Shrooms(substancePos, physics); break;
             case 4: substance = new Vodka(substancePos, physics); break;
             case 5: substance = new Salvia(substancePos, physics); break;
+            case 6: substance = new Fent(substancePos, physics); break;
         }
         
         if (substance) {

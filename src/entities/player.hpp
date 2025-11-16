@@ -30,6 +30,16 @@ private:
     dGeomID geom;
     PhysicsWorld* physics;
 
+    // Global player instance (for substances to access insanity manager)
+    static Player* globalInstance;
+
+    // Death state
+    bool isDying;                   // Death sequence started
+    float deathVignetteProgress;    // 0.0 to 1.0 (fully enclosed)
+    Shader vignetteShader;          // Vignette post-processing shader
+    bool vignetteShaderLoaded;      // Track if shader was loaded successfully
+    static constexpr float DEATH_VIGNETTE_DURATION = 3.0f;  // 3 seconds to close
+
     // Inventory selection
     int selectedItemIndex;  // -1 = no item selected, 0+ = selected item index
     int lastHeldItemIndex;  // Remembers the last item that was held
@@ -82,7 +92,12 @@ public:
     // Insanity management
     void OnKillPerson();  // Called when player kills someone
     float GetInsanity() const;  // Get current insanity level
-    bool IsDead() const;  // Check if player has died from insanity
+    
+    // Death management
+    void TriggerDeath();  // Trigger death sequence (from insanity, fent, etc.)
+    bool IsDying() const { return isDying; }
+    bool IsDead() const { return isDying && deathVignetteProgress >= 1.0f; }
+    void DrawDeathVignette();  // Draw death vignette overlay
     
     // Accessors
     Camera3D* GetCamera() { return camera.GetCamera(); }
@@ -90,6 +105,10 @@ public:
     Vector3 GetPosition() const { return position; }
     int GetSelectedItemIndex() const { return selectedItemIndex; }
     dGeomID GetGeom() const { return geom; }
+
+    // Global instance management (for substances to access player)
+    static void SetGlobal(Player* instance);
+    static Player* GetGlobal();
 };
 
 #endif

@@ -1,4 +1,5 @@
 #include "substances/vodka.hpp"
+#include "core/physics.hpp"
 
 Vodka::Vodka(Vector3 pos, PhysicsWorld* physics)
     : Substance(pos, (Color){220, 220, 240, 255}, physics)  // Clear/light blue color for vodka

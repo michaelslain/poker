@@ -16,9 +16,13 @@
 #include <vector>
 #include <ode/ode.h>
 
+// Initialize static global instance pointer
+Player* Player::globalInstance = nullptr;
+
 Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName)
     : Person(pos, playerName, 1.0f), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
       lookYaw(0.0f), lookPitch(0.0f), body(nullptr), geom(nullptr), physics(physicsWorld),
+      isDying(false), deathVignetteProgress(0.0f), vignetteShaderLoaded(false),
       selectedItemIndex(-1), lastHeldItemIndex(-1),
       bettingUIActive(false), bettingChoice(-1), raiseSliderValue(0), raiseMin(0), raiseMax(0),
       storedCurrentBet(0), storedCallAmount(0),
@@ -51,6 +55,16 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
 
         dGeomSetData(geom, this);
     }
+
+    // Load vignette shader for death effect
+    TraceLog(LOG_INFO, "PLAYER: Attempting to load vignette shader...");
+    vignetteShader = LoadShader("shaders/vignette.vs", "shaders/vignette.fs");
+    if (vignetteShader.id != 0) {
+        vignetteShaderLoaded = true;
+        TraceLog(LOG_INFO, "PLAYER: Vignette shader loaded successfully (ID: %d)", vignetteShader.id);
+    } else {
+        TraceLog(LOG_WARNING, "PLAYER: Failed to load vignette shader - death effect will be disabled");
+    }
 }
 
 Player::~Player() {
@@ -61,6 +75,10 @@ Player::~Player() {
     if (body != nullptr) {
         dBodyDestroy(body);
         body = nullptr;
+    }
+
+    if (vignetteShaderLoaded) {
+        UnloadShader(vignetteShader);
     }
 }
 
@@ -113,6 +131,13 @@ void Player::HandleInteraction() {
 }
 
 void Player::Update(float deltaTime) {
+    // Handle death vignette progression
+    if (isDying) {
+        deathVignetteProgress += deltaTime / DEATH_VIGNETTE_DURATION;
+        if (deathVignetteProgress > 1.0f) deathVignetteProgress = 1.0f;
+        return; // Stop all other updates while dying
+    }
+
     // Mouse look
     Vector2 mouseDelta = GetMouseDelta();
 
@@ -290,6 +315,11 @@ void Player::Update(float deltaTime) {
     bool isTripping = PsychedelicManager::IsTripping();
     float tripIntensity = isTripping ? PsychedelicManager::GetCurrentIntensity() : 0.0f;
     insanityManager.Update(deltaTime, position, isSeated, isTripping, tripIntensity);
+
+    // Check if insanity reached maximum - trigger death
+    if (insanityManager.GetInsanity() >= 1.0f && !isDying) {
+        TriggerDeath();
+    }
 
     // FOV adjustment with bracket keys (manual control disabled during insanity)
     // camera.AdjustFOV();  // Commented out - FOV controlled by insanity
@@ -895,6 +925,36 @@ float Player::GetInsanity() const {
     return insanityManager.GetInsanity();
 }
 
-bool Player::IsDead() const {
-    return insanityManager.IsDeathComplete();
+void Player::TriggerDeath() {
+    // Immediately trigger death sequence (from insanity, fent, etc.)
+    if (!isDying) {
+        isDying = true;
+        deathVignetteProgress = 0.0f;
+        TraceLog(LOG_INFO, "PLAYER: Death triggered");
+    }
+}
+
+void Player::DrawDeathVignette() {
+    if (!isDying || !vignetteShaderLoaded) return;
+
+    // Draw full-screen vignette using shader
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+
+    BeginShaderMode(vignetteShader);
+        // Set shader uniform for vignette progress
+        int progressLoc = GetShaderLocation(vignetteShader, "progress");
+        SetShaderValue(vignetteShader, progressLoc, &deathVignetteProgress, SHADER_UNIFORM_FLOAT);
+        
+        // Draw full-screen quad
+        DrawRectangle(0, 0, screenWidth, screenHeight, WHITE);
+    EndShaderMode();
+}
+
+void Player::SetGlobal(Player* instance) {
+    globalInstance = instance;
+}
+
+Player* Player::GetGlobal() {
+    return globalInstance;
 }

@@ -45,7 +45,7 @@ This command compiles all test files and executes them, showing which tests pass
 - **Location**: All tests are in the `tests/` directory
 - **Framework**: Catch2 v3.5.0 (header-only)
 - **Test files**: One `test_*.cpp` file for each class (e.g., `test_card.cpp`, `test_player.cpp`)
-- **Coverage**: 32 test files covering all game classes
+- **Coverage**: 36 test files covering all game classes
 
 ### Test Organization
 
@@ -83,7 +83,10 @@ TEST_CASE("ClassName - Feature", "[tag]") {
 - `test_item.cpp` - Item base class
 - `test_weapon.cpp` - Weapon base class
 - `test_pistol.cpp` - Pistol weapon
+- `test_substance.cpp` - Substance base class and all substance types
+- `test_fent.cpp` - Fent substance (death trigger, stacking, type system)
 - `test_person.cpp` - Person base class
+- `test_player.cpp` - Player class (death system, insanity, global instance, seating, inventory)
 - `test_enemy.cpp` - AI enemy behavior
 - `test_dealer.cpp` - Dealer NPC
 
@@ -222,7 +225,8 @@ Object (base class with virtual functions)
 │   │       ├── Adrenaline
 │   │       ├── Salvia
 │   │       ├── Shrooms
-│   │       └── Vodka
+│   │       ├── Vodka
+│   │       └── Fent (fentanyl - instant death)
 │   └── PokerTable (poker game manager)
 ├── Person (abstract base with Inventory)
 │   ├── Player (human player with GameCamera)
@@ -397,7 +401,17 @@ poker/
   - Tracks movement, seating state, kills, and psychedelic trips
   - Affects FOV: interpolates from 60° (sane) to 150° (insane)
   - Visualized via `insanityManager.DrawMeter()` - N64-style circular meter in top-right
-- Methods: `HandleInteraction()`, `HandleUseItem()`, `GetClosestInteractable()`, `DrawInventoryUI()`, `DrawHeldItem()`, `DrawBettingUI()`, `DrawCardSelectionUI()`, `GetSelectedCards()`, `OnKillPerson()`, `GetInsanity()`
+  - Triggers death when reaching 100%
+- **Death system**: Player-managed death state
+  - Private members: `isDying`, `deathVignetteProgress`, `vignetteShader`, `vignetteShaderLoaded`
+  - `TriggerDeath()` - Start death sequence (called by insanity 100% or fent overdose)
+  - `IsDying()` / `IsDead()` - Query death state
+  - `DrawDeathVignette()` - Renders 3-second vignette closing animation using shader
+  - Death stops all player updates (early return in `Update()`)
+- **Global instance**: Static `globalInstance` pointer for substance access
+  - `SetGlobal(Player*)` / `GetGlobal()` - Manage global player reference
+  - Allows substances (like Fent) to trigger death without parameter passing
+- Methods: `HandleInteraction()`, `HandleUseItem()`, `GetClosestInteractable()`, `DrawInventoryUI()`, `DrawHeldItem()`, `DrawBettingUI()`, `DrawCardSelectionUI()`, `GetSelectedCards()`, `OnKillPerson()`, `GetInsanity()`, `TriggerDeath()`, `DrawDeathVignette()`
 - `HandleUseItem()` calls `item->Use()` on held items, delegates weapon raycast to `Weapon::PerformRaycast()`, handles killing/cleanup
 - `DrawHeldItem()` calls `item->DrawHeld()` on held items - works for any item that implements DrawHeld()
 - Overrides `SitDown()` and `StandUp()` to handle physics
@@ -487,7 +501,7 @@ poker/
 
 **Substance** (`substance.hpp/cpp`):
 - Inherits from Item
-- Abstract base class for all consumable substances (Weed, Cocaine, Molly, etc.)
+- Abstract base class for all consumable substances (Weed, Cocaine, Molly, Fent, etc.)
 - Protected members: `rigidBody` (RigidBody*), `color` (Color)
 - Sets `usable = true` in constructor - substances can be consumed via left-click
 - Constructor: `Substance(Vector3 pos, Color substanceColor, PhysicsWorld* physics)`
@@ -499,6 +513,14 @@ poker/
 - Component hierarchy: Substance → Item → Interactable → Object
 - Each substance implements unique effects in `Consume()` method
 - Subclasses specify color, name, and consumption effects
+
+**Fent** (`fent.hpp/cpp`):
+- Inherits from Substance
+- Dark gray/black color: `{50, 50, 50, 255}`
+- `Consume()` triggers instant death via `Player::GetGlobal()->TriggerDeath()`
+- Null-safe: checks if global player exists before triggering death
+- Returns type: "object_interactable_item_substance_fent"
+- Spawns in procedurally generated levels (1/7 chance alongside other substances)
 
 **Card** (`card.hpp/cpp`):
 - Inherits from Item
@@ -816,6 +838,30 @@ poker/
   - Player owns public `InsanityManager insanityManager` member
   - `OnKillPerson()` delegates to manager
   - FOV warping driven by `insanityManager.GetInsanity()`
+  - Player checks insanity >= 1.0 and calls `TriggerDeath()` (death logic moved to Player class)
+
+### Death System
+
+**Player Death Management** (`player.hpp/cpp`):
+- **Purpose**: Unified death system triggered by multiple sources (insanity, fentanyl overdose)
+- **Private members**:
+  - `isDying` (bool) - Death sequence active
+  - `deathVignetteProgress` (float) - 0.0 to 1.0 animation progress
+  - `vignetteShader` (Shader) - Vignette post-processing shader
+  - `vignetteShaderLoaded` (bool) - Shader load success flag
+  - `DEATH_VIGNETTE_DURATION` (3.0f) - Static constexpr duration
+- **Death triggers**:
+  - Insanity reaching 100%: Player checks in `Update()` and calls `TriggerDeath()`
+  - Fent overdose: `Fent::Consume()` calls `Player::GetGlobal()->TriggerDeath()`
+- **TriggerDeath()**: Idempotent - can be called multiple times safely
+- **Update behavior**: When `isDying == true`, `Update()` returns early (stops all player logic)
+- **Vignette animation**:
+  - Shader loaded in constructor, unloaded in destructor
+  - Progress updates at rate of `deltaTime / DEATH_VIGNETTE_DURATION`
+  - `DrawDeathVignette()` renders full-screen shader effect with progress uniform
+  - Clamps at 1.0 when complete
+- **Death complete**: `IsDead()` returns true when `isDying && deathVignetteProgress >= 1.0f`
+- **Main loop integration**: After rendering, main.cpp checks `player->IsDead()` and switches to death scene
 
 ### Death Scene System
 
@@ -1225,3 +1271,7 @@ if (numContacts > 0) {
 16. **Lighting Cleanup Order**: Call `LightingManager::CleanupLightingSystem()` BEFORE `CloseWindow()` to avoid shader cleanup errors
 
 17. **Light Position Updates**: Remember to call `UpdateLight()` on Light-derived objects each frame to sync shader uniforms
+
+18. **Global Player Instance**: Call `Player::SetGlobal(player)` after creating player in main.cpp - required for substances (like Fent) to access player
+
+19. **Death System Separation**: Death logic lives in Player class, not InsanityManager - InsanityManager only manages insanity value, Player triggers death when appropriate

@@ -1,5 +1,6 @@
 #include "catch_amalgamated.hpp"
 #include "gameplay/insanity_manager.hpp"
+#include "raymath.h"
 
 TEST_CASE("InsanityManager - Construction", "[insanity_manager]") {
     SECTION("Default constructor initializes to zero") {

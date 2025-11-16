@@ -3,41 +3,15 @@
 
 InsanityManager::InsanityManager(Vector3 startPosition)
     : insanity(0.0f), minInsanity(0.0f), minInsanityDecayTimer(0.0f),
-      timeSinceLastMove(0.0f), lastPosition(startPosition),
-      isDying(false), deathVignetteProgress(0.0f), vignetteShaderLoaded(false)
+      timeSinceLastMove(0.0f), lastPosition(startPosition)
 {
-    // Load vignette shader (optional - game still works if it fails)
-    TraceLog(LOG_INFO, "INSANITY: Attempting to load vignette shader...");
-    vignetteShader = LoadShader("shaders/vignette.vs", "shaders/vignette.fs");
-    if (vignetteShader.id != 0) {
-        vignetteShaderLoaded = true;
-        TraceLog(LOG_INFO, "INSANITY: Vignette shader loaded successfully (ID: %d)", vignetteShader.id);
-    } else {
-        TraceLog(LOG_WARNING, "INSANITY: Failed to load vignette shader - death effect will be disabled");
-    }
     TraceLog(LOG_INFO, "INSANITY: InsanityManager initialized");
 }
 
 InsanityManager::~InsanityManager() {
-    if (vignetteShaderLoaded) {
-        UnloadShader(vignetteShader);
-    }
 }
 
 void InsanityManager::Update(float deltaTime, Vector3 currentPosition, bool isSeated, bool isTripping, float tripIntensity) {
-    // Handle death vignette progression
-    if (isDying) {
-        deathVignetteProgress += deltaTime / DEATH_VIGNETTE_DURATION;
-        if (deathVignetteProgress > 1.0f) deathVignetteProgress = 1.0f;
-        return; // Don't update insanity while dying
-    }
-    
-    // Check if insanity reached maximum - trigger death
-    if (insanity >= 1.0f && !isDying) {
-        isDying = true;
-        deathVignetteProgress = 0.0f;
-    }
-    
     // If tripping, insanity is trip intensity + minimum floor
     if (isTripping) {
         insanity = tripIntensity + minInsanity;
@@ -136,25 +110,4 @@ void InsanityManager::DrawMeter() {
     int textWidth = MeasureText(text, fontSize);
     DrawText(text, (int)(centerX - textWidth / 2.0f), (int)(centerY - fontSize / 2.0f),
              fontSize, WHITE);
-}
-
-void InsanityManager::DrawDeathVignette() {
-    if (!isDying || !vignetteShaderLoaded) return;
-    
-    int screenWidth = GetScreenWidth();
-    int screenHeight = GetScreenHeight();
-    
-    // Set shader uniform for vignette progress
-    int progressLoc = GetShaderLocation(vignetteShader, "progress");
-    SetShaderValue(vignetteShader, progressLoc, &deathVignetteProgress, SHADER_UNIFORM_FLOAT);
-    
-    // Enable alpha blending for overlay effect
-    BeginBlendMode(BLEND_ALPHA);
-    BeginShaderMode(vignetteShader);
-    
-    // Draw full-screen quad - shader outputs black with varying alpha
-    DrawRectangle(0, 0, screenWidth, screenHeight, WHITE);
-    
-    EndShaderMode();
-    EndBlendMode();
 }

@@ -14,9 +14,9 @@
 - **Physics-Based Gameplay** - ODE physics engine for realistic item interactions and collisions
 - **Inventory System** - Dynamic item stacking with automatic sorting by category
 - **Weapon Combat** - 6-round revolver with raycast hit detection
-- **Consumable Substances** - Weed, Cocaine, Molly, Adrenaline, Salvia, Shrooms, Vodka with unique effects
+- **Consumable Substances** - Weed, Cocaine, Molly, Adrenaline, Salvia, Shrooms, Vodka, Fent (instant death) with unique effects
 - **Dynamic Lighting** - Shader-based lighting system supporting up to 4 lights with decorative light bulbs
-- **Death System** - Die from insanity reaching 100% with death vignette effect
+- **Death System** - Die from insanity reaching 100% or fentanyl overdose with 3-second death vignette effect
 
 ## Stack
 
@@ -81,7 +81,8 @@ Object (base class)
 │   │       ├── Adrenaline
 │   │       ├── Salvia
 │   │       ├── Shrooms
-│   │       └── Vodka
+│   │       ├── Vodka
+│   │       └── Fent (instant death)
 │   └── PokerTable
 ├── Person (abstract base with inventory)
 │   ├── Player (human-controlled with insanity system)
@@ -115,6 +116,7 @@ Standalone Classes:
 - **Lighting** - `LightingManager` static class managing shader-based lighting with up to 4 dynamic lights
 - **Psychedelic system** - `PsychedelicManager` with post-processing shaders for shrooms trips (5-minute duration with come-up, peak, and come-down stages)
 - **Insanity system** - `InsanityManager` tracking player mental state based on movement, seating, kills, and psychedelic trips; affects FOV (60°-150°) and compounds with trip intensity
+- **Death system** - Player-managed death state triggered by 100% insanity or fentanyl overdose; 3-second vignette animation with shader effects
 - **Scene management** - Scene system for different game states
 - **Level system** - Procedural level generation with difficulty scaling and alternate dimensions (Salvia mechanic)
-- **Testing** - Catch2 v3.5.0 framework with 166 test cases (1222 assertions) covering all classes
+- **Testing** - Catch2 v3.5.0 framework with 184 test cases (1294 assertions) covering all classes
