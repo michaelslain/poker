@@ -1,5 +1,4 @@
 #include "gameplay/level_generator.hpp"
-#include "core/level_manager.hpp"
 #include "world/floor.hpp"
 #include "world/ceiling.hpp"
 #include "world/wall.hpp"
@@ -24,13 +23,11 @@
 
 LevelGenerator::LevelGenerator(PhysicsWorld* physicsWorld, DOM* domInstance)
     : physics(physicsWorld), dom(domInstance), levelNumber(0)
-{
-}
+{}
 
 void LevelGenerator::GenerateLevel(int level) {
     levelNumber = level;
     rooms.clear();
-    hallways.clear();
     
     TraceLog(LOG_INFO, "LEVEL_GEN: Generating level %d", level);
     
@@ -46,24 +43,22 @@ void LevelGenerator::GenerateLevel(int level) {
     // Generate room layout
     GenerateRooms(roomCount);
     
-    // Generate hallways connecting rooms
-    GenerateHallways();
+    // Calculate aligned world positions for all rooms
+    CalculateRoomPositions();
+    
+    // Analyze which rooms connect to each other
+    AnalyzeRoomConnections();
     
     // Build geometry and spawn contents for each room
     TraceLog(LOG_INFO, "LEVEL_GEN: Building %d rooms", (int)rooms.size());
     for (size_t i = 0; i < rooms.size(); i++) {
         const Room& room = rooms[i];
-        TraceLog(LOG_INFO, "LEVEL_GEN: Room %d at (%.1f, %.1f), size (%.1f, %.1f), hasTable=%d, hasStairs=%d", 
-                 (int)i, room.position.x, room.position.y, room.size.x, room.size.y, 
-                 room.hasPokerTable, room.hasStairs);
+        TraceLog(LOG_INFO, "LEVEL_GEN: Room %d at (%.1f, %.1f), grid (%d, %d), size (%.1f, %.1f), hasTable=%d, hasStairs=%d",
+                 (int)i, room.position.x, room.position.y, room.gridX, room.gridZ,
+                 room.size.x, room.size.y, room.hasPokerTable, room.hasStairs);
         BuildFloorAndCeiling(room);
         BuildWalls(room);
         SpawnRoomContents(room, scaling);
-    }
-    
-    // Build hallway walls
-    for (const Hallway& hallway : hallways) {
-        BuildHallwayWalls(hallway);
     }
     
     // Spawn lights throughout level
@@ -76,24 +71,61 @@ void LevelGenerator::GenerateLevel(int level) {
 }
 
 void LevelGenerator::GenerateRooms(int roomCount) {
-    // Simple grid-based room generation with random sizes
-    // Rooms are placed in a rough grid pattern to avoid overlap
+    // Grid-based room generation using random walk algorithm
+    // Rooms can branch out in different directions creating organic layouts
+    // Key constraint: Rooms that connect on an axis must share the same size on that axis
+    // Example: Room to the North must have same width, but can have different depth
     
-    // Place rooms in a line for now (simpler, rooms are connected)
-    float spacing = 12.0f;  // Distance between room centers
+    // Start at origin
+    int currentGridX = 0;
+    int currentGridZ = 0;
     
     for (int i = 0; i < roomCount; i++) {
         Room room;
         
-        // Place rooms in a line along X axis
-        room.position.x = i * spacing;
-        room.position.y = 0.0f;
+        // Grid position
+        room.gridX = currentGridX;
+        room.gridZ = currentGridZ;
         
-        // Random size
-        room.size.x = GetRandomValue(static_cast<int>(ROOM_MIN_SIZE * 100), 
-                                      static_cast<int>(ROOM_MAX_SIZE * 100)) / 100.0f;
-        room.size.y = GetRandomValue(static_cast<int>(ROOM_MIN_SIZE * 100), 
-                                      static_cast<int>(ROOM_MAX_SIZE * 100)) / 100.0f;
+        // Determine size based on existing neighbors
+        // If we have a neighbor to North/South, we must match their width (size.x)
+        // If we have a neighbor to East/West, we must match their depth (size.y)
+        
+        int northNeighborIdx = FindRoomAtGrid(currentGridX, currentGridZ - 1);
+        int southNeighborIdx = FindRoomAtGrid(currentGridX, currentGridZ + 1);
+        int eastNeighborIdx = FindRoomAtGrid(currentGridX + 1, currentGridZ);
+        int westNeighborIdx = FindRoomAtGrid(currentGridX - 1, currentGridZ);
+        
+        // Determine width (size.x)
+        if (northNeighborIdx != -1) {
+            // Match north neighbor's width
+            room.size.x = rooms[northNeighborIdx].size.x;
+        } else if (southNeighborIdx != -1) {
+            // Match south neighbor's width
+            room.size.x = rooms[southNeighborIdx].size.x;
+        } else {
+            // No North/South neighbor - random width
+            room.size.x = GetRandomValue(static_cast<int>(ROOM_MIN_SIZE * 100),
+                                          static_cast<int>(ROOM_MAX_SIZE * 100)) / 100.0f;
+        }
+        
+        // Determine depth (size.y)
+        if (eastNeighborIdx != -1) {
+            // Match east neighbor's depth
+            room.size.y = rooms[eastNeighborIdx].size.y;
+        } else if (westNeighborIdx != -1) {
+            // Match west neighbor's depth
+            room.size.y = rooms[westNeighborIdx].size.y;
+        } else {
+            // No East/West neighbor - random depth
+            room.size.y = GetRandomValue(static_cast<int>(ROOM_MIN_SIZE * 100),
+                                          static_cast<int>(ROOM_MAX_SIZE * 100)) / 100.0f;
+        }
+        
+        // Calculate world position based on neighboring rooms to align edges
+        // We'll adjust position after all rooms are placed
+        room.position.x = 0;  // Placeholder
+        room.position.y = 0;  // Placeholder
         
         // First room is start room
         room.isStartRoom = (i == 0);
@@ -104,20 +136,131 @@ void LevelGenerator::GenerateRooms(int roomCount) {
         // 60% chance to have poker table (but not in start room or stairs room)
         room.hasPokerTable = !room.isStartRoom && !room.hasStairs && (GetRandomValue(0, 100) < 60);
         
+        // Initialize connections to false
+        room.connectsNorth = false;
+        room.connectsSouth = false;
+        room.connectsEast = false;
+        room.connectsWest = false;
+        
         rooms.push_back(room);
+        
+        // Choose next grid position (random walk)
+        if (i < roomCount - 1) {
+            // Pick a random direction that doesn't overlap with existing room
+            int attempts = 0;
+            int nextGridX, nextGridZ;
+            
+            do {
+                int direction = GetRandomValue(0, 3);
+                nextGridX = currentGridX;
+                nextGridZ = currentGridZ;
+                
+                switch (direction) {
+                    case 0: nextGridX++; break;  // East
+                    case 1: nextGridX--; break;  // West
+                    case 2: nextGridZ++; break;  // South
+                    case 3: nextGridZ--; break;  // North
+                }
+                
+                attempts++;
+                // Prevent infinite loop
+                if (attempts > 20) {
+                    // Force progress in positive X direction
+                    nextGridX = currentGridX + 1;
+                    nextGridZ = currentGridZ;
+                    break;
+                }
+            } while (FindRoomAtGrid(nextGridX, nextGridZ) != -1);
+            
+            currentGridX = nextGridX;
+            currentGridZ = nextGridZ;
+        }
     }
 }
 
-void LevelGenerator::GenerateHallways() {
-    // Connect each room to the next room in sequence
-    // This ensures all rooms are connected
+void LevelGenerator::CalculateRoomPositions() {
+    // Calculate world positions for rooms so their edges align perfectly
+    // Strategy: Start from first room at origin, then place each connected room
+    // by aligning its edge with the previous room's edge
     
-    for (size_t i = 0; i < rooms.size() - 1; i++) {
-        Hallway hallway;
-        hallway.start = FindClosestPoint(rooms[i], rooms[i + 1]);
-        hallway.end = FindClosestPoint(rooms[i + 1], rooms[i]);
-        hallway.width = HALLWAY_WIDTH;
-        hallways.push_back(hallway);
+    if (rooms.empty()) return;
+    
+    // First room at origin
+    rooms[0].position.x = 0.0f;
+    rooms[0].position.y = 0.0f;
+    
+    // Process rooms using breadth-first search from origin
+    // This ensures we place rooms based on their neighbors
+    std::vector<bool> placed(rooms.size(), false);
+    placed[0] = true;
+    
+    bool anyPlaced = true;
+    while (anyPlaced) {
+        anyPlaced = false;
+        
+        for (size_t i = 0; i < rooms.size(); i++) {
+            if (!placed[i]) continue;
+            
+            Room& currentRoom = rooms[i];
+            
+            // Try to place all neighbors of this room
+            for (size_t j = 0; j < rooms.size(); j++) {
+                if (placed[j]) continue;
+                
+                Room& neighborRoom = rooms[j];
+                
+                // Check if rooms are grid neighbors
+                int dx = neighborRoom.gridX - currentRoom.gridX;
+                int dz = neighborRoom.gridZ - currentRoom.gridZ;
+                
+                if (abs(dx) + abs(dz) == 1) {  // Adjacent on grid
+                    // Place neighbor room by aligning edges
+                    if (dx == 1) {  // Neighbor is to the East
+                        neighborRoom.position.x = currentRoom.position.x + currentRoom.size.x / 2.0f + neighborRoom.size.x / 2.0f;
+                        neighborRoom.position.y = currentRoom.position.y;
+                    } else if (dx == -1) {  // Neighbor is to the West
+                        neighborRoom.position.x = currentRoom.position.x - currentRoom.size.x / 2.0f - neighborRoom.size.x / 2.0f;
+                        neighborRoom.position.y = currentRoom.position.y;
+                    } else if (dz == 1) {  // Neighbor is to the South
+                        neighborRoom.position.x = currentRoom.position.x;
+                        neighborRoom.position.y = currentRoom.position.y + currentRoom.size.y / 2.0f + neighborRoom.size.y / 2.0f;
+                    } else if (dz == -1) {  // Neighbor is to the North
+                        neighborRoom.position.x = currentRoom.position.x;
+                        neighborRoom.position.y = currentRoom.position.y - currentRoom.size.y / 2.0f - neighborRoom.size.y / 2.0f;
+                    }
+                    
+                    placed[j] = true;
+                    anyPlaced = true;
+                }
+            }
+        }
+    }
+}
+
+void LevelGenerator::AnalyzeRoomConnections() {
+    // Check each room's neighbors and mark connections
+    for (size_t i = 0; i < rooms.size(); i++) {
+        Room& room = rooms[i];
+        
+        // Check North (gridZ - 1)
+        if (FindRoomAtGrid(room.gridX, room.gridZ - 1) != -1) {
+            room.connectsNorth = true;
+        }
+        
+        // Check South (gridZ + 1)
+        if (FindRoomAtGrid(room.gridX, room.gridZ + 1) != -1) {
+            room.connectsSouth = true;
+        }
+        
+        // Check East (gridX + 1)
+        if (FindRoomAtGrid(room.gridX + 1, room.gridZ) != -1) {
+            room.connectsEast = true;
+        }
+        
+        // Check West (gridX - 1)
+        if (FindRoomAtGrid(room.gridX - 1, room.gridZ) != -1) {
+            room.connectsWest = true;
+        }
     }
 }
 
@@ -228,79 +371,55 @@ void LevelGenerator::SpawnResources(const Room& room, const ScalingConfig& scali
 }
 
 void LevelGenerator::BuildWalls(const Room& room) {
-    // Build walls around room, but leave openings for hallways
-    // For now: only build North and South walls (leave East/West open for linear progression)
-    // Walls are now 2D planes with no thickness - only width (X) and height (Y)
+    // Build walls around room with doorway openings where rooms connect
+    // Walls are 2D planes with no thickness - only width (X) and height (Y)
+    // Since rooms share dimensions on connecting axes, walls align perfectly
+    float halfWidth = room.size.x / 2.0f;
     float halfDepth = room.size.y / 2.0f;
     float wallHeight = CEILING_HEIGHT - FLOOR_HEIGHT;
     
-    // North wall - 2D plane (width x height, Z component ignored)
-    Vector3 northPos = {room.position.x, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y - halfDepth};
-    Vector3 northSize = {room.size.x, wallHeight, 0.0f};  // Z=0 for 2D plane
-    Wall* northWall = new Wall(northPos, northSize, physics);
-    dom->AddObject(northWall);
+    // North wall (negative Z) - skip if connects north
+    if (!room.connectsNorth) {
+        Vector3 northPos = {room.position.x, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y - halfDepth};
+        Vector3 northSize = {room.size.x, wallHeight, 0.0f};
+        Wall* northWall = new Wall(northPos, northSize, physics);
+        dom->AddObject(northWall);
+    }
     
-    // South wall - 2D plane (width x height, Z component ignored)
-    Vector3 southPos = {room.position.x, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y + halfDepth};
-    Vector3 southSize = {room.size.x, wallHeight, 0.0f};  // Z=0 for 2D plane
-    Wall* southWall = new Wall(southPos, southSize, physics);
-    dom->AddObject(southWall);
+    // South wall (positive Z) - skip if connects south
+    if (!room.connectsSouth) {
+        Vector3 southPos = {room.position.x, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y + halfDepth};
+        Vector3 southSize = {room.size.x, wallHeight, 0.0f};
+        Wall* southWall = new Wall(southPos, southSize, physics);
+        dom->AddObject(southWall);
+    }
     
-    // Skip East/West walls to allow linear progression between rooms
-    // TODO: Add proper doorway system when implementing complex room layouts
-}
-
-void LevelGenerator::BuildHallwayWalls(const Hallway& hallway) {
-    // Build walls along hallway - now 2D planes with no thickness
-    Vector2 direction = {hallway.end.x - hallway.start.x, hallway.end.y - hallway.start.y};
-    float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+    // East wall (positive X) - skip if connects east
+    if (!room.connectsEast) {
+        Vector3 eastPos = {room.position.x + halfWidth, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y};
+        Vector3 eastSize = {room.size.y, wallHeight, 0.0f};  // Note: width is room depth
+        Wall* eastWall = new Wall(eastPos, eastSize, physics);
+        eastWall->rotation.y = 90.0f;  // Rotate to face East/West
+        eastWall->needsColliderUpdate = true;  // Mark for collider update
+        dom->AddObject(eastWall);
+    }
     
-    // Normalize direction
-    direction.x /= length;
-    direction.y /= length;
-    
-    // Perpendicular direction for wall placement
-    Vector2 perpendicular = {-direction.y, direction.x};
-    
-    // Center of hallway
-    Vector2 center = {
-        (hallway.start.x + hallway.end.x) / 2.0f,
-        (hallway.start.y + hallway.end.y) / 2.0f
-    };
-    
-    float wallHeight = CEILING_HEIGHT - FLOOR_HEIGHT;
-    
-    // Left wall - 2D plane (length x height, Z=0)
-    Vector3 leftPos = {
-        center.x + perpendicular.x * hallway.width / 2.0f,
-        FLOOR_HEIGHT + wallHeight / 2.0f,
-        center.y + perpendicular.y * hallway.width / 2.0f
-    };
-    Vector3 leftSize = {length, wallHeight, 0.0f};  // Z=0 for 2D plane
-    Wall* leftWall = new Wall(leftPos, leftSize, physics);
-    
-    // Rotate wall to align with hallway
-    float angle = std::atan2(direction.y, direction.x) * RAD2DEG;
-    leftWall->rotation.y = angle;
-    
-    dom->AddObject(leftWall);
-    
-    // Right wall - 2D plane (length x height, Z=0)
-    Vector3 rightPos = {
-        center.x - perpendicular.x * hallway.width / 2.0f,
-        FLOOR_HEIGHT + wallHeight / 2.0f,
-        center.y - perpendicular.y * hallway.width / 2.0f
-    };
-    Vector3 rightSize = {length, wallHeight, 0.0f};  // Z=0 for 2D plane
-    Wall* rightWall = new Wall(rightPos, rightSize, physics);
-    rightWall->rotation.y = angle;
-    dom->AddObject(rightWall);
+    // West wall (negative X) - skip if connects west
+    if (!room.connectsWest) {
+        Vector3 westPos = {room.position.x - halfWidth, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y};
+        Vector3 westSize = {room.size.y, wallHeight, 0.0f};  // Note: width is room depth
+        Wall* westWall = new Wall(westPos, westSize, physics);
+        westWall->rotation.y = 90.0f;  // Rotate to face East/West
+        westWall->needsColliderUpdate = true;  // Mark for collider update
+        dom->AddObject(westWall);
+    }
 }
 
 void LevelGenerator::BuildFloorAndCeiling(const Room& room) {
-    // Floor
+    // Floor - extremely dark maroon color
     Vector3 floorPos = {room.position.x, FLOOR_HEIGHT, room.position.y};
-    Floor* floor = new Floor(floorPos, {room.size.x, room.size.y}, GRAY, physics);
+    Color darkMaroon = {20, 2, 2, 255};
+    Floor* floor = new Floor(floorPos, {room.size.x, room.size.y}, darkMaroon, physics);
     dom->AddObject(floor);
     
     // Ceiling
@@ -309,34 +428,13 @@ void LevelGenerator::BuildFloorAndCeiling(const Room& room) {
     dom->AddObject(ceiling);
 }
 
-bool LevelGenerator::RoomsOverlap(const Room& a, const Room& b) const {
-    float aLeft = a.position.x - a.size.x / 2.0f;
-    float aRight = a.position.x + a.size.x / 2.0f;
-    float aTop = a.position.y - a.size.y / 2.0f;
-    float aBottom = a.position.y + a.size.y / 2.0f;
-    
-    float bLeft = b.position.x - b.size.x / 2.0f;
-    float bRight = b.position.x + b.size.x / 2.0f;
-    float bTop = b.position.y - b.size.y / 2.0f;
-    float bBottom = b.position.y + b.size.y / 2.0f;
-    
-    return !(aRight < bLeft || aLeft > bRight || aBottom < bTop || aTop > bBottom);
-}
-
-Vector2 LevelGenerator::FindClosestPoint(const Room& from, const Room& to) const {
-    // Find closest point on edge of 'from' room toward 'to' room
-    Vector2 direction = {to.position.x - from.position.x, to.position.y - from.position.y};
-    float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-    direction.x /= length;
-    direction.y /= length;
-    
-    // Move to edge of room in that direction
-    Vector2 point = {
-        from.position.x + direction.x * from.size.x / 2.0f,
-        from.position.y + direction.y * from.size.y / 2.0f
-    };
-    
-    return point;
+int LevelGenerator::FindRoomAtGrid(int gridX, int gridZ) const {
+    for (size_t i = 0; i < rooms.size(); i++) {
+        if (rooms[i].gridX == gridX && rooms[i].gridZ == gridZ) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;  // No room found
 }
 
 Vector3 LevelGenerator::GetPlayerSpawnPosition() const {
@@ -351,5 +449,4 @@ Vector3 LevelGenerator::GetPlayerSpawnPosition() const {
 
 void LevelGenerator::Clear() {
     rooms.clear();
-    hallways.clear();
 }

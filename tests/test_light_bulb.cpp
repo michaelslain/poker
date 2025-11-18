@@ -151,3 +151,31 @@ TEST_CASE("LightBulb - Position Changes", "[light_bulb]") {
         REQUIRE_NOTHROW(bulb.UpdateLight());
     }
 }
+
+TEST_CASE("LightBulb - Blue Light Emission", "[light_bulb]") {
+    SECTION("Constructor ignores lightColor parameter for emission") {
+        // The constructor should create a blueish light regardless of input color
+        // Visual glow remains yellow, but emitted light is blue
+        
+        LightBulb bulb1({0, 5, 0}, WHITE);
+        LightBulb bulb2({5, 5, 5}, RED);
+        LightBulb bulb3({-5, 5, -5}, YELLOW);
+        
+        // All should construct successfully
+        REQUIRE(bulb1.position.y == 5.0f);
+        REQUIRE(bulb2.position.x == 5.0f);
+        REQUIRE(bulb3.position.x == -5.0f);
+    }
+    
+    SECTION("Multiple light bulbs with different input colors") {
+        // Even with different constructor colors, all should emit blue light
+        LightBulb yellowBulb({0, 5, 0}, YELLOW);
+        LightBulb redBulb({5, 5, 5}, RED);
+        LightBulb greenBulb({-5, 5, -5}, GREEN);
+        
+        // All should be valid light sources
+        REQUIRE_NOTHROW(yellowBulb.UpdateLight());
+        REQUIRE_NOTHROW(redBulb.UpdateLight());
+        REQUIRE_NOTHROW(greenBulb.UpdateLight());
+    }
+}

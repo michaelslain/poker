@@ -15,13 +15,14 @@ struct Room {
     bool hasPokerTable;
     bool isStartRoom;
     bool hasStairs;
-};
-
-// Hallway structure connecting rooms
-struct Hallway {
-    Vector2 start;     // Start position (x, z)
-    Vector2 end;       // End position (x, z)
-    float width;       // Hallway width
+    int gridX;         // Grid position X
+    int gridZ;         // Grid position Z
+    
+    // Which sides connect to other rooms (doorways)
+    bool connectsNorth;
+    bool connectsSouth;
+    bool connectsEast;
+    bool connectsWest;
 };
 
 // Level generation class
@@ -33,7 +34,6 @@ private:
     int levelNumber;
     
     std::vector<Room> rooms;
-    std::vector<Hallway> hallways;
     
     // Generation parameters
     static constexpr int MIN_ROOMS = 3;
@@ -46,17 +46,16 @@ private:
     
     // Private generation methods
     void GenerateRooms(int roomCount);
-    void GenerateHallways();
+    void CalculateRoomPositions();
+    void AnalyzeRoomConnections();
     void SpawnRoomContents(const Room& room, const ScalingConfig& scaling);
     void SpawnPokerTable(Vector3 position, const ScalingConfig& scaling);
     void SpawnResources(const Room& room, const ScalingConfig& scaling);
     void BuildWalls(const Room& room);
-    void BuildHallwayWalls(const Hallway& hallway);
     void BuildFloorAndCeiling(const Room& room);
     
     // Helper methods
-    bool RoomsOverlap(const Room& a, const Room& b) const;
-    Vector2 FindClosestPoint(const Room& from, const Room& to) const;
+    int FindRoomAtGrid(int gridX, int gridZ) const;
 
 public:
     // Constructor

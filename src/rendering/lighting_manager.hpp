@@ -4,7 +4,7 @@
 #include "raylib.h"
 
 // Max dynamic lights supported by shader
-#define MAX_LIGHTS 4
+#define MAX_LIGHTS 32
 
 // Light type enum
 typedef enum {
@@ -20,6 +20,7 @@ typedef struct {
     Vector3 target;
     Color color;
     float attenuation;
+    int lightIndex;  // Index in the shader lights array
     
     // Shader locations
     int enabledLoc;
@@ -47,6 +48,7 @@ public:
     // Light management functions (moved from rlights.h)
     static RaylibLight CreateLight(int type, Vector3 position, Vector3 target, Color color);
     static void UpdateLightValues(RaylibLight light);
+    static void ResetLights();  // Reset light counter when cleaning up scene
 };
 
 #endif

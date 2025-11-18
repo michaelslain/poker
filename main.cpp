@@ -35,6 +35,9 @@ void CleanupLevel(DOM& dom, Player* player) {
             dom.RemoveObject(obj);
         }
     }
+    
+    // Reset lighting system for new level
+    LightingManager::ResetLights();
 }
 
 // Helper function to generate a level
@@ -172,6 +175,7 @@ int main(void)
         
         // Check for stairs collision - trigger level transition
         if (player && !isInDeathScene) {
+            bool transitionTriggered = false;
             for (int i = 0; i < dom.GetCount(); i++) {
                 Object* obj = dom.GetObject(i);
                 if (TypeContains(obj->GetType(), "stairs")) {
@@ -194,17 +198,22 @@ int main(void)
                             TraceLog(LOG_INFO, "STAIRS: Progressing to level %d", levelManager->GetCurrentLevel());
                         }
                         
-                        // Clean up current level (except player)
-                        CleanupLevel(dom, player);
-                        
-                        // Generate new level
-                        int newLevel = levelManager->GetCurrentLevel();
-                        GenerateLevel(newLevel, levelGenerator, hospitalScene, dom, player);
-                        
-                        TraceLog(LOG_INFO, "STAIRS: New level %d loaded", newLevel);
-                        break;  // Only process one stairs collision per frame
+                        transitionTriggered = true;
+                        break;  // Stop iterating - we'll clean up and regenerate after the loop
                     }
                 }
+            }
+            
+            // Handle transition after finishing DOM iteration
+            if (transitionTriggered) {
+                // Clean up current level (except player)
+                CleanupLevel(dom, player);
+                
+                // Generate new level
+                int newLevel = levelManager->GetCurrentLevel();
+                GenerateLevel(newLevel, levelGenerator, hospitalScene, dom, player);
+                
+                TraceLog(LOG_INFO, "STAIRS: New level %d loaded", newLevel);
             }
         }
         

@@ -8,8 +8,10 @@ LightBulb::LightBulb(Vector3 position, Color lightColor)
     // Allocate RaylibLight struct on heap
     RaylibLight* light = new RaylibLight;
     
-    // Create point light (radial/omni-directional)
-    *light = LightingManager::CreateLight(LIGHT_POINT, position, Vector3Zero(), lightColor);
+    // Create point light with blueish tint (ignores lightColor parameter)
+    // Visual glow remains yellow, but actual lighting is blue
+    Color blueLight = {100, 120, 180, 255};
+    *light = LightingManager::CreateLight(LIGHT_POINT, position, Vector3Zero(), blueLight);
     
     // Store as opaque pointer
     raylibLightPtr = light;

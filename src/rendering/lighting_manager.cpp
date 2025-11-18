@@ -44,7 +44,7 @@ void LightingManager::UpdateCameraPosition(Vector3 cameraPos) {
 
 // Create a light and get shader locations
 RaylibLight LightingManager::CreateLight(int type, Vector3 position, Vector3 target, Color color) {
-    RaylibLight light = {0, 0, {0, 0, 0}, {0, 0, 0}, {0, 0, 0, 0}, 0.0f, 0, 0, 0, 0, 0, 0};
+    RaylibLight light = {0, 0, {0, 0, 0}, {0, 0, 0}, {0, 0, 0, 0}, 0.0f, -1, 0, 0, 0, 0, 0, 0};
 
     if (lightsCount < MAX_LIGHTS && shaderInitialized) {
         light.enabled = true;
@@ -52,6 +52,7 @@ RaylibLight LightingManager::CreateLight(int type, Vector3 position, Vector3 tar
         light.position = position;
         light.target = target;
         light.color = color;
+        light.lightIndex = lightsCount;  // Store the index this light uses
 
         // NOTE: Lighting shader naming must be the provided ones
         light.enabledLoc = GetShaderLocation(lightingShader, TextFormat("lights[%i].enabled", lightsCount));
@@ -88,4 +89,18 @@ void LightingManager::UpdateLightValues(RaylibLight light) {
     float color[4] = { (float)light.color.r/(float)255, (float)light.color.g/(float)255, 
                        (float)light.color.b/(float)255, (float)light.color.a/(float)255 };
     SetShaderValue(lightingShader, light.colorLoc, color, SHADER_UNIFORM_VEC4);
+}
+
+// Reset light counter when cleaning up scene
+void LightingManager::ResetLights() {
+    lightsCount = 0;
+    
+    // Disable all lights in shader
+    if (shaderInitialized) {
+        for (int i = 0; i < MAX_LIGHTS; i++) {
+            int enabledLoc = GetShaderLocation(lightingShader, TextFormat("lights[%i].enabled", i));
+            int enabled = 0;
+            SetShaderValue(lightingShader, enabledLoc, &enabled, SHADER_UNIFORM_INT);
+        }
+    }
 }

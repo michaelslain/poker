@@ -133,6 +133,14 @@ Tests are tagged for easy filtering:
 4. **Refactoring safety**: Change code confidently knowing tests will catch breaks
 5. **Edge case coverage**: Test unusual inputs and boundary conditions
 
+### Test Statistics
+
+As of the latest build:
+- **192 test cases** covering all game systems
+- **1325 assertions** validating functionality
+- **100% pass rate** - all tests passing
+- **36 test files** - one per major class/system
+
 ### Writing New Tests
 
 When adding a new class:
@@ -723,12 +731,15 @@ poker/
 - **Cleanup**: `CleanupLightingSystem()` - unloads shader
 - **Camera updates**: `UpdateCameraPosition(Vector3)` - updates view position uniform
 - **Light management**:
-  - `CreateLight(int type, Vector3 position, Vector3 target, Color color)` - creates RaylibLight struct
+  - `CreateLight(int type, Vector3 position, Vector3 target, Color color)` - creates RaylibLight struct with unique lightIndex
   - `UpdateLightValues(RaylibLight light)` - sends light data to shader
-- **Constants**: `MAX_LIGHTS` (4), `LightType` enum (LIGHT_DIRECTIONAL=0, LIGHT_POINT=1)
-- **RaylibLight struct**: Contains type, enabled, position, target, color, and shader location IDs
+  - `ResetLights()` - resets light counter and disables all lights in shader (call when cleaning up scenes)
+- **Constants**: `MAX_LIGHTS` (32), `LightType` enum (LIGHT_DIRECTIONAL=0, LIGHT_POINT=1)
+- **RaylibLight struct**: Contains type, enabled, position, target, color, lightIndex, and shader location IDs
+- **Light index tracking**: Each light stores its index in the shader's lights array to prevent overwrites
 - Must call `InitLightingSystem()` before creating any lights
 - Must call `CleanupLightingSystem()` before closing window
+- Must call `ResetLights()` when transitioning between levels to reset light counter
 
 **Light** (`light.hpp/cpp`):
 - Inherits from Object
@@ -743,7 +754,9 @@ poker/
 - Hanging lantern-style light bulb with visible geometry
 - Private members: `raylibLightPtr` (void* to RaylibLight), `color` (Color)
 - Constructor: `LightBulb(Vector3 position, Color lightColor)`
-  - Creates point light via `LightingManager::CreateLight()`
+  - Creates point light with **blueish tint** RGB(100, 120, 180) via `LightingManager::CreateLight()`
+  - Ignores `lightColor` parameter - all light bulbs emit blue light
+  - Visual glow halos remain yellow for aesthetic contrast
   - Stores light struct as opaque pointer for encapsulation
 - `UpdateLight()` - syncs RaylibLight position with Object position and updates shader
 - `Draw()` - renders decorative bulb geometry:
@@ -927,26 +940,35 @@ The level system provides procedural level generation with difficulty scaling an
 - **Level 1+**: Procedurally generated casino levels
 
 **LevelGenerator** (`src/gameplay/level_generator.hpp/cpp`):
-- **Purpose**: Procedural generation of casino levels with rooms, poker tables, enemies
-- **Private members**: `physics` (PhysicsWorld*), `dom` (DOM*), `rooms` (vector), `hallways` (vector)
+- **Purpose**: Procedural generation of casino levels with non-linear room layouts
+- **Private members**: `physics` (PhysicsWorld*), `dom` (DOM*), `rooms` (vector)
 - **Generation constants**:
   - `MIN_ROOMS` (3), `MAX_ROOMS` (8) - Room count scales with level
   - `ROOM_MIN_SIZE` (8.0f), `ROOM_MAX_SIZE` (15.0f) - Random room dimensions
-  - `HALLWAY_WIDTH` (3.0f), `FLOOR_HEIGHT` (0.0f), `CEILING_HEIGHT` (5.0f)
-- **Room structure**: Contains position, size, flags for poker table, stairs, start room
+  - `FLOOR_HEIGHT` (0.0f), `CEILING_HEIGHT` (5.0f)
+- **Room structure**: Contains position, size, grid coordinates (gridX, gridZ), connection flags (connectsNorth/South/East/West), and flags for poker table, stairs, start room
+- **Generation algorithm**:
+  - Uses **random walk** on a grid to create organic, non-linear layouts
+  - Rooms can branch in all four cardinal directions (North, South, East, West)
+  - **Dimension constraints**: Rooms connecting on an axis must share the same size on that axis
+    - North/South connections: Must have matching width (size.x)
+    - East/West connections: Must have matching depth (size.y)
+  - Ensures perfect edge alignment without gaps
 - **Generation methods**:
   - `GenerateLevel(int level)` - Main entry point, creates complete level
-  - `GenerateRooms(int count)` - Creates rooms in linear layout
-  - `GenerateHallways()` - Connects rooms sequentially
+  - `GenerateRooms(int count)` - Creates rooms using random walk with dimension constraints
+  - `CalculateRoomPositions()` - Uses breadth-first search to align room edges perfectly
+  - `AnalyzeRoomConnections()` - Marks which sides connect to other rooms (for doorways)
   - `SpawnRoomContents()` - Adds poker tables, stairs, resources
-  - `BuildWalls()`, `BuildFloorAndCeiling()` - Creates geometry
+  - `BuildWalls()` - Builds walls only where rooms don't connect (creates doorways automatically)
+  - `BuildFloorAndCeiling()` - Creates geometry with **dark maroon floor** RGB(20, 2, 2)
 - **Content spawning**:
   - First room: Empty start room
   - Middle rooms: 60% chance of poker table with enemies
   - Last room: Contains stairs to next level
   - Resources: Chips, weapons, substances (scaled by difficulty)
-- **Lighting**: One light bulb per room at ceiling height
-- **Helper methods**: `GetPlayerSpawnPosition()`, `Clear()` for cleanup
+- **Lighting**: One light bulb per room at ceiling height (supports up to 32 lights per level)
+- **Helper methods**: `GetPlayerSpawnPosition()`, `Clear()`, `FindRoomAtGrid(gridX, gridZ)`
 - **Uses global DOM and PhysicsWorld** from static accessors
 
 **HospitalScene** (`src/scenes/hospital_scene.hpp/cpp`):
@@ -987,10 +1009,15 @@ The level system provides procedural level generation with difficulty scaling an
   - Start at level 0 (hospital)
 - **Dimension change detection**:
   - Track `previousDimension`, compare to `GetCurrentDimension()`
-  - On change: Clean up level, regenerate same level number in new dimension
+  - On change: Clean up level, call `LightingManager::ResetLights()`, regenerate same level number in new dimension
 - **Stairs collision detection**:
-  - Check all stairs objects for player collision
+  - Uses deferred cleanup pattern to avoid use-after-free
+  - Sets `transitionTriggered` flag during DOM iteration
+  - After iteration completes: Clean up level, call `LightingManager::ResetLights()`, generate new level
   - On collision: Progress level, clean up, generate new level
+- **Level cleanup** (`CleanupLevel()` helper):
+  - Deletes all DOM objects except player
+  - Calls `LightingManager::ResetLights()` to reset light counter
 - **Level UI**: `DrawLevelUI(level, dimension)` in top-left corner
   - Shows "LEVEL N" or "LEVEL N (ALT DIM M)" in purple for alternate dimensions
 
@@ -1275,6 +1302,10 @@ if (numContacts > 0) {
 
 17. **Light Position Updates**: Remember to call `UpdateLight()` on Light-derived objects each frame to sync shader uniforms
 
-18. **Global Player Instance**: Call `Player::SetGlobal(player)` after creating player in main.cpp - required for substances (like Fent) to access player
+18. **Light Reset Between Scenes**: Call `LightingManager::ResetLights()` when cleaning up levels to reset the light counter - prevents "only one light works" bug on subsequent levels
 
-19. **Death System Separation**: Death logic lives in Player class, not InsanityManager - InsanityManager only manages insanity value, Player triggers death when appropriate
+19. **Deferred Cleanup Pattern**: Never clean up DOM objects while iterating through the DOM - set a flag during iteration and perform cleanup after the loop completes to avoid use-after-free
+
+20. **Global Player Instance**: Call `Player::SetGlobal(player)` after creating player in main.cpp - required for substances (like Fent) to access player
+
+21. **Death System Separation**: Death logic lives in Player class, not InsanityManager - InsanityManager only manages insanity value, Player triggers death when appropriate

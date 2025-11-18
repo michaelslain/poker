@@ -4,7 +4,7 @@
 
 ## Features
 
-- **Procedural Level Generation** - Infinite casino levels with increasing difficulty
+- **Procedural Level Generation** - Infinite non-linear casino levels with organic room layouts and increasing difficulty
 - **Roguelike Progression** - Start in a hospital (level 0), progress through procedurally generated casino levels
 - **Difficulty Scaling** - Exponential difficulty curve affecting enemy count, AI quality, resources, and insanity
 - **Alternate Dimensions** - Consume Salvia to enter parallel dimensions with different layouts and random level jumps
@@ -15,7 +15,7 @@
 - **Inventory System** - Dynamic item stacking with automatic sorting by category
 - **Weapon Combat** - 6-round revolver with raycast hit detection
 - **Consumable Substances** - Weed, Cocaine, Molly, Adrenaline, Salvia, Shrooms, Vodka, Fent (instant death) with unique effects
-- **Dynamic Lighting** - Shader-based lighting system supporting up to 4 lights with decorative light bulbs
+- **Dynamic Lighting** - Shader-based lighting system supporting up to 32 lights with decorative light bulbs emitting atmospheric blue light
 - **Death System** - Die from insanity reaching 100% or fentanyl overdose with 3-second death vignette effect
 
 ## Stack
@@ -119,4 +119,4 @@ Standalone Classes:
 - **Death system** - Player-managed death state triggered by 100% insanity or fentanyl overdose; 3-second vignette animation with shader effects
 - **Scene management** - Scene system for different game states
 - **Level system** - Procedural level generation with difficulty scaling and alternate dimensions (Salvia mechanic)
-- **Testing** - Catch2 v3.5.0 framework with 184 test cases (1294 assertions) covering all classes
+- **Testing** - Catch2 v3.5.0 framework with 192 test cases (1325 assertions) covering all classes
