@@ -181,21 +181,20 @@ void Player::Update(float deltaTime) {
     Vector3 moveDir = {0.0f, 0.0f, 0.0f};
 
     if (isSeated) {
-        // When seated, lock XZ position to seat but keep Y at ground level
-        // This keeps camera height consistent
+        // When seated, lock XZ position to seat but KEEP Y at standing height
         position.x = seatPosition.x;
         position.z = seatPosition.z;
-        position.y = 0.0f;  // Keep at ground level for consistent camera height
+        // Don't modify position.y - it stays at standing height
 
-        // Lock physics body to ground position at seat XZ
+        // Lock physics body to standing height at seat XZ
         if (body != nullptr) {
-            dBodySetPosition(body, seatPosition.x, 0.85f, seatPosition.z);
+            dBodySetPosition(body, seatPosition.x, STANDING_HEIGHT, seatPosition.z);
             // Reset velocity when seated
             dBodySetLinearVel(body, 0, 0, 0);
             dBodySetAngularVel(body, 0, 0, 0);
         }
         if (geom != nullptr) {
-            dGeomSetPosition(geom, seatPosition.x, 0.85f, seatPosition.z);
+            dGeomSetPosition(geom, seatPosition.x, STANDING_HEIGHT, seatPosition.z);
         }
 
         // Skip movement processing when seated
@@ -244,7 +243,7 @@ void Player::Update(float deltaTime) {
 
             for (int iteration = 0; iteration < maxIterations; iteration++) {
                 // Test the position
-                dGeomSetPosition(geom, finalPos.x, finalPos.y + 0.85f, finalPos.z);
+                dGeomSetPosition(geom, finalPos.x, finalPos.y + CAPSULE_OFFSET, finalPos.z);
 
                 // Check for collisions
                 bool collided = false;
@@ -292,19 +291,23 @@ void Player::Update(float deltaTime) {
                 }
             }
 
-            // Get current Y position from physics (affected by gravity)
-            const dReal* physicsPos = dBodyGetPosition(body);
-            float currentY = (float)physicsPos[1] - 0.85f;
-
-            // Set final XZ position, preserve Y from physics
-            finalPos.y = currentY;
-            dGeomSetPosition(geom, finalPos.x, finalPos.y + 0.85f, finalPos.z);
-            dBodySetPosition(body, finalPos.x, finalPos.y + 0.85f, finalPos.z);
-            position = finalPos;
-
-            // Reset horizontal velocity to prevent sliding, preserve vertical velocity for gravity
+            // Apply horizontal movement force (gravity still works on Y)
+            Vector3 moveForce = {
+                (finalPos.x - position.x) * MOVEMENT_FORCE,  // Force proportional to distance
+                0.0f,  // No vertical force - let gravity work
+                (finalPos.z - position.z) * MOVEMENT_FORCE
+            };
+            dBodyAddForce(body, moveForce.x, moveForce.y, moveForce.z);
+            
+            // Dampen horizontal velocity to prevent sliding
             const dReal* vel = dBodyGetLinearVel(body);
-            dBodySetLinearVel(body, 0, vel[1], 0);
+            dBodySetLinearVel(body, vel[0] * VELOCITY_DAMPING, vel[1], vel[2] * VELOCITY_DAMPING);
+            
+            // Update Object position from physics (physics controls everything)
+            const dReal* physicsPos = dBodyGetPosition(body);
+            position.x = (float)physicsPos[0];
+            position.y = (float)physicsPos[1] - CAPSULE_OFFSET;  // Offset for capsule center
+            position.z = (float)physicsPos[2];
         } else {
             // No physics - just move directly
             position = newPos;
@@ -638,15 +641,18 @@ void Player::SitDown(Vector3 seatPos) {
     // Call base class to set seating state
     Person::SitDown(seatPos);
 
-    // Update physics body position and reset velocity
+    // Keep player height the same, only move X and Z coordinates
+    // Player maintains their standing height when seated
+    
+    // Update physics body position (only X/Z changes, Y stays at standing height)
     if (body != nullptr) {
-        dBodySetPosition(body, seatPos.x, seatPos.y + 0.85f, seatPos.z);
+        dBodySetPosition(body, seatPos.x, STANDING_HEIGHT, seatPos.z);
         // Reset velocity when sitting
         dBodySetLinearVel(body, 0, 0, 0);
         dBodySetAngularVel(body, 0, 0, 0);
     }
     if (geom != nullptr) {
-        dGeomSetPosition(geom, seatPos.x, seatPos.y + 0.85f, seatPos.z);
+        dGeomSetPosition(geom, seatPos.x, STANDING_HEIGHT, seatPos.z);
     }
 }
 
@@ -654,19 +660,21 @@ void Player::StandUp() {
     // Call base class to clear seating state
     Person::StandUp();
 
-    // Move player to ground level when standing (prevents clipping through table)
-    // Seat positions are at table height, we need to move to ground
-    position.y = 0.0f;  // Reset to ground level
+    // Close betting UI when standing up from table
+    bettingUIActive = false;
+    bettingChoice = -1;
+    
+    // Close card selection UI when standing up
+    cardSelectionUIActive = false;
+    selectedCardIndices.clear();
 
-    // Update physics body to ground position
+    // Player maintains their height when standing up - no Y change needed
+    // Physics already handles the player's Y position, we don't modify it
+    
+    // Reset velocity so player doesn't fly off
     if (body != nullptr) {
-        dBodySetPosition(body, position.x, position.y + 0.85f, position.z);
-        // Reset velocity so player doesn't fly off
         dBodySetLinearVel(body, 0, 0, 0);
         dBodySetAngularVel(body, 0, 0, 0);
-    }
-    if (geom != nullptr) {
-        dGeomSetPosition(geom, position.x, position.y + 0.85f, position.z);
     }
 }
 

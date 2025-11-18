@@ -42,7 +42,8 @@ private:
     static constexpr float ROOM_MAX_SIZE = 15.0f;
     static constexpr float HALLWAY_WIDTH = 3.0f;
     static constexpr float FLOOR_HEIGHT = 0.0f;
-    static constexpr float CEILING_HEIGHT = 5.0f;
+    static constexpr float CEILING_HEIGHT = 7.0f;
+    static constexpr float TABLE_HEIGHT = 2.2f;  // Standard poker table height above floor
     
     // Private generation methods
     void GenerateRooms(int roomCount);

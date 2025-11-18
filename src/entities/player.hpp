@@ -20,6 +20,12 @@ class Card;
 
 class Player : public Person {
 private:
+    // Physics constants
+    static constexpr float STANDING_HEIGHT = 1.8f;        // Player eye height
+    static constexpr float CAPSULE_OFFSET = 0.85f;        // Offset from body center to feet
+    static constexpr float MOVEMENT_FORCE = 500.0f;       // Horizontal movement force
+    static constexpr float VELOCITY_DAMPING = 0.8f;       // Horizontal velocity damping (0-1)
+    
     GameCamera camera;
     float speed;
     float lookYaw;

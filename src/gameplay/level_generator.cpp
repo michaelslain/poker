@@ -287,16 +287,19 @@ void LevelGenerator::SpawnRoomContents(const Room& room, const ScalingConfig& sc
 }
 
 void LevelGenerator::SpawnPokerTable(Vector3 position, const ScalingConfig& scaling) {
-    // Create poker table
+    // Create poker table at standardized height
+    Vector3 tablePos = position;
+    tablePos.y = FLOOR_HEIGHT + TABLE_HEIGHT;
     Vector3 tableSize = {4.0f, 0.2f, 2.5f};
-    PokerTable* table = new PokerTable(position, tableSize, DARKBROWN, physics);
+    PokerTable* table = new PokerTable(tablePos, tableSize, DARKBROWN, physics);
     dom->AddObject(table);
     
     // Spawn enemies around table
     int enemyCount = GetRandomValue(scaling.minEnemiesPerTable, scaling.maxEnemiesPerTable);
     
     for (int i = 0; i < enemyCount; i++) {
-        Vector3 enemySpawnPos = {position.x + i * 0.5f, position.y, position.z};
+        // Spawn enemies at floor level, not at table height
+        Vector3 enemySpawnPos = {position.x + i * 0.5f, 1.8f, position.z};
         Enemy* enemy = new Enemy(enemySpawnPos, "Enemy " + std::to_string(i + 1));
         
         // Find and seat enemy at table

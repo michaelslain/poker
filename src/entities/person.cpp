@@ -187,13 +187,17 @@ std::string Person::GetType() const {
 void Person::SitDown(Vector3 seatPos) {
     isSeated = true;
     seatPosition = seatPos;
-    position = seatPos;  // Move person to seat immediately
+    // Only change X and Z position, keep Y (height) the same
+    position.x = seatPos.x;
+    position.z = seatPos.z;
 }
 
 void Person::SitDownFacingPoint(Vector3 seatPos, Vector3 faceTowards) {
     isSeated = true;
     seatPosition = seatPos;
-    position = seatPos;  // Move person to seat immediately
+    // Only change X and Z position, keep Y (height) the same
+    position.x = seatPos.x;
+    position.z = seatPos.z;
 
     // Calculate direction from seat to target point
     Vector3 direction = {

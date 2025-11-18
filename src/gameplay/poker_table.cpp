@@ -139,12 +139,25 @@ void PokerTable::Update(float deltaTime) {
 void PokerTable::Draw(Camera3D camera) {
     (void)camera;
 
-    // Draw table body
+    // Draw table top
     DrawCube(position, size.x, size.y, size.z, color);
 
     // Draw felt top
     DrawCube({position.x, position.y + size.y/2.0f, position.z},
              size.x * 0.9f, 0.01f, size.z * 0.8f, GREEN);
+
+    // Draw 4 table legs connecting table to floor
+    float legThickness = 0.15f;
+    float legHeight = position.y - size.y / 2.0f;  // Height from floor to bottom of table
+    float legY = legHeight / 2.0f;  // Center Y of legs
+    float legOffsetX = size.x * 0.35f;  // Inset from edges
+    float legOffsetZ = size.z * 0.35f;
+
+    // 4 corner legs
+    DrawCube({position.x - legOffsetX, legY, position.z - legOffsetZ}, legThickness, legHeight, legThickness, color);
+    DrawCube({position.x + legOffsetX, legY, position.z - legOffsetZ}, legThickness, legHeight, legThickness, color);
+    DrawCube({position.x - legOffsetX, legY, position.z + legOffsetZ}, legThickness, legHeight, legThickness, color);
+    DrawCube({position.x + legOffsetX, legY, position.z + legOffsetZ}, legThickness, legHeight, legThickness, color);
 
     // Draw collision box wireframe if debug mode is on
     if (g_showCollisionDebug) {
