@@ -5,7 +5,7 @@
 
 class Pistol : public Weapon {
 public:
-    Pistol(Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
+    Pistol(Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Pistol();
 
     // Override virtual functions

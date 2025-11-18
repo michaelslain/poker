@@ -26,7 +26,7 @@ TEST_CASE("ChipStack - GetType", "[chip_stack]") {
 
 TEST_CASE("ChipStack - AddChip", "[chip_stack]") {
     ChipStack stack({0, 0, 0});
-    Chip* chip = new Chip(10, {0, 0, 0}, nullptr);
+    Chip* chip = new Chip(10, {0, 0, 0});
     
     SECTION("Add single chip") {
         stack.AddChip(chip);
@@ -39,9 +39,9 @@ TEST_CASE("ChipStack - AddChip", "[chip_stack]") {
 TEST_CASE("ChipStack - AddChips", "[chip_stack]") {
     ChipStack stack({0, 0, 0});
     std::vector<Chip*> chips;
-    chips.push_back(new Chip(5, {0, 0, 0}, nullptr));
-    chips.push_back(new Chip(10, {0, 0, 0}, nullptr));
-    chips.push_back(new Chip(25, {0, 0, 0}, nullptr));
+    chips.push_back(new Chip(5, {0, 0, 0}));
+    chips.push_back(new Chip(10, {0, 0, 0}));
+    chips.push_back(new Chip(25, {0, 0, 0}));
     
     stack.AddChips(chips);
     REQUIRE(stack.GetChipCount() == 3);
@@ -50,8 +50,8 @@ TEST_CASE("ChipStack - AddChips", "[chip_stack]") {
 
 TEST_CASE("ChipStack - Clear", "[chip_stack]") {
     ChipStack stack({0, 0, 0});
-    stack.AddChip(new Chip(10, {0, 0, 0}, nullptr));
-    stack.AddChip(new Chip(5, {0, 0, 0}, nullptr));
+    stack.AddChip(new Chip(10, {0, 0, 0}));
+    stack.AddChip(new Chip(5, {0, 0, 0}));
     
     stack.Clear();
     REQUIRE(stack.GetChipCount() == 0);
@@ -60,8 +60,8 @@ TEST_CASE("ChipStack - Clear", "[chip_stack]") {
 
 TEST_CASE("ChipStack - RemoveAll", "[chip_stack]") {
     ChipStack stack({0, 0, 0});
-    stack.AddChip(new Chip(10, {0, 0, 0}, nullptr));
-    stack.AddChip(new Chip(25, {0, 0, 0}, nullptr));
+    stack.AddChip(new Chip(10, {0, 0, 0}));
+    stack.AddChip(new Chip(25, {0, 0, 0}));
     
     std::vector<Chip*> removed = stack.RemoveAll();
     REQUIRE(removed.size() == 2);

@@ -5,7 +5,7 @@
 
 TEST_CASE("Dealer - Construction", "[dealer]") {
     SECTION("Create with default name") {
-        Dealer dealer({0, 0, 0});
+        Dealer dealer({0, 0, 0}, "Dealer");
         REQUIRE(dealer.GetName() == "Dealer");
     }
     
@@ -15,31 +15,31 @@ TEST_CASE("Dealer - Construction", "[dealer]") {
     }
     
     SECTION("Dealer has normal height") {
-        Dealer dealer({0, 0, 0});
+        Dealer dealer({0, 0, 0}, "Dealer");
         REQUIRE(dealer.GetHeight() == 1.0f);
     }
 }
 
 TEST_CASE("Dealer - GetType", "[dealer]") {
-    Dealer dealer({0, 0, 0});
+    Dealer dealer({0, 0, 0}, "Dealer");
     REQUIRE(dealer.GetType().find("dealer") != std::string::npos);
 }
 
 TEST_CASE("Dealer - Position", "[dealer]") {
-    Dealer dealer({10, 2, 5});
+    Dealer dealer({10, 2, 5}, "Dealer");
     REQUIRE(dealer.position.x == 10.0f);
     REQUIRE(dealer.position.y == 2.0f);
     REQUIRE(dealer.position.z == 5.0f);
 }
 
 TEST_CASE("Dealer - Inventory", "[dealer]") {
-    Dealer dealer({0, 0, 0});
+    Dealer dealer({0, 0, 0}, "Dealer");
     Inventory* inv = dealer.GetInventory();
     REQUIRE(inv != nullptr);
 }
 
 TEST_CASE("Dealer - Seating", "[dealer]") {
-    Dealer dealer({0, 0, 0});
+    Dealer dealer({0, 0, 0}, "Dealer");
     
     SECTION("Not seated by default") {
         REQUIRE(dealer.IsSeated() == false);

@@ -4,12 +4,13 @@
 #include "items/chip.hpp"
 #include "core/debug.hpp"
 #include "core/dom.hpp"
+#include "core/collision_categories.hpp"
 #include "raymath.h"
 #include <cstring>
 #include <map>
 #include <cstdio>
 
-PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, PhysicsWorld* physicsWorld)
+PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor)
     : Interactable(pos), size(tableSize), color(tableColor),
       dealer(nullptr), deck(nullptr), potStack(nullptr),
       smallBlindSeat(-1), bigBlindSeat(-1), currentPlayerSeat(-1),
@@ -20,16 +21,19 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
     float hw = size.x / 2.0f;
     float hd = size.z / 2.0f;
     float dist = 1.2f;
-    float ground = pos.y - size.y / 2.0f;
+    // Seat Y position must be the drawing reference point (1.3 units above mesh bottom for height=1.0)
+    // This is because Person::position.y is now a drawing reference, not ground level
+    float seatY = 1.3f;  // Drawing reference height for normal person sitting on floor
 
-    seats[0].position = {pos.x - hw/2, ground, pos.z + hd + dist};
-    seats[1].position = {pos.x + hw/2, ground, pos.z + hd + dist};
-    seats[2].position = {pos.x - hw - dist, ground, pos.z + hd/2};
-    seats[3].position = {pos.x - hw - dist, ground, pos.z - hd/2};
-    seats[4].position = {pos.x + hw + dist, ground, pos.z + hd/2};
-    seats[5].position = {pos.x + hw + dist, ground, pos.z - hd/2};
-    seats[6].position = {pos.x - hw/2, ground, pos.z - hd - dist};
-    seats[7].position = {pos.x + hw/2, ground, pos.z - hd - dist};
+    // 7 seats around table (dealer stands at bottom-center, no seat there)
+    seats[0].position = {pos.x - hw/2, seatY, pos.z + hd + dist};   // Top-left
+    seats[1].position = {pos.x + hw/2, seatY, pos.z + hd + dist};   // Top-right
+    seats[2].position = {pos.x - hw - dist, seatY, pos.z + hd/2};   // Left-top
+    seats[3].position = {pos.x - hw - dist, seatY, pos.z - hd/2};   // Left-bottom
+    seats[4].position = {pos.x + hw + dist, seatY, pos.z + hd/2};   // Right-top
+    seats[5].position = {pos.x + hw + dist, seatY, pos.z - hd/2};   // Right-bottom
+    seats[6].position = {pos.x + hw/2, seatY, pos.z - hd - dist};   // Bottom-right
+    // Seat 7 removed - dealer stands at bottom-center (was: {pos.x - hw/2, seatY, pos.z - hd - dist})
 
     // Initialize seats as empty
     for (int i = 0; i < MAX_SEATS; i++) {
@@ -39,8 +43,10 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
         hasRaised[i] = false;
     }
 
-    // Create dealer and add to DOM
-    dealer = new Dealer({pos.x, ground, pos.z - hd - dist}, "Dealer");
+    // Create dealer and add to DOM (stands at bottom-center where seat 7 used to be)
+    // Spawn slightly above floor to avoid initial penetration
+    float dealerY = 0.1f;  // FLOOR_HEIGHT + 0.1f (floor is at y=0)
+    dealer = new Dealer({pos.x - hw/2, dealerY, pos.z - hd - dist}, "Dealer");
     DOM::GetGlobal()->AddObject(dealer);
 
     // Create deck (not added to DOM - we don't want to render it)
@@ -55,15 +61,16 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor, Physics
 
     // Create collision geometry that extends higher than table to prevent walking on top
     // This makes the table act like a solid barrier you can't walk through or climb on
-    if (physicsWorld) {
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
+    if (physics) {
         float collisionHeight = pos.y + size.y / 2.0f + 1.5f; // Extend 1.5 units above table top
         float collisionY = collisionHeight / 2.0f; // Center the collision box
 
         Vector3 collisionSize = {size.x, collisionHeight, size.z};
         Vector3 collisionOffset = {0, collisionY - pos.y, 0}; // Offset from table position
 
-        collider.InitStatic(physicsWorld, COLLISION_SHAPE_BOX, collisionSize, collisionOffset);
-        collider.SetCollisionBits(COLLISION_CATEGORY_TABLE, ~0);
+        collider.InitStatic(physics, COLLISION_SHAPE_BOX, collisionSize, collisionOffset);
+        collider.SetCollisionBits(COLLISION_CATEGORY_TABLE, COLLISION_MASK_TABLE);
         collider.UpdateFromObject(this);
     }
 }
@@ -205,8 +212,10 @@ bool PokerTable::SeatPerson(Person* p, int seatIndex) {
         return false;
     }
 
-    // Seat the person
-    p->SitDownFacingPoint(seats[seatIndex].position, position);
+    // Seat the person - preserve their Y position (don't change up/down level)
+    Vector3 seatPos = seats[seatIndex].position;
+    seatPos.y = p->position.y;  // Keep person's current Y position
+    p->SitDownFacingPoint(seatPos, position);
     seats[seatIndex].occupant = p;
     seats[seatIndex].isOccupied = true;
 
@@ -361,7 +370,7 @@ std::vector<Chip*> PokerTable::CalculateChipCombination(int amount) {
     for (int denom : denominations) {
         int count = 0;
         while (amount >= denom) {
-            Chip* chip = new Chip(denom, {0, 0, 0}, nullptr);
+            Chip* chip = new Chip(denom, {0, 0, 0});
             result.push_back(chip);
             amount -= denom;
             count++;

@@ -1,11 +1,10 @@
 #include "world/stairs.hpp"
 #include <ode/ode.h>
 
-// Collision category for stairs
-#define COLLISION_CATEGORY_STAIRS (1 << 4)
+#include "core/collision_categories.hpp"
 
-Stairs::Stairs(Vector3 pos, Vector3 stairSize, Color stairColor, PhysicsWorld* physicsWorld)
-    : Object(), size(stairSize), color(stairColor), physics(physicsWorld), transitionTriggered(false)
+Stairs::Stairs(Vector3 pos, Vector3 stairSize, Color stairColor)
+    : Object(), size(stairSize), color(stairColor), physics(PhysicsWorld::GetGlobal()), transitionTriggered(false)
 {
     position = pos;
     
@@ -13,9 +12,9 @@ Stairs::Stairs(Vector3 pos, Vector3 stairSize, Color stairColor, PhysicsWorld* p
     geom = dCreateBox(physics->space, size.x, size.y, size.z);
     dGeomSetPosition(geom, position.x, position.y, position.z);
     
-    // Set collision category and mask
+    // Set collision category and mask: Stairs only collide with persons
     dGeomSetCategoryBits(geom, COLLISION_CATEGORY_STAIRS);
-    dGeomSetCollideBits(geom, (1 << 0));  // Only collide with player
+    dGeomSetCollideBits(geom, COLLISION_MASK_STAIRS);
 }
 
 Stairs::~Stairs() {

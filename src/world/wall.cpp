@@ -1,8 +1,9 @@
 #include "world/wall.hpp"
 #include "rendering/lighting_manager.hpp"
 #include "rlgl.h"
+#include "core/collision_categories.hpp"
 
-Wall::Wall(Vector3 position, Vector3 wallSize, PhysicsWorld* physicsWorld)
+Wall::Wall(Vector3 position, Vector3 wallSize)
     : Object(position), size(wallSize), color({25, 30, 10, 255}), needsColliderUpdate(false)
 {
     // For 2D walls: size.x = width, size.y = height, size.z should always be 0
@@ -13,8 +14,18 @@ Wall::Wall(Vector3 position, Vector3 wallSize, PhysicsWorld* physicsWorld)
     TraceLog(LOG_INFO, "WALL: Creating wall at (%.1f, %.1f, %.1f) size (%.1f x %.1f) rotation.y=%.1f",
              position.x, position.y, position.z, size.x, size.y, rotation.y);
     
-    if (physicsWorld) {
-        collider.InitStatic(physicsWorld, COLLISION_SHAPE_BOX, physicsSize);
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
+    if (physics) {
+        collider.InitStatic(physics, COLLISION_SHAPE_BOX, physicsSize);
+        
+        // Set collision bits: WORLD category
+        collider.SetCollisionBits(COLLISION_CATEGORY_WORLD, COLLISION_MASK_WORLD);
+        
+        // Set Object data for collision detection
+        if (collider.GetGeom()) {
+            dGeomSetData(collider.GetGeom(), this);
+        }
+        
         // Update immediately for walls without rotation
         collider.UpdateFromObject(this);
         needsColliderUpdate = false;

@@ -3,11 +3,12 @@
 #include "core/dom.hpp"
 #include <cmath>
 
-Weapon::Weapon(Vector3 pos, int initialAmmo, int maxAmmoCapacity, PhysicsWorld* physics)
+Weapon::Weapon(Vector3 pos, int initialAmmo, int maxAmmoCapacity)
     : Item(pos), ammo(initialAmmo), maxAmmo(maxAmmoCapacity), rigidBody(nullptr)
 {
     usable = true;  // Weapons can be used
-    // Initialize physics if provided
+    // Get physics from global instance
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
     if (physics) {
         Vector3 weaponSize = {0.3f, 0.2f, 0.5f};  // Default weapon size
         rigidBody = new RigidBody(pos);

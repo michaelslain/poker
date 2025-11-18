@@ -5,7 +5,7 @@
 
 class Salvia : public Substance {
 public:
-    Salvia(Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
+    Salvia(Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Salvia();
 
     // Override virtual functions

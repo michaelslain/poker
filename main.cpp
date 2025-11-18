@@ -28,12 +28,18 @@ inline bool TypeContains(const std::string& type, const std::string& component) 
 
 // Helper function to clean up all DOM objects except player
 void CleanupLevel(DOM& dom, Player* player) {
-    for (int i = dom.GetCount() - 1; i >= 0; i--) {
+    // Delete all objects except player
+    for (int i = 0; i < dom.GetCount(); i++) {
         Object* obj = dom.GetObject(i);
-        if (obj != player) {  // Keep player alive
+        if (obj != player) {
             delete obj;
-            dom.RemoveObject(obj);
         }
+    }
+    
+    // Clear DOM and re-add player
+    dom.Cleanup();
+    if (player) {
+        dom.AddObject(player);
     }
     
     // Reset lighting system for new level
@@ -46,13 +52,13 @@ void GenerateLevel(int levelNum, LevelGenerator& levelGen, HospitalScene& hospit
         // Hospital scene
         hospital.Generate();
         if (player) {
-            player->position = hospital.GetPlayerSpawnPosition();
+            player->Teleport(hospital.GetPlayerSpawnPosition());
         }
     } else {
         // Procedurally generated casino level
         levelGen.GenerateLevel(levelNum);
         if (player) {
-            player->position = levelGen.GetPlayerSpawnPosition();
+            player->Teleport(levelGen.GetPlayerSpawnPosition());
         }
     }
 }
@@ -100,7 +106,7 @@ int main(void)
     
     // Create player at spawn position
     Vector3 spawnPos = hospitalScene.GetPlayerSpawnPosition();
-    Player* player = new Player(spawnPos, &physics);
+    Player* player = new Player(spawnPos);
     Player::SetGlobal(player);  // Set global player for substances to access
     dom.AddObject(player);
     

@@ -4,21 +4,21 @@
 
 TEST_CASE("Pistol - Construction", "[pistol]") {
     SECTION("Create pistol") {
-        Pistol pistol({0, 0, 0}, nullptr);
+        Pistol pistol({0, 0, 0});
         REQUIRE(pistol.position.x == 0.0f);
         REQUIRE(pistol.position.y == 0.0f);
         REQUIRE(pistol.position.z == 0.0f);
     }
     
     SECTION("Pistol has correct ammo capacity") {
-        Pistol pistol({0, 0, 0}, nullptr);
+        Pistol pistol({0, 0, 0});
         REQUIRE(pistol.GetAmmo() == 6);  // Revolver has 6 rounds
         REQUIRE(pistol.GetMaxAmmo() == 6);
     }
 }
 
 TEST_CASE("Pistol - GetType", "[pistol]") {
-    Pistol pistol({0, 0, 0}, nullptr);
+    Pistol pistol({0, 0, 0});
     std::string type = pistol.GetType();
     REQUIRE(type.find("pistol") != std::string::npos);
     REQUIRE(type.find("weapon") != std::string::npos);
@@ -26,7 +26,7 @@ TEST_CASE("Pistol - GetType", "[pistol]") {
 }
 
 TEST_CASE("Pistol - Ammo", "[pistol]") {
-    Pistol pistol({0, 0, 0}, nullptr);
+    Pistol pistol({0, 0, 0});
     
     SECTION("Has initial ammo") {
         REQUIRE(pistol.GetAmmo() == 6);
@@ -73,7 +73,7 @@ TEST_CASE("Pistol - Ammo", "[pistol]") {
 
 TEST_CASE("Pistol - Clone", "[pistol]") {
     SECTION("Clone creates new pistol at different position") {
-        Pistol original({1, 2, 3}, nullptr);
+        Pistol original({1, 2, 3});
         Object* cloned = original.Clone({5, 6, 7});
         
         REQUIRE(cloned != nullptr);

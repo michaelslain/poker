@@ -276,7 +276,7 @@ void LevelGenerator::SpawnRoomContents(const Room& room, const ScalingConfig& sc
     if (room.hasStairs) {
         Vector3 stairsPos = {room.position.x, FLOOR_HEIGHT + 1.0f, room.position.y};
         Vector3 stairsSize = {3.0f, 2.0f, 3.0f};
-        Stairs* stairs = new Stairs(stairsPos, stairsSize, DARKGRAY, physics);
+        Stairs* stairs = new Stairs(stairsPos, stairsSize, DARKGRAY);
         dom->AddObject(stairs);
     }
     
@@ -291,15 +291,16 @@ void LevelGenerator::SpawnPokerTable(Vector3 position, const ScalingConfig& scal
     Vector3 tablePos = position;
     tablePos.y = FLOOR_HEIGHT + TABLE_HEIGHT;
     Vector3 tableSize = {4.0f, 0.2f, 2.5f};
-    PokerTable* table = new PokerTable(tablePos, tableSize, DARKBROWN, physics);
+    PokerTable* table = new PokerTable(tablePos, tableSize, DARKBROWN);
     dom->AddObject(table);
     
     // Spawn enemies around table
     int enemyCount = GetRandomValue(scaling.minEnemiesPerTable, scaling.maxEnemiesPerTable);
     
     for (int i = 0; i < enemyCount; i++) {
-        // Spawn enemies at floor level, not at table height
-        Vector3 enemySpawnPos = {position.x + i * 0.5f, 1.8f, position.z};
+        // Spawn enemies at proper drawing reference height (1.3 units above mesh bottom for normal height)
+        // Mesh bottom should be at floor level (FLOOR_HEIGHT), so drawing reference = FLOOR_HEIGHT + 1.3
+        Vector3 enemySpawnPos = {position.x + i * 0.5f, FLOOR_HEIGHT + 1.3f, position.z};
         Enemy* enemy = new Enemy(enemySpawnPos, "Enemy " + std::to_string(i + 1));
         
         // Find and seat enemy at table
@@ -311,10 +312,7 @@ void LevelGenerator::SpawnPokerTable(Vector3 position, const ScalingConfig& scal
         dom->AddObject(enemy);
     }
     
-    // Spawn dealer
-    Vector3 dealerPos = {position.x, position.y, position.z - 3.0f};  // Behind table
-    Dealer* dealer = new Dealer(dealerPos, "Dealer");
-    dom->AddObject(dealer);
+    // Note: Dealer is created automatically by PokerTable constructor
 }
 
 void LevelGenerator::SpawnResources(const Room& room, const ScalingConfig& scaling) {
@@ -330,7 +328,7 @@ void LevelGenerator::SpawnResources(const Room& room, const ScalingConfig& scali
         };
         
         int chipValue = (GetRandomValue(0, 100) < 50) ? 5 : 25;  // Mostly low-value chips
-        Spawner* chipSpawner = new Spawner(chipSpawnPos, 1.5f, new Chip(chipValue, {0,0,0}, nullptr), chipSpawnCount);
+        Spawner* chipSpawner = new Spawner(chipSpawnPos, 1.5f, new Chip(chipValue, {0,0,0}), chipSpawnCount);
         dom->AddObject(chipSpawner);
     }
     
@@ -341,7 +339,7 @@ void LevelGenerator::SpawnResources(const Room& room, const ScalingConfig& scali
             2.0f,
             room.position.y + GetRandomValue(-100, 100) / 50.0f
         };
-        Pistol* pistol = new Pistol(weaponPos, physics);
+        Pistol* pistol = new Pistol(weaponPos);
         dom->AddObject(pistol);
     }
     
@@ -358,13 +356,13 @@ void LevelGenerator::SpawnResources(const Room& room, const ScalingConfig& scali
         Object* substance = nullptr;
         
         switch (substanceType) {
-            case 0: substance = new Weed(substancePos, physics); break;
-            case 1: substance = new Cocaine(substancePos, physics); break;
-            case 2: substance = new Molly(substancePos, physics); break;
-            case 3: substance = new Shrooms(substancePos, physics); break;
-            case 4: substance = new Vodka(substancePos, physics); break;
-            case 5: substance = new Salvia(substancePos, physics); break;
-            case 6: substance = new Fent(substancePos, physics); break;
+            case 0: substance = new Weed(substancePos); break;
+            case 1: substance = new Cocaine(substancePos); break;
+            case 2: substance = new Molly(substancePos); break;
+            case 3: substance = new Shrooms(substancePos); break;
+            case 4: substance = new Vodka(substancePos); break;
+            case 5: substance = new Salvia(substancePos); break;
+            case 6: substance = new Fent(substancePos); break;
         }
         
         if (substance) {
@@ -385,7 +383,7 @@ void LevelGenerator::BuildWalls(const Room& room) {
     if (!room.connectsNorth) {
         Vector3 northPos = {room.position.x, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y - halfDepth};
         Vector3 northSize = {room.size.x, wallHeight, 0.0f};
-        Wall* northWall = new Wall(northPos, northSize, physics);
+        Wall* northWall = new Wall(northPos, northSize);
         dom->AddObject(northWall);
     }
     
@@ -393,7 +391,7 @@ void LevelGenerator::BuildWalls(const Room& room) {
     if (!room.connectsSouth) {
         Vector3 southPos = {room.position.x, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y + halfDepth};
         Vector3 southSize = {room.size.x, wallHeight, 0.0f};
-        Wall* southWall = new Wall(southPos, southSize, physics);
+        Wall* southWall = new Wall(southPos, southSize);
         dom->AddObject(southWall);
     }
     
@@ -401,7 +399,7 @@ void LevelGenerator::BuildWalls(const Room& room) {
     if (!room.connectsEast) {
         Vector3 eastPos = {room.position.x + halfWidth, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y};
         Vector3 eastSize = {room.size.y, wallHeight, 0.0f};  // Note: width is room depth
-        Wall* eastWall = new Wall(eastPos, eastSize, physics);
+        Wall* eastWall = new Wall(eastPos, eastSize);
         eastWall->rotation.y = 90.0f;  // Rotate to face East/West
         eastWall->needsColliderUpdate = true;  // Mark for collider update
         dom->AddObject(eastWall);
@@ -411,7 +409,7 @@ void LevelGenerator::BuildWalls(const Room& room) {
     if (!room.connectsWest) {
         Vector3 westPos = {room.position.x - halfWidth, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y};
         Vector3 westSize = {room.size.y, wallHeight, 0.0f};  // Note: width is room depth
-        Wall* westWall = new Wall(westPos, westSize, physics);
+        Wall* westWall = new Wall(westPos, westSize);
         westWall->rotation.y = 90.0f;  // Rotate to face East/West
         westWall->needsColliderUpdate = true;  // Mark for collider update
         dom->AddObject(westWall);
@@ -422,12 +420,12 @@ void LevelGenerator::BuildFloorAndCeiling(const Room& room) {
     // Floor - extremely dark maroon color
     Vector3 floorPos = {room.position.x, FLOOR_HEIGHT, room.position.y};
     Color darkMaroon = {20, 2, 2, 255};
-    Floor* floor = new Floor(floorPos, {room.size.x, room.size.y}, darkMaroon, physics);
+    Floor* floor = new Floor(floorPos, {room.size.x, room.size.y}, darkMaroon);
     dom->AddObject(floor);
     
     // Ceiling
     Vector3 ceilingPos = {room.position.x, CEILING_HEIGHT, room.position.y};
-    Ceiling* ceiling = new Ceiling(ceilingPos, {room.size.x, room.size.y}, DARKGRAY, physics);
+    Ceiling* ceiling = new Ceiling(ceilingPos, {room.size.x, room.size.y}, DARKGRAY);
     dom->AddObject(ceiling);
 }
 
@@ -442,12 +440,14 @@ int LevelGenerator::FindRoomAtGrid(int gridX, int gridZ) const {
 
 Vector3 LevelGenerator::GetPlayerSpawnPosition() const {
     if (rooms.empty()) {
-        return {0, 1.8f, 0};  // Default spawn
+        // Player spawn uses drawing reference height (1.3 units above mesh bottom)
+        return {0, FLOOR_HEIGHT + 1.3f, 0};
     }
     
-    // Spawn in first room (start room)
+    // Spawn in first room at proper drawing reference height
+    // Mesh bottom should be at floor level, so drawing reference = FLOOR_HEIGHT + 1.3
     const Room& startRoom = rooms[0];
-    return {startRoom.position.x, 1.8f, startRoom.position.y};
+    return {startRoom.position.x, FLOOR_HEIGHT + 1.3f, startRoom.position.y};
 }
 
 void LevelGenerator::Clear() {

@@ -12,7 +12,7 @@ protected:
     RigidBody* rigidBody;
 
 public:
-    Weapon(Vector3 pos, int initialAmmo, int maxAmmoCapacity, PhysicsWorld* physics = nullptr);
+    Weapon(Vector3 pos, int initialAmmo, int maxAmmoCapacity);
     virtual ~Weapon();
 
     // Override virtual functions

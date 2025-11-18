@@ -1,7 +1,7 @@
 #include "substances/cocaine.hpp"
 
-Cocaine::Cocaine(Vector3 pos, PhysicsWorld* physics)
-    : Substance(pos, WHITE, physics)  // White color for cocaine
+Cocaine::Cocaine(Vector3 pos)
+    : Substance(pos, WHITE)  // White color for cocaine
 {
 }
 
@@ -19,6 +19,5 @@ std::string Cocaine::GetType() const {
 }
 
 Object* Cocaine::Clone(Vector3 newPos) const {
-    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Cocaine(newPos, physics);
+    return new Cocaine(newPos);
 }

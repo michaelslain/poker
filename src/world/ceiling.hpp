@@ -13,7 +13,7 @@ private:
     Model model;
 
 public:
-    Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor, PhysicsWorld* physicsWorld);
+    Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor);
     virtual ~Ceiling();
     
     // Override virtual functions

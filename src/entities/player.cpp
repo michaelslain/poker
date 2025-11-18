@@ -19,9 +19,9 @@
 // Initialize static global instance pointer
 Player* Player::globalInstance = nullptr;
 
-Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName)
+Player::Player(Vector3 pos, const std::string& playerName)
     : Person(pos, playerName, 1.0f), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
-      lookYaw(0.0f), lookPitch(0.0f), body(nullptr), geom(nullptr), physics(physicsWorld),
+      lookYaw(0.0f), lookPitch(0.0f),
       isDying(false), deathVignetteProgress(0.0f), vignetteShaderLoaded(false),
       selectedItemIndex(-1), lastHeldItemIndex(-1),
       bettingUIActive(false), bettingChoice(-1), raiseSliderValue(0), raiseMin(0), raiseMax(0),
@@ -29,33 +29,8 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
       cardSelectionUIActive(false), selectedCardIndices(),
       insanityManager(pos)
 {
-    if (physics != nullptr) {
-        // Create dynamic body with mass for gravity
-        body = dBodyCreate(physics->world);
-        dBodySetPosition(body, pos.x, pos.y + 0.85f, pos.z);
-
-        // Set mass for the player (needed for gravity)
-        dMass mass;
-        float radius = 0.4f;
-        float height = 1.7f;
-        float cylinderLength = height - (2.0f * radius);
-        dMassSetCapsuleTotal(&mass, 70.0f, 3, radius, cylinderLength); // 70kg player
-        dBodySetMass(body, &mass);
-
-        // Disable auto-disable so player doesn't "sleep" and fall through floor
-        dBodySetAutoDisableFlag(body, 0);
-
-        // Create capsule geometry
-        geom = dCreateCapsule(physics->space, radius, cylinderLength);
-        dGeomSetBody(geom, body);
-
-        // Set collision category and mask (collide with everything except items)
-        dGeomSetCategoryBits(geom, COLLISION_CATEGORY_PLAYER);
-        dGeomSetCollideBits(geom, ~COLLISION_CATEGORY_ITEM);  // Collide with all except items
-
-        dGeomSetData(geom, this);
-    }
-
+    // Physics is initialized in Person base class
+    
     // Load vignette shader for death effect
     TraceLog(LOG_INFO, "PLAYER: Attempting to load vignette shader...");
     vignetteShader = LoadShader("shaders/vignette.vs", "shaders/vignette.fs");
@@ -68,15 +43,8 @@ Player::Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playe
 }
 
 Player::~Player() {
-    if (geom != nullptr) {
-        dGeomDestroy(geom);
-        geom = nullptr;
-    }
-    if (body != nullptr) {
-        dBodyDestroy(body);
-        body = nullptr;
-    }
-
+    // Physics cleanup handled by Person base class
+    
     if (vignetteShaderLoaded) {
         UnloadShader(vignetteShader);
     }
@@ -137,6 +105,9 @@ void Player::Update(float deltaTime) {
         if (deathVignetteProgress > 1.0f) deathVignetteProgress = 1.0f;
         return; // Stop all other updates while dying
     }
+    
+    // Call parent update to sync with physics (handles seating and gravity)
+    Person::Update(deltaTime);
 
     // Mouse look
     Vector2 mouseDelta = GetMouseDelta();
@@ -180,25 +151,8 @@ void Player::Update(float deltaTime) {
     // WASD movement (disabled when seated)
     Vector3 moveDir = {0.0f, 0.0f, 0.0f};
 
-    if (isSeated) {
-        // When seated, lock XZ position to seat but KEEP Y at standing height
-        position.x = seatPosition.x;
-        position.z = seatPosition.z;
-        // Don't modify position.y - it stays at standing height
-
-        // Lock physics body to standing height at seat XZ
-        if (body != nullptr) {
-            dBodySetPosition(body, seatPosition.x, STANDING_HEIGHT, seatPosition.z);
-            // Reset velocity when seated
-            dBodySetLinearVel(body, 0, 0, 0);
-            dBodySetAngularVel(body, 0, 0, 0);
-        }
-        if (geom != nullptr) {
-            dGeomSetPosition(geom, seatPosition.x, STANDING_HEIGHT, seatPosition.z);
-        }
-
-        // Skip movement processing when seated
-    } else {
+    if (!isSeated) {
+        // Only process movement when not seated (seating handled by Person::Update())
         // Only process movement when not seated
         if (IsKeyDown(KEY_W)) {
             moveDir = Vector3Add(moveDir, forward);
@@ -242,8 +196,12 @@ void Player::Update(float deltaTime) {
             const int maxIterations = 3;  // Handle corners and complex geometry
 
             for (int iteration = 0; iteration < maxIterations; iteration++) {
-                // Test the position
-                dGeomSetPosition(geom, finalPos.x, finalPos.y + CAPSULE_OFFSET, finalPos.z);
+                // Test the position - convert from drawing reference to body center
+                // Drawing position is 1.3*height above mesh bottom, body center needs to be at mesh bottom + capsule half-height
+                float actualCapsuleOffset = (CAPSULE_HEIGHT * height) / 2.0f;
+                float visualMeshBottom = finalPos.y - 1.3f * height;
+                float bodyCenterHeight = visualMeshBottom + actualCapsuleOffset;
+                dGeomSetPosition(geom, finalPos.x, bodyCenterHeight, finalPos.z);
 
                 // Check for collisions
                 bool collided = false;
@@ -303,11 +261,7 @@ void Player::Update(float deltaTime) {
             const dReal* vel = dBodyGetLinearVel(body);
             dBodySetLinearVel(body, vel[0] * VELOCITY_DAMPING, vel[1], vel[2] * VELOCITY_DAMPING);
             
-            // Update Object position from physics (physics controls everything)
-            const dReal* physicsPos = dBodyGetPosition(body);
-            position.x = (float)physicsPos[0];
-            position.y = (float)physicsPos[1] - CAPSULE_OFFSET;  // Offset for capsule center
-            position.z = (float)physicsPos[2];
+            // Position update handled by Person::Update() at start of this function
         } else {
             // No physics - just move directly
             position = newPos;
@@ -345,9 +299,16 @@ void Player::Update(float deltaTime) {
     };
 
     Vector3 eyePos = position;
-    eyePos.y += 1.9f * height;  // Eye level height (scaled by height)
+    eyePos.y += 1.6f * height;  // Eye level height at ~1.6m for person (scaled by height)
     eyePos.x += forwardDir.x * 0.3f;  // Offset forward slightly
     eyePos.z += forwardDir.z * 0.3f;
+    
+    // Debug: Log position occasionally
+    static int debugFrameCount = 0;
+    debugFrameCount++;
+    if (debugFrameCount == 60) {  // After 1 second at 60fps
+        TraceLog(LOG_INFO, "PLAYER: position.y=%.2f, eyePos.y=%.2f, capsule should be 0 to 1.7", position.y, eyePos.y);
+    }
 
     camera.SetTarget(eyePos);
     camera.Update({0, 0});
@@ -638,26 +599,12 @@ void Player::DrawHeldItem() {
 }
 
 void Player::SitDown(Vector3 seatPos) {
-    // Call base class to set seating state
+    // Call base class to handle seating and physics
     Person::SitDown(seatPos);
-
-    // Keep player height the same, only move X and Z coordinates
-    // Player maintains their standing height when seated
-    
-    // Update physics body position (only X/Z changes, Y stays at standing height)
-    if (body != nullptr) {
-        dBodySetPosition(body, seatPos.x, STANDING_HEIGHT, seatPos.z);
-        // Reset velocity when sitting
-        dBodySetLinearVel(body, 0, 0, 0);
-        dBodySetAngularVel(body, 0, 0, 0);
-    }
-    if (geom != nullptr) {
-        dGeomSetPosition(geom, seatPos.x, STANDING_HEIGHT, seatPos.z);
-    }
 }
 
 void Player::StandUp() {
-    // Call base class to clear seating state
+    // Call base class to handle unseating and physics
     Person::StandUp();
 
     // Close betting UI when standing up from table
@@ -667,15 +614,6 @@ void Player::StandUp() {
     // Close card selection UI when standing up
     cardSelectionUIActive = false;
     selectedCardIndices.clear();
-
-    // Player maintains their height when standing up - no Y change needed
-    // Physics already handles the player's Y position, we don't modify it
-    
-    // Reset velocity so player doesn't fly off
-    if (body != nullptr) {
-        dBodySetLinearVel(body, 0, 0, 0);
-        dBodySetAngularVel(body, 0, 0, 0);
-    }
 }
 
 int Player::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) {
@@ -957,6 +895,27 @@ void Player::DrawDeathVignette() {
         // Draw full-screen quad
         DrawRectangle(0, 0, screenWidth, screenHeight, WHITE);
     EndShaderMode();
+}
+
+void Player::Teleport(Vector3 newPos) {
+    // Update render position
+    position = newPos;
+    
+    // Update physics body position if physics is enabled
+    if (body != nullptr) {
+        // Convert from drawing reference to body center position
+        float actualCapsuleOffset = (CAPSULE_HEIGHT * height) / 2.0f;
+        float visualMeshBottom = newPos.y - 1.3f * height;
+        float bodyCenterHeight = visualMeshBottom + actualCapsuleOffset;
+        dBodySetPosition(body, newPos.x, bodyCenterHeight, newPos.z);
+        
+        // Reset velocities to prevent momentum from previous level
+        dBodySetLinearVel(body, 0, 0, 0);
+        dBodySetAngularVel(body, 0, 0, 0);
+        
+        TraceLog(LOG_INFO, "PLAYER: Teleported to (%.2f, %.2f, %.2f), body at (%.2f, %.2f, %.2f)",
+                 newPos.x, newPos.y, newPos.z, newPos.x, bodyCenterHeight, newPos.z);
+    }
 }
 
 void Player::SetGlobal(Player* instance) {

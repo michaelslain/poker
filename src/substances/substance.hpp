@@ -11,7 +11,7 @@ protected:
     Color color;  // Visual color of the substance
 
 public:
-    Substance(Vector3 pos, Color substanceColor, PhysicsWorld* physics = nullptr);
+    Substance(Vector3 pos, Color substanceColor);
     virtual ~Substance();
 
     // Override virtual functions

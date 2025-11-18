@@ -6,20 +6,20 @@
 
 TEST_CASE("Fent - Construction", "[substance][fent]") {
     SECTION("Create fent") {
-        Fent fent({1, 2, 3}, nullptr);
+        Fent fent({1, 2, 3});
         REQUIRE(fent.position.x == 1.0f);
         REQUIRE(fent.position.y == 2.0f);
         REQUIRE(fent.position.z == 3.0f);
     }
     
     SECTION("Fent has correct name") {
-        Fent fent({0, 0, 0}, nullptr);
+        Fent fent({0, 0, 0});
         REQUIRE(std::string(fent.GetName()) == "Fent");
     }
 }
 
 TEST_CASE("Fent - Type System", "[substance][fent]") {
-    Fent fent({0, 0, 0}, nullptr);
+    Fent fent({0, 0, 0});
     std::string type = fent.GetType();
     
     REQUIRE(type.find("object") != std::string::npos);
@@ -30,7 +30,7 @@ TEST_CASE("Fent - Type System", "[substance][fent]") {
 }
 
 TEST_CASE("Fent - Clone", "[substance][fent]") {
-    Fent original({1, 2, 3}, nullptr);
+    Fent original({1, 2, 3});
     Object* cloned = original.Clone({5, 6, 7});
     
     REQUIRE(cloned != nullptr);
@@ -46,7 +46,7 @@ TEST_CASE("Fent - Death Trigger", "[substance][fent][death]") {
     PhysicsWorld physics;
     
     SECTION("Consume triggers death when player exists") {
-        Player player({0, 0, 0}, &physics);
+        Player player({0, 0, 0});
         Player::SetGlobal(&player);
         
         // Player should not be dying initially
@@ -54,7 +54,7 @@ TEST_CASE("Fent - Death Trigger", "[substance][fent][death]") {
         REQUIRE(player.IsDead() == false);
         
         // Consume fent
-        Fent fent({0, 0, 0}, nullptr);
+        Fent fent({0, 0, 0});
         fent.Consume();
         
         // Player should now be dying
@@ -67,7 +67,7 @@ TEST_CASE("Fent - Death Trigger", "[substance][fent][death]") {
     SECTION("Consume doesn't crash without player") {
         Player::SetGlobal(nullptr);
         
-        Fent fent({0, 0, 0}, nullptr);
+        Fent fent({0, 0, 0});
         // Should not crash
         fent.Consume();
         
@@ -79,8 +79,8 @@ TEST_CASE("Fent - Stacking in Inventory", "[substance][fent][inventory]") {
     Inventory inventory;
     
     SECTION("Fent stacks correctly") {
-        Fent* fent1 = new Fent({0, 0, 0}, nullptr);
-        Fent* fent2 = new Fent({1, 1, 1}, nullptr);
+        Fent* fent1 = new Fent({0, 0, 0});
+        Fent* fent2 = new Fent({1, 1, 1});
         
         inventory.AddItem(fent1);
         inventory.AddItem(fent2);
@@ -94,13 +94,13 @@ TEST_CASE("Fent - Stacking in Inventory", "[substance][fent][inventory]") {
     }
     
     SECTION("Fent is stackable") {
-        Fent fent({0, 0, 0}, nullptr);
+        Fent fent({0, 0, 0});
         REQUIRE(fent.CanStack() == true);
     }
 }
 
 TEST_CASE("Fent - Usable Flag", "[substance][fent]") {
-    Fent fent({0, 0, 0}, nullptr);
+    Fent fent({0, 0, 0});
     
     // Substances should be usable
     REQUIRE(fent.usable == true);

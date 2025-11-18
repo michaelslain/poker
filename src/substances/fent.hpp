@@ -5,7 +5,7 @@
 
 class Fent : public Substance {
 public:
-    Fent(Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
+    Fent(Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Fent();
 
     // Override virtual functions

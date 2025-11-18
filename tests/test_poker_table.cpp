@@ -11,21 +11,42 @@
 #include "core/dom.hpp"
 
 TEST_CASE("PokerTable - Construction", "[poker_table]") {
+    PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);
+    DOM::SetGlobal(&dom);
+    
     SECTION("Create poker table") {
-        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
+        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
         REQUIRE(table.position.x == 0.0f);
         REQUIRE(table.position.y == 1.0f);
         REQUIRE(table.position.z == 0.0f);
     }
+    
+    PhysicsWorld::SetGlobal(nullptr);
+    DOM::SetGlobal(nullptr);
 }
 
 TEST_CASE("PokerTable - GetType", "[poker_table]") {
-    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
+    PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);
+    DOM::SetGlobal(&dom);
+    
+    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
     REQUIRE(table.GetType().find("poker_table") != std::string::npos);
+    
+    PhysicsWorld::SetGlobal(nullptr);
+    DOM::SetGlobal(nullptr);
 }
 
 TEST_CASE("PokerTable - Seating", "[poker_table]") {
-    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
+    PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);
+    DOM::SetGlobal(&dom);
+    
+    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
 
     SECTION("Find closest open seat") {
         int seatIndex = table.FindClosestOpenSeat({0, 0, 0});
@@ -34,7 +55,7 @@ TEST_CASE("PokerTable - Seating", "[poker_table]") {
     }
 
     SECTION("Seat a player") {
-        Player player({0, 0, 0}, nullptr);
+        Player player({0, 1.3f, 0});
         int seatIndex = table.FindClosestOpenSeat(player.position);
         bool seated = table.SeatPerson(&player, seatIndex);
         REQUIRE(seated == true);
@@ -43,7 +64,7 @@ TEST_CASE("PokerTable - Seating", "[poker_table]") {
     }
 
     SECTION("Unseat a player") {
-        Player player({0, 0, 0}, nullptr);
+        Player player({0, 1.3f, 0});
         int seatIndex = table.FindClosestOpenSeat(player.position);
         table.SeatPerson(&player, seatIndex);
         table.UnseatPerson(&player);
@@ -52,8 +73,8 @@ TEST_CASE("PokerTable - Seating", "[poker_table]") {
     }
 
     SECTION("Cannot seat player in occupied seat") {
-        Player player1({0, 0, 0}, nullptr);
-        Player player2({1, 0, 0}, nullptr);
+        Player player1({0, 1.3f, 0});
+        Player player2({1, 1.3f, 0});
         int seatIndex = 0;
 
         bool seated1 = table.SeatPerson(&player1, seatIndex);
@@ -64,9 +85,9 @@ TEST_CASE("PokerTable - Seating", "[poker_table]") {
     }
 
     SECTION("Seat multiple players") {
-        Player player1({0, 0, 0}, nullptr);
-        Player player2({1, 0, 0}, nullptr);
-        Player player3({2, 0, 0}, nullptr);
+        Player player1({0, 1.3f, 0});
+        Player player2({1, 1.3f, 0});
+        Player player3({2, 1.3f, 0});
 
         bool seated1 = table.SeatPerson(&player1, 0);
         bool seated2 = table.SeatPerson(&player2, 1);
@@ -82,14 +103,14 @@ TEST_CASE("PokerTable - Seating", "[poker_table]") {
 
     SECTION("Seat all MAX_SEATS players") {
         Player players[MAX_SEATS] = {
-            {{0, 0, 0}, nullptr},
-            {{1, 0, 0}, nullptr},
-            {{2, 0, 0}, nullptr},
-            {{3, 0, 0}, nullptr},
-            {{4, 0, 0}, nullptr},
-            {{5, 0, 0}, nullptr},
-            {{6, 0, 0}, nullptr},
-            {{7, 0, 0}, nullptr}
+            {{0, 1.3f, 0}},
+            {{1, 1.3f, 0}},
+            {{2, 1.3f, 0}},
+            {{3, 1.3f, 0}},
+            {{4, 1.3f, 0}},
+            {{5, 1.3f, 0}},
+            {{6, 1.3f, 0}},
+            {{7, 1.3f, 0}}
         };
 
         for (int i = 0; i < MAX_SEATS; i++) {
@@ -98,15 +119,23 @@ TEST_CASE("PokerTable - Seating", "[poker_table]") {
         }
 
         // Try to seat 9th player (should fail)
-        Player extraPlayer({8, 0, 0}, nullptr);
+        Player extraPlayer({8, 1.3f, 0});
         bool seated = table.SeatPerson(&extraPlayer, 0); // Seat 0 is occupied
         REQUIRE(seated == false);
     }
+    
+    PhysicsWorld::SetGlobal(nullptr);
+    DOM::SetGlobal(nullptr);
 }
 
 TEST_CASE("PokerTable - Player Sit/Stand Cycles", "[poker_table]") {
-    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
-    Player player({0, 0, 0}, nullptr);
+    PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);
+    DOM::SetGlobal(&dom);
+    
+    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
+    Player player({0, 1.3f, 0});
 
     SECTION("Player sits then stands") {
         int seatIndex = table.FindClosestOpenSeat(player.position);
@@ -135,7 +164,7 @@ TEST_CASE("PokerTable - Player Sit/Stand Cycles", "[poker_table]") {
     }
 
     SECTION("Player sits, stands, another player takes seat") {
-        Player player2({1, 0, 0}, nullptr);
+        Player player2({1, 1.3f, 0});
         int seatIndex = 0;
 
         // Player 1 sits
@@ -162,19 +191,27 @@ TEST_CASE("PokerTable - Player Sit/Stand Cycles", "[poker_table]") {
             REQUIRE(player.IsSeated() == false);
         }
     }
+    
+    PhysicsWorld::SetGlobal(nullptr);
+    DOM::SetGlobal(nullptr);
 }
 
 TEST_CASE("PokerTable - Player Inventories with Items", "[poker_table]") {
-    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
+    PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);
+    DOM::SetGlobal(&dom);
+    
+    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
 
     SECTION("Player with chips sits and stands") {
-        Player player({0, 0, 0}, nullptr);
+        Player player({0, 1.3f, 0});
         Inventory* inv = player.GetInventory();
 
         // Add chips to inventory
-        Chip* chip1 = new Chip(5, {0, 0, 0}, nullptr);
-        Chip* chip2 = new Chip(10, {0, 0, 0}, nullptr);
-        Chip* chip3 = new Chip(25, {0, 0, 0}, nullptr);
+        Chip* chip1 = new Chip(5, {0, 0, 0});
+        Chip* chip2 = new Chip(10, {0, 0, 0});
+        Chip* chip3 = new Chip(25, {0, 0, 0});
         inv->AddItem(chip1);
         inv->AddItem(chip2);
         inv->AddItem(chip3);
@@ -194,12 +231,12 @@ TEST_CASE("PokerTable - Player Inventories with Items", "[poker_table]") {
     }
 
     SECTION("Player with cards sits and stands") {
-        Player player({0, 0, 0}, nullptr);
+        Player player({0, 1.3f, 0});
         Inventory* inv = player.GetInventory();
 
         // Add cards to inventory
-        Card* card1 = new Card(SUIT_HEARTS, RANK_ACE, {0, 0, 0}, nullptr);
-        Card* card2 = new Card(SUIT_SPADES, RANK_KING, {0, 0, 0}, nullptr);
+        Card* card1 = new Card(SUIT_HEARTS, RANK_ACE, {0, 0, 0});
+        Card* card2 = new Card(SUIT_SPADES, RANK_KING, {0, 0, 0});
         inv->AddItem(card1);
         inv->AddItem(card2);
 
@@ -218,13 +255,13 @@ TEST_CASE("PokerTable - Player Inventories with Items", "[poker_table]") {
     }
 
     SECTION("Player with mixed inventory (cards, chips, pistol)") {
-        Player player({0, 0, 0}, nullptr);
+        Player player({0, 1.3f, 0});
         Inventory* inv = player.GetInventory();
 
         // Add various items
-        Card* card = new Card(SUIT_DIAMONDS, RANK_QUEEN, {0, 0, 0}, nullptr);
-        Chip* chip1 = new Chip(100, {0, 0, 0}, nullptr);
-        Chip* chip2 = new Chip(5, {0, 0, 0}, nullptr);
+        Card* card = new Card(SUIT_DIAMONDS, RANK_QUEEN, {0, 0, 0});
+        Chip* chip1 = new Chip(100, {0, 0, 0});
+        Chip* chip2 = new Chip(5, {0, 0, 0});
         Pistol* pistol = new Pistol({0, 0, 0});
 
         inv->AddItem(card);
@@ -247,16 +284,16 @@ TEST_CASE("PokerTable - Player Inventories with Items", "[poker_table]") {
     }
 
     SECTION("Player with full inventory sits and stands") {
-        Player player({0, 0, 0}, nullptr);
+        Player player({0, 1.3f, 0});
         Inventory* inv = player.GetInventory();
 
         // Fill inventory with many items (chips of same value will stack)
         for (int i = 0; i < 5; i++) {
-            Chip* chip = new Chip(25, {0, 0, 0}, nullptr);
+            Chip* chip = new Chip(25, {0, 0, 0});
             inv->AddItem(chip);
         }
         for (int i = 0; i < 5; i++) {
-            Card* card = new Card(SUIT_CLUBS, static_cast<Rank>(RANK_TWO + i), {0, 0, 0}, nullptr);
+            Card* card = new Card(SUIT_CLUBS, static_cast<Rank>(RANK_TWO + i), {0, 0, 0});
             inv->AddItem(card);
         }
 
@@ -275,19 +312,19 @@ TEST_CASE("PokerTable - Player Inventories with Items", "[poker_table]") {
     }
 
     SECTION("Multiple players with different inventories") {
-        Player player1({0, 0, 0}, nullptr);
-        Player player2({1, 0, 0}, nullptr);
-        Player player3({2, 0, 0}, nullptr);
+        Player player1({0, 1.3f, 0});
+        Player player2({1, 1.3f, 0});
+        Player player3({2, 1.3f, 0});
 
         // Player 1: chips only (using valid chip values: 1, 5, 10, 25, 100)
-        Chip* chip1 = new Chip(100, {0, 0, 0}, nullptr);
-        Chip* chip2 = new Chip(25, {0, 0, 0}, nullptr);
+        Chip* chip1 = new Chip(100, {0, 0, 0});
+        Chip* chip2 = new Chip(25, {0, 0, 0});
         player1.GetInventory()->AddItem(chip1);
         player1.GetInventory()->AddItem(chip2);
 
         // Player 2: cards only
-        Card* card1 = new Card(SUIT_HEARTS, RANK_ACE, {0, 0, 0}, nullptr);
-        Card* card2 = new Card(SUIT_HEARTS, RANK_KING, {0, 0, 0}, nullptr);
+        Card* card1 = new Card(SUIT_HEARTS, RANK_ACE, {0, 0, 0});
+        Card* card2 = new Card(SUIT_HEARTS, RANK_KING, {0, 0, 0});
         player2.GetInventory()->AddItem(card1);
         player2.GetInventory()->AddItem(card2);
 
@@ -313,13 +350,21 @@ TEST_CASE("PokerTable - Player Inventories with Items", "[poker_table]") {
         REQUIRE(player2.GetInventory()->GetStackCount() == 2);
         REQUIRE(player3.GetInventory()->GetStackCount() == 1);
     }
+    
+    PhysicsWorld::SetGlobal(nullptr);
+    DOM::SetGlobal(nullptr);
 }
 
 TEST_CASE("PokerTable - Enemy Seating", "[poker_table]") {
-    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
+    PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);
+    DOM::SetGlobal(&dom);
+    
+    PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
 
     SECTION("Enemy can sit at table") {
-        Enemy enemy({0, 0, 0}, "TestEnemy");
+        Enemy enemy({0, 1.3f, 0}, "TestEnemy");
         int seatIndex = table.FindClosestOpenSeat(enemy.position);
         bool seated = table.SeatPerson(&enemy, seatIndex);
 
@@ -329,9 +374,9 @@ TEST_CASE("PokerTable - Enemy Seating", "[poker_table]") {
     }
 
     SECTION("Mix of players and enemies") {
-        Player player({0, 0, 0}, nullptr);
-        Enemy enemy1({1, 0, 0}, "Enemy1");
-        Enemy enemy2({2, 0, 0}, "Enemy2");
+        Player player({0, 1.3f, 0});
+        Enemy enemy1({1, 1.3f, 0}, "Enemy1");
+        Enemy enemy2({2, 1.3f, 0}, "Enemy2");
 
         table.SeatPerson(&player, 0);
         table.SeatPerson(&enemy1, 1);
@@ -343,13 +388,13 @@ TEST_CASE("PokerTable - Enemy Seating", "[poker_table]") {
     }
 
     SECTION("Enemy with chips sits and stands") {
-        Enemy enemy({0, 0, 0}, "RichEnemy");
+        Enemy enemy({0, 1.3f, 0}, "RichEnemy");
         Inventory* inv = enemy.GetInventory();
 
         // Give enemy chips (different values so they don't stack)
-        Chip* chip1 = new Chip(100, {0, 0, 0}, nullptr);
-        Chip* chip2 = new Chip(25, {0, 0, 0}, nullptr);
-        Chip* chip3 = new Chip(10, {0, 0, 0}, nullptr);
+        Chip* chip1 = new Chip(100, {0, 0, 0});
+        Chip* chip2 = new Chip(25, {0, 0, 0});
+        Chip* chip3 = new Chip(10, {0, 0, 0});
         inv->AddItem(chip1);
         inv->AddItem(chip2);
         inv->AddItem(chip3);
@@ -363,19 +408,27 @@ TEST_CASE("PokerTable - Enemy Seating", "[poker_table]") {
         table.UnseatPerson(&enemy);
         REQUIRE(inv->GetStackCount() == 3);
     }
+    
+    // Cleanup
+    PhysicsWorld::SetGlobal(nullptr);
+    DOM::SetGlobal(nullptr);
 }
 
+// NOTE: PokerTable now uses global physics from PhysicsWorld::GetGlobal()
+// Collision geometry is internal and not exposed via GetCollider()
 TEST_CASE("PokerTable - GetGeom", "[poker_table]") {
-    SECTION("GetGeom returns nullptr when physics is null") {
-        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
-        REQUIRE(table.GetCollider()->GetGeom() == nullptr);
+    PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);
+    DOM::SetGlobal(&dom);
+    
+    SECTION("PokerTable creates successfully") {
+        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
+        REQUIRE(table.GetType().find("poker_table") != std::string::npos);
     }
-
-    SECTION("GetGeom returns valid geom when physics provided") {
-        PhysicsWorld physics;
-        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, &physics);
-        REQUIRE(table.GetCollider()->GetGeom() != nullptr);
-    }
+    
+    PhysicsWorld::SetGlobal(nullptr);
+    DOM::SetGlobal(nullptr);
 }
 
 TEST_CASE("PokerTable - Community Cards Memory Management", "[poker_table][regression]") {
@@ -385,7 +438,7 @@ TEST_CASE("PokerTable - Community Cards Memory Management", "[poker_table][regre
         DOM dom;
         DOM::SetGlobal(&dom);
 
-        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
+        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
         dom.AddObject(&table);
 
         // Create enemies with chips
@@ -394,8 +447,8 @@ TEST_CASE("PokerTable - Community Cards Memory Management", "[poker_table][regre
 
         // Give them chips
         for (int i = 0; i < 5; i++) {
-            Chip* chip1 = new Chip(100, {0, 0, 0}, nullptr);
-            Chip* chip2 = new Chip(100, {0, 0, 0}, nullptr);
+            Chip* chip1 = new Chip(100, {0, 0, 0});
+            Chip* chip2 = new Chip(100, {0, 0, 0});
             enemy1.GetInventory()->AddItem(chip1);
             enemy2.GetInventory()->AddItem(chip2);
         }
@@ -428,7 +481,7 @@ TEST_CASE("PokerTable - Community Cards Memory Management", "[poker_table][regre
         DOM dom;
         DOM::SetGlobal(&dom);
 
-        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
+        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
         dom.AddObject(&table);
 
 
@@ -438,8 +491,8 @@ TEST_CASE("PokerTable - Community Cards Memory Management", "[poker_table][regre
 
         // Give chips
         for (int i = 0; i < 5; i++) {
-            enemy1.GetInventory()->AddItem(new Chip(100, {0, 0, 0}, nullptr));
-            enemy2.GetInventory()->AddItem(new Chip(100, {0, 0, 0}, nullptr));
+            enemy1.GetInventory()->AddItem(new Chip(100, {0, 0, 0}));
+            enemy2.GetInventory()->AddItem(new Chip(100, {0, 0, 0}));
         }
 
         table.SeatPerson(&enemy1, 0);
@@ -470,7 +523,7 @@ TEST_CASE("PokerTable - Community Cards Memory Management", "[poker_table][regre
         DOM dom;
         DOM::SetGlobal(&dom);
 
-        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN, nullptr);
+        PokerTable table({0, 1, 0}, {4, 0.2f, 2.5f}, BROWN);
         dom.AddObject(&table);
 
         Enemy enemy1({0, 0, 0}, "Player1");
@@ -478,8 +531,8 @@ TEST_CASE("PokerTable - Community Cards Memory Management", "[poker_table][regre
 
         // Give them lots of chips
         for (int i = 0; i < 10; i++) {
-            enemy1.GetInventory()->AddItem(new Chip(100, {0, 0, 0}, nullptr));
-            enemy2.GetInventory()->AddItem(new Chip(100, {0, 0, 0}, nullptr));
+            enemy1.GetInventory()->AddItem(new Chip(100, {0, 0, 0}));
+            enemy2.GetInventory()->AddItem(new Chip(100, {0, 0, 0}));
         }
 
         table.SeatPerson(&enemy1, 0);
@@ -499,4 +552,85 @@ TEST_CASE("PokerTable - Community Cards Memory Management", "[poker_table][regre
 
         dom.Cleanup();
     }
+}
+
+TEST_CASE("PokerTable - Seating Y Position Preservation", "[poker_table][seating][regression]") {
+    PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);
+    DOM::SetGlobal(&dom);
+    
+    Vector3 tablePos = {0, 0.1f, 0};
+    Vector3 tableSize = {4.0f, 0.2f, 2.5f};
+    PokerTable table(tablePos, tableSize, DARKBROWN);
+    dom.AddObject(&table);
+    
+    SECTION("Player Y position preserved when sitting") {
+        Player player({0, 1.3f, 0});
+        float originalY = player.position.y;
+        
+        // Find and sit at first available seat
+        int seatIndex = table.FindClosestOpenSeat(player.position);
+        REQUIRE(seatIndex >= 0);
+        
+        table.SeatPerson(&player, seatIndex);
+        
+        // Y position should be preserved
+        REQUIRE(player.position.y == Catch::Approx(originalY));
+        REQUIRE(player.IsSeated() == true);
+        
+        table.UnseatPerson(&player);
+    }
+    
+    SECTION("Player Y position preserved when standing") {
+        Player player({0, 1.3f, 0});
+        
+        int seatIndex = table.FindClosestOpenSeat(player.position);
+        table.SeatPerson(&player, seatIndex);
+        
+        float seatedY = player.position.y;
+        
+        table.UnseatPerson(&player);
+        
+        // Y should remain the same after standing
+        REQUIRE(player.position.y == Catch::Approx(seatedY));
+        REQUIRE(player.IsSeated() == false);
+    }
+    
+    SECTION("Enemy Y position preserved when sitting") {
+        Enemy enemy({0, 1.3f, 0}, "TestEnemy");
+        float originalY = enemy.position.y;
+        
+        int seatIndex = table.FindClosestOpenSeat(enemy.position);
+        table.SeatPerson(&enemy, seatIndex);
+        
+        REQUIRE(enemy.position.y == Catch::Approx(originalY));
+        
+        table.UnseatPerson(&enemy);
+    }
+    
+    SECTION("Multiple people at different heights maintain positions") {
+        Player player({0, 1.3f, 0});
+        Enemy enemy({5, 2.6f, 0}, "TallEnemy");  // Enemy at different height
+        
+        float playerY = player.position.y;
+        float enemyY = enemy.position.y;
+        
+        int playerSeat = table.FindClosestOpenSeat(player.position);
+        int enemySeat = table.FindClosestOpenSeat(enemy.position);
+        
+        table.SeatPerson(&player, playerSeat);
+        table.SeatPerson(&enemy, enemySeat);
+        
+        // Both should preserve their original Y positions
+        REQUIRE(player.position.y == Catch::Approx(playerY));
+        REQUIRE(enemy.position.y == Catch::Approx(enemyY));
+        
+        table.UnseatPerson(&player);
+        table.UnseatPerson(&enemy);
+    }
+    
+    dom.Cleanup();
+    PhysicsWorld::SetGlobal(nullptr);
+    DOM::SetGlobal(nullptr);
 }

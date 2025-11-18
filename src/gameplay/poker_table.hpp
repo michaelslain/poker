@@ -24,11 +24,7 @@
 // Legacy alias for poker table code
 #define POKER_LOG GAME_LOG
 
-// Collision categories
-#ifndef COLLISION_CATEGORY_PLAYER
-#define COLLISION_CATEGORY_PLAYER   (1 << 0)
-#define COLLISION_CATEGORY_TABLE    (1 << 2)
-#endif
+#include "core/collision_categories.hpp"
 
 // Forward declarations
 class Dealer;
@@ -125,7 +121,7 @@ private:
     void EndHand();
 
 public:
-    PokerTable(Vector3 pos, Vector3 size, Color color, PhysicsWorld* physics);
+    PokerTable(Vector3 pos, Vector3 size, Color color);
     ~PokerTable();
 
     // Overrides

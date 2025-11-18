@@ -1,4 +1,6 @@
 #include "core/physics.hpp"
+#include "core/object.hpp"
+#include "raylib.h"
 
 // Initialize static member
 PhysicsWorld* PhysicsWorld::globalInstance = nullptr;
@@ -12,14 +14,14 @@ PhysicsWorld::PhysicsWorld() {
     space = dHashSpaceCreate(0);
     contactGroup = dJointGroupCreate(0);
     
-    // Set gravity (negative Y is down)
-    dWorldSetGravity(world, 0, -9.81, 0);
+    // Set gravity (negative Y is down) - increased for more responsive feel
+    dWorldSetGravity(world, 0, -25.0, 0);
     
-    // Set some default parameters
-    dWorldSetCFM(world, 1e-5);
-    dWorldSetERP(world, 0.2);
-    dWorldSetContactMaxCorrectingVel(world, 0.9);
-    dWorldSetContactSurfaceLayer(world, 0.001);
+    // Set physics parameters for stable ground collision (based on working ODE examples)
+    dWorldSetCFM(world, 1e-5);  // Small global CFM (contacts use soft_cfm instead)
+    dWorldSetERP(world, 0.96);  // High ERP for strong correction (0.96 from working example)
+    dWorldSetContactMaxCorrectingVel(world, 10.0);  // Higher velocity for proper correction
+    dWorldSetContactSurfaceLayer(world, 0.001);  // Small surface layer
 }
 
 PhysicsWorld::~PhysicsWorld() {
@@ -41,16 +43,17 @@ void PhysicsWorld::NearCallback(void* data, dGeomID o1, dGeomID o2) {
         return;
     
     // Create contact joints for collision
-    dContact contact[4];
-    int n = dCollide(o1, o2, 4, &contact[0].geom, sizeof(dContact));
+    dContact contact[8];  // Increased from 4 to 8 for better stability
+    int n = dCollide(o1, o2, 8, &contact[0].geom, sizeof(dContact));
     
     for (int i = 0; i < n; i++) {
-        // Set contact properties
-        contact[i].surface.mode = dContactBounce | dContactSoftCFM;
-        contact[i].surface.mu = 0.5;
-        contact[i].surface.bounce = 0.3;
-        contact[i].surface.bounce_vel = 0.1;
-        contact[i].surface.soft_cfm = 0.01;
+        // Set contact properties based on working ODE example
+        // Higher ERP (0.96) provides strong correction force
+        // Higher CFM (2.0) makes contacts soft and stable
+        contact[i].surface.mode = dContactSoftCFM | dContactSoftERP | dContactApprox1;
+        contact[i].surface.mu = dInfinity;  // Infinite friction to prevent sliding
+        contact[i].surface.soft_cfm = 0.001;  // VERY LOW CFM for hard contacts  
+        contact[i].surface.soft_erp = 0.8;   // High ERP for strong correction
         
         // Create contact joint
         dJointID c = dJointCreateContact(physics->world, physics->contactGroup, &contact[i]);
@@ -65,14 +68,22 @@ void PhysicsWorld::Step(float deltaTime) {
     // Cap deltaTime to prevent instability
     if (deltaTime > 0.1f) deltaTime = 0.1f;
     
-    // Check for collisions
-    dSpaceCollide(space, this, &NearCallback);
+    // Use fixed timestep substepping to prevent tunneling
+    // Physics runs at 120 Hz (substep = 1/120 = 0.00833 seconds)
+    const float fixedTimestep = 1.0f / 120.0f;
+    int substeps = (int)(deltaTime / fixedTimestep) + 1;
+    float actualSubstep = deltaTime / substeps;
     
-    // Step the world
-    dWorldQuickStep(world, deltaTime);
-    
-    // Remove all contact joints
-    dJointGroupEmpty(contactGroup);
+    for (int i = 0; i < substeps; i++) {
+        // Check for collisions
+        dSpaceCollide(space, this, &NearCallback);
+        
+        // Step the world with small timestep
+        dWorldQuickStep(world, actualSubstep);
+        
+        // Remove all contact joints
+        dJointGroupEmpty(contactGroup);
+    }
 }
 
 void PhysicsWorld::SetGlobal(PhysicsWorld* physics) {

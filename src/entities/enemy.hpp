@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 #include "entities/person.hpp"
+#include "core/physics.hpp"
 
 class Enemy : public Person {
 private:
@@ -14,7 +15,7 @@ private:
 public:
     Enemy(Vector3 pos, const std::string& enemyName = "Enemy");
     virtual ~Enemy() = default;
-
+    
     // Override GetType for identification
     std::string GetType() const override;
     

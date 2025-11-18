@@ -23,7 +23,7 @@ TEST_CASE("LevelGenerator - Construction", "[level_generator]") {
         
         // Default spawn position
         REQUIRE(spawn.x == 0.0f);
-        REQUIRE(spawn.y == 1.8f);
+        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
         REQUIRE(spawn.z == 0.0f);
     }
 }
@@ -61,8 +61,8 @@ TEST_CASE("LevelGenerator - Level Generation", "[level_generator]") {
         
         Vector3 spawn = generator.GetPlayerSpawnPosition();
         
-        // Y should be player height (1.8)
-        REQUIRE(spawn.y == 1.8f);
+        // Y should be drawing reference height
+        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
         
         // Cleanup
         for (int i = 0; i < dom.GetCount(); i++) {
@@ -109,7 +109,7 @@ TEST_CASE("LevelGenerator - Level Generation", "[level_generator]") {
         // After clear, spawn position should be default
         Vector3 spawn = generator.GetPlayerSpawnPosition();
         REQUIRE(spawn.x == 0.0f);
-        REQUIRE(spawn.y == 1.8f);
+        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
         REQUIRE(spawn.z == 0.0f);
         
         // Cleanup DOM objects

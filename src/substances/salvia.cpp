@@ -1,8 +1,8 @@
 #include "substances/salvia.hpp"
 #include "core/level_manager.hpp"
 
-Salvia::Salvia(Vector3 pos, PhysicsWorld* physics)
-    : Substance(pos, (Color){100, 200, 100, 255}, physics)  // Green color for salvia
+Salvia::Salvia(Vector3 pos)
+    : Substance(pos, (Color){200, 255, 100, 255})  // Green color for salvia
 {
 }
 
@@ -28,6 +28,5 @@ std::string Salvia::GetType() const {
 }
 
 Object* Salvia::Clone(Vector3 newPos) const {
-    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Salvia(newPos, physics);
+    return new Salvia(newPos);
 }

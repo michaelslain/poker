@@ -1,7 +1,7 @@
 #include "substances/molly.hpp"
 
-Molly::Molly(Vector3 pos, PhysicsWorld* physics)
-    : Substance(pos, (Color){255, 150, 200, 255}, physics)  // Pink color for molly
+Molly::Molly(Vector3 pos)
+    : Substance(pos, (Color){255, 150, 200, 255})  // Pink color for molly
 {
 }
 
@@ -19,6 +19,5 @@ std::string Molly::GetType() const {
 }
 
 Object* Molly::Clone(Vector3 newPos) const {
-    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Molly(newPos, physics);
+    return new Molly(newPos);
 }

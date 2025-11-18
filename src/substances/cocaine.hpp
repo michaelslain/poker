@@ -5,7 +5,7 @@
 
 class Cocaine : public Substance {
 public:
-    Cocaine(Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
+    Cocaine(Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Cocaine();
 
     // Override virtual functions

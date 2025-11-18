@@ -2,8 +2,8 @@
 #include "core/physics.hpp"
 #include "entities/player.hpp"
 
-Fent::Fent(Vector3 pos, PhysicsWorld* physics)
-    : Substance(pos, (Color){50, 50, 50, 255}, physics)  // Dark gray/black color for fentanyl
+Fent::Fent(Vector3 pos)
+    : Substance(pos, (Color){50, 50, 50, 255})  // Dark gray/black color for fentanyl
 {
 }
 
@@ -27,6 +27,5 @@ std::string Fent::GetType() const {
 }
 
 Object* Fent::Clone(Vector3 newPos) const {
-    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Fent(newPos, physics);
+    return new Fent(newPos);
 }

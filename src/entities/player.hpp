@@ -13,16 +13,9 @@
 class Interactable;
 class Card;
 
-// Collision categories
-#define COLLISION_CATEGORY_PLAYER   (1 << 0)  // 0001
-#define COLLISION_CATEGORY_ITEM     (1 << 1)  // 0010
-#define COLLISION_CATEGORY_TABLE    (1 << 2)  // 0100
-
 class Player : public Person {
 private:
-    // Physics constants
-    static constexpr float STANDING_HEIGHT = 1.8f;        // Player eye height
-    static constexpr float CAPSULE_OFFSET = 0.85f;        // Offset from body center to feet
+    // Player-specific movement constants
     static constexpr float MOVEMENT_FORCE = 500.0f;       // Horizontal movement force
     static constexpr float VELOCITY_DAMPING = 0.8f;       // Horizontal velocity damping (0-1)
     
@@ -30,11 +23,6 @@ private:
     float speed;
     float lookYaw;
     float lookPitch;
-
-    // Physics
-    dBodyID body;
-    dGeomID geom;
-    PhysicsWorld* physics;
 
     // Global player instance (for substances to access insanity manager)
     static Player* globalInstance;
@@ -66,7 +54,7 @@ public:
     
     // Insanity system - public so main.cpp can access DrawMeter
     InsanityManager insanityManager;
-    Player(Vector3 pos, PhysicsWorld* physicsWorld, const std::string& playerName = "Player");
+    Player(Vector3 pos, const std::string& playerName = "Player");
     virtual ~Player();
 
     // Override virtual functions
@@ -104,6 +92,9 @@ public:
     bool IsDying() const { return isDying; }
     bool IsDead() const { return isDying && deathVignetteProgress >= 1.0f; }
     void DrawDeathVignette();  // Draw death vignette overlay
+    
+    // Teleportation (for level transitions)
+    void Teleport(Vector3 newPos);
     
     // Accessors
     Camera3D* GetCamera() { return camera.GetCamera(); }

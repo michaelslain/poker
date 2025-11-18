@@ -1,7 +1,7 @@
 #include "substances/weed.hpp"
 
-Weed::Weed(Vector3 pos, PhysicsWorld* physics)
-    : Substance(pos, (Color){50, 150, 50, 255}, physics)  // Dark green color for weed
+Weed::Weed(Vector3 pos)
+    : Substance(pos, (Color){50, 150, 50, 255})  // Dark green color for weed
 {
 }
 
@@ -19,6 +19,5 @@ std::string Weed::GetType() const {
 }
 
 Object* Weed::Clone(Vector3 newPos) const {
-    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Weed(newPos, physics);
+    return new Weed(newPos);
 }

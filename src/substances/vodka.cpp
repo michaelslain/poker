@@ -1,8 +1,8 @@
 #include "substances/vodka.hpp"
 #include "core/physics.hpp"
 
-Vodka::Vodka(Vector3 pos, PhysicsWorld* physics)
-    : Substance(pos, (Color){220, 220, 240, 255}, physics)  // Clear/light blue color for vodka
+Vodka::Vodka(Vector3 pos)
+    : Substance(pos, (Color){220, 220, 240, 255})  // Clear/light blue color for vodka
 {
 }
 
@@ -20,6 +20,5 @@ std::string Vodka::GetType() const {
 }
 
 Object* Vodka::Clone(Vector3 newPos) const {
-    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Vodka(newPos, physics);
+    return new Vodka(newPos);
 }

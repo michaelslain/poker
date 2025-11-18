@@ -15,7 +15,7 @@ private:
 public:
     bool needsColliderUpdate;  // Flag to update collider after rotation is set
     
-    Wall(Vector3 position, Vector3 wallSize, PhysicsWorld* physicsWorld);
+    Wall(Vector3 position, Vector3 wallSize);
     virtual ~Wall();
     
     // Override virtual functions

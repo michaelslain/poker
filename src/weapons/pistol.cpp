@@ -2,8 +2,8 @@
 #include "rlgl.h"
 #include "raymath.h"
 
-Pistol::Pistol(Vector3 pos, PhysicsWorld* physics)
-    : Weapon(pos, 6, 6, physics)  // 6 rounds in a revolver
+Pistol::Pistol(Vector3 pos)
+    : Weapon(pos, 6, 6)  // 6 rounds in a revolver
 {
     // All ammo/physics logic handled by Weapon base class
 }
@@ -110,6 +110,5 @@ std::string Pistol::GetType() const {
 }
 
 Object* Pistol::Clone(Vector3 newPos) const {
-    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Pistol(newPos, physics);
+    return new Pistol(newPos);
 }

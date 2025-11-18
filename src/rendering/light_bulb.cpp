@@ -8,9 +8,9 @@ LightBulb::LightBulb(Vector3 position, Color lightColor)
     // Allocate RaylibLight struct on heap
     RaylibLight* light = new RaylibLight;
     
-    // Create point light with blueish tint (ignores lightColor parameter)
-    // Visual glow remains yellow, but actual lighting is blue
-    Color blueLight = {100, 120, 180, 255};
+    // Create point light with slight warm tint (ignores lightColor parameter)
+    // Visual glow remains yellow, lighting is slightly warm/neutral
+    Color blueLight = {140, 140, 160, 255};  // Less blue, more neutral with slight cool tint
     *light = LightingManager::CreateLight(LIGHT_POINT, position, Vector3Zero(), blueLight);
     
     // Store as opaque pointer

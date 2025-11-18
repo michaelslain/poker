@@ -10,7 +10,7 @@ TEST_CASE("Stairs - Construction", "[stairs]") {
     SECTION("Constructor initializes properly") {
         Vector3 pos = {0, 1, 0};
         Vector3 size = {3, 2, 3};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         REQUIRE(stairs.position.x == 0.0f);
         REQUIRE(stairs.position.y == 1.0f);
@@ -20,7 +20,7 @@ TEST_CASE("Stairs - Construction", "[stairs]") {
     SECTION("GetType returns correct type") {
         Vector3 pos = {0, 1, 0};
         Vector3 size = {3, 2, 3};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         std::string type = stairs.GetType();
         REQUIRE(type.find("object") != std::string::npos);
@@ -30,7 +30,7 @@ TEST_CASE("Stairs - Construction", "[stairs]") {
     SECTION("GetGeom returns valid geometry") {
         Vector3 pos = {0, 1, 0};
         Vector3 size = {3, 2, 3};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         dGeomID geom = stairs.GetGeom();
         REQUIRE(geom != nullptr);
@@ -43,7 +43,7 @@ TEST_CASE("Stairs - Transition State", "[stairs]") {
     SECTION("Transition starts as not triggered") {
         Vector3 pos = {0, 1, 0};
         Vector3 size = {3, 2, 3};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         REQUIRE_FALSE(stairs.IsTransitionTriggered());
     }
@@ -51,7 +51,7 @@ TEST_CASE("Stairs - Transition State", "[stairs]") {
     SECTION("ResetTransition clears triggered state") {
         Vector3 pos = {0, 1, 0};
         Vector3 size = {3, 2, 3};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         // We can't directly trigger it without a player, so just test reset
         stairs.ResetTransition();
@@ -65,11 +65,11 @@ TEST_CASE("Stairs - Player Collision Detection", "[stairs][physics]") {
     SECTION("CheckPlayerCollision detects collision when player is close") {
         Vector3 stairsPos = {0, 1, 0};
         Vector3 stairsSize = {3, 2, 3};
-        Stairs stairs(stairsPos, stairsSize, GRAY, &physics);
+        Stairs stairs(stairsPos, stairsSize, GRAY);
         
         // Create player at same position (should collide)
         Vector3 playerPos = {0, 1, 0};
-        Player player(playerPos, &physics);
+        Player player(playerPos);
         
         // Advance physics to set up collision
         physics.Step(0.016f);
@@ -86,10 +86,10 @@ TEST_CASE("Stairs - Player Collision Detection", "[stairs][physics]") {
     SECTION("CheckPlayerCollision does not trigger twice") {
         Vector3 stairsPos = {0, 1, 0};
         Vector3 stairsSize = {3, 2, 3};
-        Stairs stairs(stairsPos, stairsSize, GRAY, &physics);
+        Stairs stairs(stairsPos, stairsSize, GRAY);
         
         Vector3 playerPos = {0, 1, 0};
-        Player player(playerPos, &physics);
+        Player player(playerPos);
         
         physics.Step(0.016f);
         
@@ -106,10 +106,10 @@ TEST_CASE("Stairs - Player Collision Detection", "[stairs][physics]") {
     SECTION("ResetTransition allows re-triggering") {
         Vector3 stairsPos = {0, 1, 0};
         Vector3 stairsSize = {3, 2, 3};
-        Stairs stairs(stairsPos, stairsSize, GRAY, &physics);
+        Stairs stairs(stairsPos, stairsSize, GRAY);
         
         Vector3 playerPos = {0, 1, 0};
-        Player player(playerPos, &physics);
+        Player player(playerPos);
         
         physics.Step(0.016f);
         
@@ -130,11 +130,11 @@ TEST_CASE("Stairs - Player Collision Detection", "[stairs][physics]") {
     SECTION("CheckPlayerCollision does not detect collision when player is far") {
         Vector3 stairsPos = {0, 1, 0};
         Vector3 stairsSize = {3, 2, 3};
-        Stairs stairs(stairsPos, stairsSize, GRAY, &physics);
+        Stairs stairs(stairsPos, stairsSize, GRAY);
         
         // Create player far away
         Vector3 playerPos = {100, 1, 100};
-        Player player(playerPos, &physics);
+        Player player(playerPos);
         
         physics.Step(0.016f);
         
@@ -152,7 +152,7 @@ TEST_CASE("Stairs - Update", "[stairs]") {
     SECTION("Update does not modify position (stairs are static)") {
         Vector3 pos = {5, 2, 3};
         Vector3 size = {3, 2, 3};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         Vector3 originalPos = stairs.position;
         
@@ -172,7 +172,7 @@ TEST_CASE("Stairs - Memory Management", "[stairs][regression]") {
         Vector3 size = {3, 2, 3};
         
         {
-            Stairs stairs(pos, size, GRAY, &physics);
+            Stairs stairs(pos, size, GRAY);
             dGeomID geom = stairs.GetGeom();
             REQUIRE(geom != nullptr);
             
@@ -186,9 +186,9 @@ TEST_CASE("Stairs - Memory Management", "[stairs][regression]") {
     SECTION("Multiple stairs can exist simultaneously") {
         Vector3 size = {3, 2, 3};
         
-        Stairs stairs1({0, 1, 0}, size, GRAY, &physics);
-        Stairs stairs2({10, 1, 0}, size, DARKGRAY, &physics);
-        Stairs stairs3({20, 1, 0}, size, LIGHTGRAY, &physics);
+        Stairs stairs1({0, 1, 0}, size, GRAY);
+        Stairs stairs2({10, 1, 0}, size, DARKGRAY);
+        Stairs stairs3({20, 1, 0}, size, LIGHTGRAY);
         
         REQUIRE(stairs1.GetGeom() != stairs2.GetGeom());
         REQUIRE(stairs2.GetGeom() != stairs3.GetGeom());
@@ -202,7 +202,7 @@ TEST_CASE("Stairs - Edge Cases", "[stairs][regression]") {
     SECTION("Very small stairs work") {
         Vector3 pos = {0, 1, 0};
         Vector3 size = {0.1f, 0.1f, 0.1f};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         REQUIRE(stairs.GetGeom() != nullptr);
     }
@@ -210,7 +210,7 @@ TEST_CASE("Stairs - Edge Cases", "[stairs][regression]") {
     SECTION("Very large stairs work") {
         Vector3 pos = {0, 1, 0};
         Vector3 size = {100, 50, 100};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         REQUIRE(stairs.GetGeom() != nullptr);
     }
@@ -218,7 +218,7 @@ TEST_CASE("Stairs - Edge Cases", "[stairs][regression]") {
     SECTION("Stairs at origin work") {
         Vector3 pos = {0, 0, 0};
         Vector3 size = {3, 2, 3};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         REQUIRE(stairs.position.x == 0.0f);
         REQUIRE(stairs.position.y == 0.0f);
@@ -228,7 +228,7 @@ TEST_CASE("Stairs - Edge Cases", "[stairs][regression]") {
     SECTION("Stairs at negative coordinates work") {
         Vector3 pos = {-10, -5, -15};
         Vector3 size = {3, 2, 3};
-        Stairs stairs(pos, size, GRAY, &physics);
+        Stairs stairs(pos, size, GRAY);
         
         REQUIRE(stairs.position.x == -10.0f);
         REQUIRE(stairs.position.y == -5.0f);

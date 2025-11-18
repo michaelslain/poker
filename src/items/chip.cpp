@@ -5,14 +5,15 @@
 #include <stdexcept>
 #include <string>
 
-Chip::Chip(int chipValue, Vector3 pos, PhysicsWorld* physics)
+Chip::Chip(int chipValue, Vector3 pos)
     : Item(pos), value(chipValue), iconTextureLoaded(false), rigidBody(nullptr)
 {
     usesLighting = false;  // Chips render without lighting
     
     color = GetColorFromValue(value);
 
-    // Initialize physics
+    // Initialize physics from global instance
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
     if (physics) {
         float radius = 0.1f;  // Even smaller radius (was 0.3f originally)
         float height = 0.03f;  // Even thinner height (was 0.1f originally)
@@ -131,5 +132,5 @@ Color Chip::GetColorFromValue(int value) {
 
 Object* Chip::Clone(Vector3 newPos) const {
     PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Chip(value, newPos, physics);
+    return new Chip(value, newPos);
 }

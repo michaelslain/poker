@@ -1,8 +1,8 @@
 #include "substances/shrooms.hpp"
 #include "rendering/psychedelic_manager.hpp"
 
-Shrooms::Shrooms(Vector3 pos, PhysicsWorld* physics)
-    : Substance(pos, (Color){150, 100, 200, 255}, physics)  // Purple color for shrooms
+Shrooms::Shrooms(Vector3 pos)
+    : Substance(pos, (Color){150, 100, 200, 255})  // Purple color for shrooms
 {
 }
 
@@ -20,6 +20,5 @@ std::string Shrooms::GetType() const {
 }
 
 Object* Shrooms::Clone(Vector3 newPos) const {
-    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Shrooms(newPos, physics);
+    return new Shrooms(newPos);
 }

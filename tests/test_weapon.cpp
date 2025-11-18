@@ -7,7 +7,7 @@
 class TestWeapon : public Weapon {
 public:
     TestWeapon(Vector3 pos, int ammo, int maxAmmo)
-        : Weapon(pos, ammo, maxAmmo, nullptr) {}
+        : Weapon(pos, ammo, maxAmmo) {}
     
     void Draw(Camera3D camera) override {
         (void)camera;
@@ -131,14 +131,14 @@ TEST_CASE("Weapon - Type System", "[weapon]") {
 
 TEST_CASE("Pistol - Inherits from Weapon", "[pistol][weapon]") {
     SECTION("Pistol has correct ammo") {
-        Pistol pistol({0, 0, 0}, nullptr);
+        Pistol pistol({0, 0, 0});
         
         REQUIRE(pistol.GetAmmo() == 6);  // Revolver capacity
         REQUIRE(pistol.GetMaxAmmo() == 6);
     }
     
     SECTION("Pistol shooting works") {
-        Pistol pistol({0, 0, 0}, nullptr);
+        Pistol pistol({0, 0, 0});
         
         pistol.Shoot();
         REQUIRE(pistol.GetAmmo() == 5);
@@ -149,7 +149,7 @@ TEST_CASE("Pistol - Inherits from Weapon", "[pistol][weapon]") {
     }
     
     SECTION("Pistol can be reloaded") {
-        Pistol pistol({0, 0, 0}, nullptr);
+        Pistol pistol({0, 0, 0});
         
         pistol.Shoot();
         pistol.Shoot();
@@ -161,7 +161,7 @@ TEST_CASE("Pistol - Inherits from Weapon", "[pistol][weapon]") {
     }
     
     SECTION("Pistol type hierarchy") {
-        Pistol pistol({0, 0, 0}, nullptr);
+        Pistol pistol({0, 0, 0});
         
         std::string type = pistol.GetType();
         REQUIRE(type.find("weapon") != std::string::npos);

@@ -2,11 +2,12 @@
 #include "rlgl.h"
 #include "raymath.h"
 
-Substance::Substance(Vector3 pos, Color substanceColor, PhysicsWorld* physics)
+Substance::Substance(Vector3 pos, Color substanceColor)
     : Item(pos), rigidBody(nullptr), color(substanceColor)
 {
     usable = true;  // Substances can be consumed
-    // Initialize physics if provided
+    // Get physics from global instance
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
     if (physics) {
         Vector3 substanceSize = {0.2f, 0.2f, 0.2f};  // Small cube for substances
         rigidBody = new RigidBody(pos);

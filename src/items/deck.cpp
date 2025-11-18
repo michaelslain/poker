@@ -10,7 +10,7 @@ Deck::Deck(Vector3 pos) : Object(pos) {
     for (int suit = SUIT_HEARTS; suit <= SUIT_SPADES; suit++) {
         for (int rank = RANK_ACE; rank <= RANK_KING; rank++) {
             // Create card at origin with no physics (cards are part of the deck, not individual objects)
-            Card* card = new Card(static_cast<Suit>(suit), static_cast<Rank>(rank), {0, 0, 0}, nullptr);
+            Card* card = new Card(static_cast<Suit>(suit), static_cast<Rank>(rank), {0, 0, 0});
             
             // Add to allCards for cleanup tracking
             allCards.push_back(card);

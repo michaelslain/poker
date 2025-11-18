@@ -13,7 +13,7 @@ public:
     bool iconTextureLoaded;
     RigidBody* rigidBody;
 
-    Chip(int chipValue, Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
+    Chip(int chipValue, Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Chip();
 
     void Update(float deltaTime) override;

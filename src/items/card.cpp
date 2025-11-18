@@ -3,7 +3,7 @@
 #include "raymath.h"
 #include <cstdio>
 
-Card::Card(Suit s, Rank r, Vector3 pos, PhysicsWorld* physics)
+Card::Card(Suit s, Rank r, Vector3 pos)
     : Item(pos), suit(s), rank(r), textureLoaded(false), rigidBody(nullptr)
 {
     usesLighting = true;  // Cards use lighting
@@ -29,7 +29,8 @@ Card::Card(Suit s, Rank r, Vector3 pos, PhysicsWorld* physics)
         DrawText(suitSymbol, 128 - suitWidth/2, 200, 30, textColor);
     EndTextureMode();
     
-    // Initialize physics if provided
+    // Initialize physics from global instance
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
     if (physics) {
         AttachPhysics(pos, physics);
     }
@@ -198,5 +199,5 @@ Color Card::GetSuitColor(Suit s) {
 
 Object* Card::Clone(Vector3 newPos) const {
     PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Card(suit, rank, newPos, physics);
+    return new Card(suit, rank, newPos);
 }

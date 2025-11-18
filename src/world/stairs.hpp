@@ -18,7 +18,7 @@ private:
 
 public:
     // Constructor
-    Stairs(Vector3 pos, Vector3 stairSize, Color stairColor, PhysicsWorld* physicsWorld);
+    Stairs(Vector3 pos, Vector3 stairSize, Color stairColor);
     
     // Destructor
     ~Stairs();

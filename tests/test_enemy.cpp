@@ -5,7 +5,7 @@
 
 TEST_CASE("Enemy - Construction", "[enemy]") {
     SECTION("Create with default name") {
-        Enemy enemy({0, 0, 0});
+        Enemy enemy({0, 0, 0}, "Enemy");
         REQUIRE(enemy.GetName() == "Enemy");
     }
     
@@ -15,32 +15,32 @@ TEST_CASE("Enemy - Construction", "[enemy]") {
     }
     
     SECTION("Enemy height is taller (1.5x)") {
-        Enemy enemy({0, 0, 0});
+        Enemy enemy({0, 0, 0}, "Enemy");
         REQUIRE(enemy.GetHeight() == 1.5f);
     }
 }
 
 TEST_CASE("Enemy - GetType", "[enemy]") {
-    Enemy enemy({0, 0, 0});
+    Enemy enemy({0, 0, 0}, "Enemy");
     REQUIRE(enemy.GetType().find("enemy") != std::string::npos);
 }
 
 TEST_CASE("Enemy - Position", "[enemy]") {
-    Enemy enemy({5, 10, 15});
+    Enemy enemy({5, 10, 15}, "Enemy");
     REQUIRE(enemy.position.x == 5.0f);
     REQUIRE(enemy.position.y == 10.0f);
     REQUIRE(enemy.position.z == 15.0f);
 }
 
 TEST_CASE("Enemy - Inventory", "[enemy]") {
-    Enemy enemy({0, 0, 0});
+    Enemy enemy({0, 0, 0}, "Enemy");
     Inventory* inv = enemy.GetInventory();
     REQUIRE(inv != nullptr);
     REQUIRE(inv->GetStackCount() == 0);
 }
 
 TEST_CASE("Enemy - Seating", "[enemy]") {
-    Enemy enemy({0, 0, 0});
+    Enemy enemy({0, 0, 0}, "Enemy");
     
     SECTION("Not seated by default") {
         REQUIRE(enemy.IsSeated() == false);

@@ -10,38 +10,38 @@ static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
 
 TEST_CASE("Chip - Construction", "[chip]") {
     SECTION("Create chip with value 1") {
-        Chip chip(1, {0, 0, 0}, nullptr);
+        Chip chip(1, {0, 0, 0});
         REQUIRE(chip.value == 1);
         REQUIRE(TypeEndsWith(chip.GetType(), "chip_1"));
     }
     
     SECTION("Create chip with value 5") {
-        Chip chip(5, {0, 0, 0}, nullptr);
+        Chip chip(5, {0, 0, 0});
         REQUIRE(chip.value == 5);
         REQUIRE(TypeEndsWith(chip.GetType(), "chip_5"));
     }
     
     SECTION("Create chip with value 10") {
-        Chip chip(10, {0, 0, 0}, nullptr);
+        Chip chip(10, {0, 0, 0});
         REQUIRE(chip.value == 10);
         REQUIRE(TypeEndsWith(chip.GetType(), "chip_10"));
     }
     
     SECTION("Create chip with value 25") {
-        Chip chip(25, {0, 0, 0}, nullptr);
+        Chip chip(25, {0, 0, 0});
         REQUIRE(chip.value == 25);
         REQUIRE(TypeEndsWith(chip.GetType(), "chip_25"));
     }
     
     SECTION("Create chip with value 100") {
-        Chip chip(100, {0, 0, 0}, nullptr);
+        Chip chip(100, {0, 0, 0});
         REQUIRE(chip.value == 100);
         REQUIRE(TypeEndsWith(chip.GetType(), "chip_100"));
     }
     
     SECTION("Chip position is set correctly") {
         Vector3 pos = {3.0f, 7.0f, 11.0f};
-        Chip chip(5, pos, nullptr);
+        Chip chip(5, pos);
         
         REQUIRE(chip.position.x == 3.0f);
         REQUIRE(chip.position.y == 7.0f);
@@ -51,15 +51,15 @@ TEST_CASE("Chip - Construction", "[chip]") {
 
 TEST_CASE("Chip - GetType", "[chip]") {
     SECTION("GetType returns correct string for all values") {
-        REQUIRE(TypeEndsWith(Chip(1, {0,0,0}, nullptr).GetType(), "chip_1"));
-        REQUIRE(TypeEndsWith(Chip(5, {0,0,0}, nullptr).GetType(), "chip_5"));
-        REQUIRE(TypeEndsWith(Chip(10, {0,0,0}, nullptr).GetType(), "chip_10"));
-        REQUIRE(TypeEndsWith(Chip(25, {0,0,0}, nullptr).GetType(), "chip_25"));
-        REQUIRE(TypeEndsWith(Chip(100, {0,0,0}, nullptr).GetType(), "chip_100"));
+        REQUIRE(TypeEndsWith(Chip(1, {0,0,0}).GetType(), "chip_1"));
+        REQUIRE(TypeEndsWith(Chip(5, {0,0,0}).GetType(), "chip_5"));
+        REQUIRE(TypeEndsWith(Chip(10, {0,0,0}).GetType(), "chip_10"));
+        REQUIRE(TypeEndsWith(Chip(25, {0,0,0}).GetType(), "chip_25"));
+        REQUIRE(TypeEndsWith(Chip(100, {0,0,0}).GetType(), "chip_100"));
     }
     
     SECTION("GetType starts with 'chip_'") {
-        Chip chip(5, {0,0,0}, nullptr);
+        Chip chip(5, {0,0,0});
         std::string type = chip.GetType();
         REQUIRE(type.find("chip_") != std::string::npos);
     }
@@ -111,8 +111,8 @@ TEST_CASE("Chip - GetColorFromValue", "[chip]") {
 
 TEST_CASE("Chip - Edge Cases", "[chip]") {
     SECTION("Multiple chips with same value are independent") {
-        Chip chip1(5, {0, 0, 0}, nullptr);
-        Chip chip2(5, {10, 10, 10}, nullptr);
+        Chip chip1(5, {0, 0, 0});
+        Chip chip2(5, {10, 10, 10});
         
         REQUIRE(chip1.value == chip2.value);
         REQUIRE(chip1.GetType() == chip2.GetType());
@@ -121,14 +121,14 @@ TEST_CASE("Chip - Edge Cases", "[chip]") {
     }
     
     SECTION("Chip with invalid value 0 throws exception") {
-        REQUIRE_THROWS_AS(Chip(0, {0, 0, 0}, nullptr), std::invalid_argument);
+        REQUIRE_THROWS_AS(Chip(0, {0, 0, 0}), std::invalid_argument);
     }
     
     SECTION("Chip with negative value throws exception") {
-        REQUIRE_THROWS_AS(Chip(-5, {0, 0, 0}, nullptr), std::invalid_argument);
+        REQUIRE_THROWS_AS(Chip(-5, {0, 0, 0}), std::invalid_argument);
     }
     
     SECTION("Chip with very large value throws exception") {
-        REQUIRE_THROWS_AS(Chip(1000000, {0, 0, 0}, nullptr), std::invalid_argument);
+        REQUIRE_THROWS_AS(Chip(1000000, {0, 0, 0}), std::invalid_argument);
     }
 }

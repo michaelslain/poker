@@ -1,7 +1,7 @@
 #include "substances/adrenaline.hpp"
 
-Adrenaline::Adrenaline(Vector3 pos, PhysicsWorld* physics)
-    : Substance(pos, RED, physics)  // Red color for adrenaline
+Adrenaline::Adrenaline(Vector3 pos)
+    : Substance(pos, RED)  // Red color for adrenaline
 {
 }
 
@@ -19,6 +19,5 @@ std::string Adrenaline::GetType() const {
 }
 
 Object* Adrenaline::Clone(Vector3 newPos) const {
-    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
-    return new Adrenaline(newPos, physics);
+    return new Adrenaline(newPos);
 }

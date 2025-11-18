@@ -5,7 +5,7 @@
 
 class Weed : public Substance {
 public:
-    Weed(Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
+    Weed(Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Weed();
 
     // Override virtual functions

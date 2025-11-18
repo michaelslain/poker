@@ -1,13 +1,16 @@
 #include "world/ceiling.hpp"
 #include "rendering/lighting_manager.hpp"
 
-Ceiling::Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor, PhysicsWorld* physicsWorld)
+Ceiling::Ceiling(Vector3 position, Vector2 ceilingSize, Color ceilingColor)
     : Object(position), size(ceilingSize), color(ceilingColor)
 {
+    // Get physics from global instance
+    PhysicsWorld* physics = PhysicsWorld::GetGlobal();
+    
     // Initialize static plane collision (normal pointing down: Y-)
-    if (physicsWorld) {
+    if (physics) {
         // For plane: size = normal vector (0, -1, 0), offset.x = distance (-position.y)
-        collider.InitStatic(physicsWorld, COLLISION_SHAPE_PLANE, {0, -1, 0}, {-position.y, 0, 0});
+        collider.InitStatic(physics, COLLISION_SHAPE_PLANE, {0, -1, 0}, {-position.y, 0, 0});
     }
     
     // Create model - ceiling doesn't use lighting (always visible from below)

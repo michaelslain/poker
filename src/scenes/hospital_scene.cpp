@@ -25,12 +25,12 @@ void HospitalScene::Generate() {
     
     // Floor
     Vector3 floorPos = {0, FLOOR_HEIGHT, 0};
-    Floor* floor = new Floor(floorPos, {ROOM_WIDTH, ROOM_DEPTH}, WHITE, physics);
+    Floor* floor = new Floor(floorPos, {ROOM_WIDTH, ROOM_DEPTH}, WHITE);
     dom->AddObject(floor);
     
     // Ceiling (black, unlit)
     Vector3 ceilingPos = {0, CEILING_HEIGHT, 0};
-    Ceiling* ceiling = new Ceiling(ceilingPos, {ROOM_WIDTH, ROOM_DEPTH}, BLACK, physics);
+    Ceiling* ceiling = new Ceiling(ceilingPos, {ROOM_WIDTH, ROOM_DEPTH}, BLACK);
     dom->AddObject(ceiling);
     
     // Walls - now 2D planes with no thickness
@@ -39,19 +39,19 @@ void HospitalScene::Generate() {
     // North wall (runs along X axis, faces +Z)
     Vector3 northPos = {0, FLOOR_HEIGHT + wallHeight / 2.0f, -ROOM_DEPTH / 2.0f};
     Vector3 northSize = {ROOM_WIDTH, wallHeight, 0.0f};  // 2D plane
-    Wall* northWall = new Wall(northPos, northSize, physics);
+    Wall* northWall = new Wall(northPos, northSize);
     dom->AddObject(northWall);
     
     // South wall (runs along X axis, faces -Z)
     Vector3 southPos = {0, FLOOR_HEIGHT + wallHeight / 2.0f, ROOM_DEPTH / 2.0f};
     Vector3 southSize = {ROOM_WIDTH, wallHeight, 0.0f};  // 2D plane
-    Wall* southWall = new Wall(southPos, southSize, physics);
+    Wall* southWall = new Wall(southPos, southSize);
     dom->AddObject(southWall);
     
     // West wall (runs along Z axis, faces +X) - rotated 90 degrees
     Vector3 westPos = {-ROOM_WIDTH / 2.0f, FLOOR_HEIGHT + wallHeight / 2.0f, 0};
     Vector3 westSize = {ROOM_DEPTH, wallHeight, 0.0f};  // 2D plane
-    Wall* westWall = new Wall(westPos, westSize, physics);
+    Wall* westWall = new Wall(westPos, westSize);
     westWall->rotation.y = 90.0f;  // Rotate to face along Z axis
     westWall->needsColliderUpdate = true;  // Flag to update collider after rotation
     dom->AddObject(westWall);
@@ -59,7 +59,7 @@ void HospitalScene::Generate() {
     // East wall (runs along Z axis, faces -X) - rotated 90 degrees
     Vector3 eastPos = {ROOM_WIDTH / 2.0f, FLOOR_HEIGHT + wallHeight / 2.0f, 0};
     Vector3 eastSize = {ROOM_DEPTH, wallHeight, 0.0f};  // 2D plane
-    Wall* eastWall = new Wall(eastPos, eastSize, physics);
+    Wall* eastWall = new Wall(eastPos, eastSize);
     eastWall->rotation.y = 90.0f;  // Rotate to face along Z axis
     eastWall->needsColliderUpdate = true;  // Flag to update collider after rotation
     dom->AddObject(eastWall);
@@ -73,13 +73,14 @@ void HospitalScene::Generate() {
     // Stairs to level 1 (exit hospital)
     Vector3 stairsPos = {0, FLOOR_HEIGHT + 1.0f, ROOM_DEPTH / 2.0f - 2.0f};
     Vector3 stairsSize = {3.0f, 2.0f, 3.0f};
-    Stairs* stairs = new Stairs(stairsPos, stairsSize, GRAY, physics);
+    Stairs* stairs = new Stairs(stairsPos, stairsSize, GRAY);
     dom->AddObject(stairs);
 }
 
 Vector3 HospitalScene::GetPlayerSpawnPosition() const {
-    // Spawn in center of room
-    return {0, 1.8f, 0};
+    // Player spawn position uses drawing reference height (1.3 units above mesh bottom)
+    // Mesh bottom should be at floor level (FLOOR_HEIGHT), so drawing reference = FLOOR_HEIGHT + 1.3
+    return {0, FLOOR_HEIGHT + 1.3f, 0};
 }
 
 void HospitalScene::Clear() {

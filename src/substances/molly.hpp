@@ -5,7 +5,7 @@
 
 class Molly : public Substance {
 public:
-    Molly(Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
+    Molly(Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Molly();
 
     // Override virtual functions

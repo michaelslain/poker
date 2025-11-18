@@ -38,7 +38,7 @@ public:
     Model model;
     bool isClosestInteractable;
 
-    Card(Suit s, Rank r, Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
+    Card(Suit s, Rank r, Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Card();
 
     void AttachPhysics(Vector3 pos, PhysicsWorld* physics);

@@ -11,20 +11,20 @@
 
 TEST_CASE("Adrenaline - Construction", "[substance][adrenaline]") {
     SECTION("Create adrenaline") {
-        Adrenaline adrenaline({1, 2, 3}, nullptr);
+        Adrenaline adrenaline({1, 2, 3});
         REQUIRE(adrenaline.position.x == 1.0f);
         REQUIRE(adrenaline.position.y == 2.0f);
         REQUIRE(adrenaline.position.z == 3.0f);
     }
     
     SECTION("Adrenaline has correct name") {
-        Adrenaline adrenaline({0, 0, 0}, nullptr);
+        Adrenaline adrenaline({0, 0, 0});
         REQUIRE(std::string(adrenaline.GetName()) == "Adrenaline");
     }
 }
 
 TEST_CASE("Adrenaline - Type System", "[substance][adrenaline]") {
-    Adrenaline adrenaline({0, 0, 0}, nullptr);
+    Adrenaline adrenaline({0, 0, 0});
     std::string type = adrenaline.GetType();
     
     REQUIRE(type.find("object") != std::string::npos);
@@ -35,7 +35,7 @@ TEST_CASE("Adrenaline - Type System", "[substance][adrenaline]") {
 }
 
 TEST_CASE("Salvia - Construction and Type", "[substance][salvia]") {
-    Salvia salvia({0, 0, 0}, nullptr);
+    Salvia salvia({0, 0, 0});
     
     SECTION("Has correct name") {
         REQUIRE(std::string(salvia.GetName()) == "Salvia");
@@ -49,7 +49,7 @@ TEST_CASE("Salvia - Construction and Type", "[substance][salvia]") {
 }
 
 TEST_CASE("Cocaine - Construction and Type", "[substance][cocaine]") {
-    Cocaine cocaine({0, 0, 0}, nullptr);
+    Cocaine cocaine({0, 0, 0});
     
     SECTION("Has correct name") {
         REQUIRE(std::string(cocaine.GetName()) == "Cocaine");
@@ -63,7 +63,7 @@ TEST_CASE("Cocaine - Construction and Type", "[substance][cocaine]") {
 }
 
 TEST_CASE("Shrooms - Construction and Type", "[substance][shrooms]") {
-    Shrooms shrooms({0, 0, 0}, nullptr);
+    Shrooms shrooms({0, 0, 0});
     
     SECTION("Has correct name") {
         REQUIRE(std::string(shrooms.GetName()) == "Shrooms");
@@ -77,7 +77,7 @@ TEST_CASE("Shrooms - Construction and Type", "[substance][shrooms]") {
 }
 
 TEST_CASE("Vodka - Construction and Type", "[substance][vodka]") {
-    Vodka vodka({0, 0, 0}, nullptr);
+    Vodka vodka({0, 0, 0});
     
     SECTION("Has correct name") {
         REQUIRE(std::string(vodka.GetName()) == "Vodka");
@@ -91,7 +91,7 @@ TEST_CASE("Vodka - Construction and Type", "[substance][vodka]") {
 }
 
 TEST_CASE("Weed - Construction and Type", "[substance][weed]") {
-    Weed weed({0, 0, 0}, nullptr);
+    Weed weed({0, 0, 0});
     
     SECTION("Has correct name") {
         REQUIRE(std::string(weed.GetName()) == "Weed");
@@ -105,7 +105,7 @@ TEST_CASE("Weed - Construction and Type", "[substance][weed]") {
 }
 
 TEST_CASE("Molly - Construction and Type", "[substance][molly]") {
-    Molly molly({0, 0, 0}, nullptr);
+    Molly molly({0, 0, 0});
     
     SECTION("Has correct name") {
         REQUIRE(std::string(molly.GetName()) == "Molly");
@@ -120,7 +120,7 @@ TEST_CASE("Molly - Construction and Type", "[substance][molly]") {
 
 TEST_CASE("Substance - Clone", "[substance]") {
     SECTION("Adrenaline clones correctly") {
-        Adrenaline original({1, 2, 3}, nullptr);
+        Adrenaline original({1, 2, 3});
         Object* cloned = original.Clone({5, 6, 7});
         
         REQUIRE(cloned != nullptr);
@@ -133,7 +133,7 @@ TEST_CASE("Substance - Clone", "[substance]") {
     }
     
     SECTION("Cocaine clones correctly") {
-        Cocaine original({0, 0, 0}, nullptr);
+        Cocaine original({0, 0, 0});
         Object* cloned = original.Clone({10, 11, 12});
         
         REQUIRE(cloned != nullptr);
@@ -146,13 +146,13 @@ TEST_CASE("Substance - Clone", "[substance]") {
 
 TEST_CASE("Substance - Consume", "[substance]") {
     SECTION("All substances have Consume method") {
-        Adrenaline adrenaline({0, 0, 0}, nullptr);
-        Salvia salvia({0, 0, 0}, nullptr);
-        Cocaine cocaine({0, 0, 0}, nullptr);
-        Shrooms shrooms({0, 0, 0}, nullptr);
-        Vodka vodka({0, 0, 0}, nullptr);
-        Weed weed({0, 0, 0}, nullptr);
-        Molly molly({0, 0, 0}, nullptr);
+        Adrenaline adrenaline({0, 0, 0});
+        Salvia salvia({0, 0, 0});
+        Cocaine cocaine({0, 0, 0});
+        Shrooms shrooms({0, 0, 0});
+        Vodka vodka({0, 0, 0});
+        Weed weed({0, 0, 0});
+        Molly molly({0, 0, 0});
         
         // Should not crash
         adrenaline.Consume();
@@ -171,8 +171,8 @@ TEST_CASE("Substance - Stacking in Inventory", "[substance][inventory][regressio
     Inventory inventory;
     
     SECTION("Substances stack correctly") {
-        Weed* weed1 = new Weed({0, 0, 0}, nullptr);
-        Weed* weed2 = new Weed({1, 1, 1}, nullptr);
+        Weed* weed1 = new Weed({0, 0, 0});
+        Weed* weed2 = new Weed({1, 1, 1});
         
         inventory.AddItem(weed1);
         inventory.AddItem(weed2);
@@ -186,8 +186,8 @@ TEST_CASE("Substance - Stacking in Inventory", "[substance][inventory][regressio
     }
     
     SECTION("Removing one from stack of two") {
-        Weed* weed1 = new Weed({0, 0, 0}, nullptr);
-        Weed* weed2 = new Weed({1, 1, 1}, nullptr);
+        Weed* weed1 = new Weed({0, 0, 0});
+        Weed* weed2 = new Weed({1, 1, 1});
         
         inventory.AddItem(weed1);
         inventory.AddItem(weed2);
@@ -213,7 +213,7 @@ TEST_CASE("Substance - Stacking in Inventory", "[substance][inventory][regressio
     }
     
     SECTION("Removing last one from stack deletes stack") {
-        Weed* weed = new Weed({0, 0, 0}, nullptr);
+        Weed* weed = new Weed({0, 0, 0});
         
         inventory.AddItem(weed);
         
@@ -231,8 +231,8 @@ TEST_CASE("Substance - Stacking in Inventory", "[substance][inventory][regressio
     }
     
     SECTION("Multiple different substances don't stack together") {
-        Weed* weed = new Weed({0, 0, 0}, nullptr);
-        Cocaine* cocaine = new Cocaine({1, 1, 1}, nullptr);
+        Weed* weed = new Weed({0, 0, 0});
+        Cocaine* cocaine = new Cocaine({1, 1, 1});
         
         inventory.AddItem(weed);
         inventory.AddItem(cocaine);
@@ -248,9 +248,9 @@ TEST_CASE("Substance - Stacking in Inventory", "[substance][inventory][regressio
     }
     
     SECTION("Three substances of same type stack correctly") {
-        Molly* molly1 = new Molly({0, 0, 0}, nullptr);
-        Molly* molly2 = new Molly({1, 1, 1}, nullptr);
-        Molly* molly3 = new Molly({2, 2, 2}, nullptr);
+        Molly* molly1 = new Molly({0, 0, 0});
+        Molly* molly2 = new Molly({1, 1, 1});
+        Molly* molly3 = new Molly({2, 2, 2});
         
         inventory.AddItem(molly1);
         inventory.AddItem(molly2);
@@ -277,13 +277,13 @@ TEST_CASE("Substance - Stacking in Inventory", "[substance][inventory][regressio
 
 TEST_CASE("Substance - CanStack returns true", "[substance]") {
     SECTION("All substances are stackable") {
-        Adrenaline adrenaline({0, 0, 0}, nullptr);
-        Salvia salvia({0, 0, 0}, nullptr);
-        Cocaine cocaine({0, 0, 0}, nullptr);
-        Shrooms shrooms({0, 0, 0}, nullptr);
-        Vodka vodka({0, 0, 0}, nullptr);
-        Weed weed({0, 0, 0}, nullptr);
-        Molly molly({0, 0, 0}, nullptr);
+        Adrenaline adrenaline({0, 0, 0});
+        Salvia salvia({0, 0, 0});
+        Cocaine cocaine({0, 0, 0});
+        Shrooms shrooms({0, 0, 0});
+        Vodka vodka({0, 0, 0});
+        Weed weed({0, 0, 0});
+        Molly molly({0, 0, 0});
         
         REQUIRE(adrenaline.CanStack() == true);
         REQUIRE(salvia.CanStack() == true);

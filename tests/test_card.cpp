@@ -10,7 +10,7 @@ static bool TypeEndsWith(const std::string& type, const std::string& suffix) {
 
 TEST_CASE("Card - Construction", "[card]") {
     SECTION("Create card with valid suit and rank") {
-        Card card(SUIT_SPADES, RANK_ACE, {0, 0, 0}, nullptr);
+        Card card(SUIT_SPADES, RANK_ACE, {0, 0, 0});
 
         REQUIRE(card.suit == SUIT_SPADES);
         REQUIRE(card.rank == RANK_ACE);
@@ -18,10 +18,10 @@ TEST_CASE("Card - Construction", "[card]") {
     }
 
     SECTION("Create card for each suit") {
-        Card hearts(SUIT_HEARTS, RANK_KING, {0, 0, 0}, nullptr);
-        Card diamonds(SUIT_DIAMONDS, RANK_QUEEN, {0, 0, 0}, nullptr);
-        Card clubs(SUIT_CLUBS, RANK_JACK, {0, 0, 0}, nullptr);
-        Card spades(SUIT_SPADES, RANK_TEN, {0, 0, 0}, nullptr);
+        Card hearts(SUIT_HEARTS, RANK_KING, {0, 0, 0});
+        Card diamonds(SUIT_DIAMONDS, RANK_QUEEN, {0, 0, 0});
+        Card clubs(SUIT_CLUBS, RANK_JACK, {0, 0, 0});
+        Card spades(SUIT_SPADES, RANK_TEN, {0, 0, 0});
 
         REQUIRE(hearts.suit == SUIT_HEARTS);
         REQUIRE(diamonds.suit == SUIT_DIAMONDS);
@@ -31,14 +31,14 @@ TEST_CASE("Card - Construction", "[card]") {
 
     SECTION("Create card for each rank") {
         for (int r = RANK_ACE; r <= RANK_KING; r++) {
-            Card card(SUIT_HEARTS, static_cast<Rank>(r), {0, 0, 0}, nullptr);
+            Card card(SUIT_HEARTS, static_cast<Rank>(r), {0, 0, 0});
             REQUIRE(card.rank == static_cast<Rank>(r));
         }
     }
 
     SECTION("Card position is set correctly") {
         Vector3 pos = {5.0f, 10.0f, 15.0f};
-        Card card(SUIT_HEARTS, RANK_FIVE, pos, nullptr);
+        Card card(SUIT_HEARTS, RANK_FIVE, pos);
 
         REQUIRE(card.position.x == 5.0f);
         REQUIRE(card.position.y == 10.0f);
@@ -48,25 +48,25 @@ TEST_CASE("Card - Construction", "[card]") {
 
 TEST_CASE("Card - GetType returns correct string", "[card]") {
     SECTION("Spades suit") {
-        REQUIRE(TypeEndsWith(Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr).GetType(), "card_spades_ace"));
-        REQUIRE(TypeEndsWith(Card(SUIT_SPADES, RANK_TWO, {0,0,0}, nullptr).GetType(), "card_spades_two"));
-        REQUIRE(TypeEndsWith(Card(SUIT_SPADES, RANK_KING, {0,0,0}, nullptr).GetType(), "card_spades_king"));
+        REQUIRE(TypeEndsWith(Card(SUIT_SPADES, RANK_ACE, {0,0,0}).GetType(), "card_spades_ace"));
+        REQUIRE(TypeEndsWith(Card(SUIT_SPADES, RANK_TWO, {0,0,0}).GetType(), "card_spades_two"));
+        REQUIRE(TypeEndsWith(Card(SUIT_SPADES, RANK_KING, {0,0,0}).GetType(), "card_spades_king"));
     }
 
     SECTION("Hearts suit") {
-        REQUIRE(TypeEndsWith(Card(SUIT_HEARTS, RANK_ACE, {0,0,0}, nullptr).GetType(), "card_hearts_ace"));
-        REQUIRE(TypeEndsWith(Card(SUIT_HEARTS, RANK_FIVE, {0,0,0}, nullptr).GetType(), "card_hearts_five"));
-        REQUIRE(TypeEndsWith(Card(SUIT_HEARTS, RANK_QUEEN, {0,0,0}, nullptr).GetType(), "card_hearts_queen"));
+        REQUIRE(TypeEndsWith(Card(SUIT_HEARTS, RANK_ACE, {0,0,0}).GetType(), "card_hearts_ace"));
+        REQUIRE(TypeEndsWith(Card(SUIT_HEARTS, RANK_FIVE, {0,0,0}).GetType(), "card_hearts_five"));
+        REQUIRE(TypeEndsWith(Card(SUIT_HEARTS, RANK_QUEEN, {0,0,0}).GetType(), "card_hearts_queen"));
     }
 
     SECTION("Diamonds suit") {
-        REQUIRE(TypeEndsWith(Card(SUIT_DIAMONDS, RANK_ACE, {0,0,0}, nullptr).GetType(), "card_diamonds_ace"));
-        REQUIRE(TypeEndsWith(Card(SUIT_DIAMONDS, RANK_JACK, {0,0,0}, nullptr).GetType(), "card_diamonds_jack"));
+        REQUIRE(TypeEndsWith(Card(SUIT_DIAMONDS, RANK_ACE, {0,0,0}).GetType(), "card_diamonds_ace"));
+        REQUIRE(TypeEndsWith(Card(SUIT_DIAMONDS, RANK_JACK, {0,0,0}).GetType(), "card_diamonds_jack"));
     }
 
     SECTION("Clubs suit") {
-        REQUIRE(TypeEndsWith(Card(SUIT_CLUBS, RANK_ACE, {0,0,0}, nullptr).GetType(), "card_clubs_ace"));
-        REQUIRE(TypeEndsWith(Card(SUIT_CLUBS, RANK_TEN, {0,0,0}, nullptr).GetType(), "card_clubs_ten"));
+        REQUIRE(TypeEndsWith(Card(SUIT_CLUBS, RANK_ACE, {0,0,0}).GetType(), "card_clubs_ace"));
+        REQUIRE(TypeEndsWith(Card(SUIT_CLUBS, RANK_TEN, {0,0,0}).GetType(), "card_clubs_ten"));
     }
 }
 
@@ -104,8 +104,8 @@ TEST_CASE("Card - Static utility functions", "[card]") {
 
 TEST_CASE("Card - Edge Cases", "[card]") {
     SECTION("Multiple cards with same suit/rank are independent") {
-        Card card1(SUIT_SPADES, RANK_ACE, {0, 0, 0}, nullptr);
-        Card card2(SUIT_SPADES, RANK_ACE, {5, 5, 5}, nullptr);
+        Card card1(SUIT_SPADES, RANK_ACE, {0, 0, 0});
+        Card card2(SUIT_SPADES, RANK_ACE, {5, 5, 5});
 
         REQUIRE(card1.GetType() == card2.GetType());
         REQUIRE(card1.position.x != card2.position.x);
@@ -113,12 +113,12 @@ TEST_CASE("Card - Edge Cases", "[card]") {
     }
 
     SECTION("Card canInteract flag defaults to true") {
-        Card card(SUIT_HEARTS, RANK_FIVE, {0, 0, 0}, nullptr);
+        Card card(SUIT_HEARTS, RANK_FIVE, {0, 0, 0});
         REQUIRE(card.canInteract == true);
     }
 
     SECTION("Setting canInteract to false") {
-        Card card(SUIT_HEARTS, RANK_FIVE, {0, 0, 0}, nullptr);
+        Card card(SUIT_HEARTS, RANK_FIVE, {0, 0, 0});
         card.canInteract = false;
         REQUIRE(card.canInteract == false);
     }

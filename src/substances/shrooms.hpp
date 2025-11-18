@@ -5,7 +5,7 @@
 
 class Shrooms : public Substance {
 public:
-    Shrooms(Vector3 pos = {0.0f, 0.0f, 0.0f}, PhysicsWorld* physics = nullptr);
+    Shrooms(Vector3 pos = {0.0f, 0.0f, 0.0f});
     virtual ~Shrooms();
 
     // Override virtual functions

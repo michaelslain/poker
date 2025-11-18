@@ -1,9 +1,8 @@
 #include "entities/dealer.hpp"
 
 Dealer::Dealer(Vector3 pos, const std::string& name)
-    : Person(pos, name)
-{
-    // Dealer-specific initialization can go here
+    : Person(pos, name) {
+    debugColor = RED;  // Debug: Dealers render as red
 }
 
 Dealer::~Dealer() {

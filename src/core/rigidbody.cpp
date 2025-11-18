@@ -1,4 +1,5 @@
 #include "core/rigidbody.hpp"
+#include "core/collision_categories.hpp"
 #include "entities/player.hpp"
 #include <cmath>
 
@@ -37,7 +38,7 @@ void RigidBody::InitBox(PhysicsWorld* physicsWorld, Vector3 pos, Vector3 size, f
     
     // Set collision category for items
     dGeomSetCategoryBits(geom, COLLISION_CATEGORY_ITEM);
-    dGeomSetCollideBits(geom, ~COLLISION_CATEGORY_PLAYER);
+    dGeomSetCollideBits(geom, COLLISION_MASK_ITEM);
 }
 
 void RigidBody::InitSphere(PhysicsWorld* physicsWorld, Vector3 pos, float radius, float mass) {
@@ -59,7 +60,7 @@ void RigidBody::InitSphere(PhysicsWorld* physicsWorld, Vector3 pos, float radius
     
     // Set collision category for items
     dGeomSetCategoryBits(geom, COLLISION_CATEGORY_ITEM);
-    dGeomSetCollideBits(geom, ~COLLISION_CATEGORY_PLAYER);
+    dGeomSetCollideBits(geom, COLLISION_MASK_ITEM);
 }
 
 void RigidBody::Update(float deltaTime) {

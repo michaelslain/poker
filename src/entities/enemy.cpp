@@ -1,5 +1,4 @@
 #include "entities/enemy.hpp"
-#include "items/chip.hpp"
 #include <cstdlib>
 
 Enemy::Enemy(Vector3 pos, const std::string& enemyName)
@@ -8,6 +7,7 @@ Enemy::Enemy(Vector3 pos, const std::string& enemyName)
       thinkingDuration(0.0f),
       isThinking(false),
       pendingAction(-1) {
+    debugColor = BLUE;  // Debug: Enemies render as blue
 }
 
 std::string Enemy::GetType() const {
@@ -26,8 +26,6 @@ void Enemy::Update(float deltaTime) {
 
 int Enemy::PromptBet(int currentBet, int callAmount, int minRaise, int maxRaise, int& raiseAmount) {
     (void)currentBet;  // Suppress unused warning
-    
-
     
     // First call: Start thinking
     if (!isThinking) {

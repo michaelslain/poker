@@ -14,7 +14,7 @@ TEST_CASE("Inventory - Construction", "[inventory]") {
 TEST_CASE("Inventory - AddItem with Cards", "[inventory]") {
     SECTION("Adding a card creates one stack") {
         Inventory inv;
-        Card* card = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
+        Card* card = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
         
         inv.AddItem(card);
         
@@ -25,8 +25,8 @@ TEST_CASE("Inventory - AddItem with Cards", "[inventory]") {
     
     SECTION("Cards DON'T stack - each card is unique") {
         Inventory inv;
-        Card* card1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
-        Card* card2 = new Card(SUIT_SPADES, RANK_ACE, {5,5,5}, nullptr);
+        Card* card1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
+        Card* card2 = new Card(SUIT_SPADES, RANK_ACE, {5,5,5});
         
         inv.AddItem(card1);
         inv.AddItem(card2);
@@ -47,8 +47,8 @@ TEST_CASE("Inventory - AddItem with Cards", "[inventory]") {
     
     SECTION("Different cards create separate stacks") {
         Inventory inv;
-        Card* aceSpades = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
-        Card* kingHearts = new Card(SUIT_HEARTS, RANK_KING, {0,0,0}, nullptr);
+        Card* aceSpades = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
+        Card* kingHearts = new Card(SUIT_HEARTS, RANK_KING, {0,0,0});
         
         inv.AddItem(aceSpades);
         inv.AddItem(kingHearts);
@@ -64,7 +64,7 @@ TEST_CASE("Inventory - AddItem with Cards", "[inventory]") {
         Card* cards[5];
         
         for (int i = 0; i < 5; i++) {
-            cards[i] = new Card(SUIT_HEARTS, RANK_ACE, {(float)i, 0, 0}, nullptr);
+            cards[i] = new Card(SUIT_HEARTS, RANK_ACE, {(float)i, 0, 0});
             inv.AddItem(cards[i]);
         }
         
@@ -80,7 +80,7 @@ TEST_CASE("Inventory - AddItem with Cards", "[inventory]") {
 TEST_CASE("Inventory - AddItem with Chips", "[inventory]") {
     SECTION("Adding a chip creates one stack") {
         Inventory inv;
-        Chip* chip = new Chip(5, {0,0,0}, nullptr);
+        Chip* chip = new Chip(5, {0,0,0});
         
         inv.AddItem(chip);
         
@@ -92,8 +92,8 @@ TEST_CASE("Inventory - AddItem with Chips", "[inventory]") {
     
     SECTION("Chips of same value DO stack") {
         Inventory inv;
-        Chip* chip1 = new Chip(5, {0,0,0}, nullptr);
-        Chip* chip2 = new Chip(5, {5,5,5}, nullptr);
+        Chip* chip1 = new Chip(5, {0,0,0});
+        Chip* chip2 = new Chip(5, {5,5,5});
         
         inv.AddItem(chip1);
         inv.AddItem(chip2);
@@ -108,8 +108,8 @@ TEST_CASE("Inventory - AddItem with Chips", "[inventory]") {
     
     SECTION("Chips of different values create separate stacks") {
         Inventory inv;
-        Chip* chip5 = new Chip(5, {0,0,0}, nullptr);
-        Chip* chip10 = new Chip(10, {0,0,0}, nullptr);
+        Chip* chip5 = new Chip(5, {0,0,0});
+        Chip* chip10 = new Chip(10, {0,0,0});
         
         inv.AddItem(chip5);
         inv.AddItem(chip10);
@@ -125,7 +125,7 @@ TEST_CASE("Inventory - AddItem with Chips", "[inventory]") {
         Chip* chips[10];
         
         for (int i = 0; i < 10; i++) {
-            chips[i] = new Chip(5, {(float)i, 0, 0}, nullptr);
+            chips[i] = new Chip(5, {(float)i, 0, 0});
             inv.AddItem(chips[i]);
         }
         
@@ -141,8 +141,8 @@ TEST_CASE("Inventory - AddItem with Chips", "[inventory]") {
 TEST_CASE("Inventory - Mixed Items", "[inventory]") {
     SECTION("Cards and chips create separate stacks") {
         Inventory inv;
-        Card* card = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
-        Chip* chip = new Chip(5, {0,0,0}, nullptr);
+        Card* card = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
+        Chip* chip = new Chip(5, {0,0,0});
         
         inv.AddItem(card);
         inv.AddItem(chip);
@@ -156,11 +156,11 @@ TEST_CASE("Inventory - Mixed Items", "[inventory]") {
     SECTION("Multiple cards and multiple chips") {
         Inventory inv;
         
-        Card* card1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
-        Card* card2 = new Card(SUIT_HEARTS, RANK_KING, {0,0,0}, nullptr);
-        Chip* chip1 = new Chip(5, {0,0,0}, nullptr);
-        Chip* chip2 = new Chip(5, {1,1,1}, nullptr);
-        Chip* chip3 = new Chip(10, {2,2,2}, nullptr);
+        Card* card1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
+        Card* card2 = new Card(SUIT_HEARTS, RANK_KING, {0,0,0});
+        Chip* chip1 = new Chip(5, {0,0,0});
+        Chip* chip2 = new Chip(5, {1,1,1});
+        Chip* chip3 = new Chip(10, {2,2,2});
         
         inv.AddItem(card1);
         inv.AddItem(card2);
@@ -182,8 +182,8 @@ TEST_CASE("Inventory - Mixed Items", "[inventory]") {
 TEST_CASE("Inventory - RemoveItem", "[inventory]") {
     SECTION("Removing item decrements count") {
         Inventory inv;
-        Chip* chip1 = new Chip(5, {0,0,0}, nullptr);
-        Chip* chip2 = new Chip(5, {1,1,1}, nullptr);
+        Chip* chip1 = new Chip(5, {0,0,0});
+        Chip* chip2 = new Chip(5, {1,1,1});
         
         inv.AddItem(chip1);
         inv.AddItem(chip2);
@@ -200,7 +200,7 @@ TEST_CASE("Inventory - RemoveItem", "[inventory]") {
     
     SECTION("Removing last item removes stack") {
         Inventory inv;
-        Chip* chip = new Chip(5, {0,0,0}, nullptr);
+        Chip* chip = new Chip(5, {0,0,0});
         
         inv.AddItem(chip);
         REQUIRE(inv.GetStackCount() == 1);
@@ -221,9 +221,9 @@ TEST_CASE("Inventory - RemoveItem", "[inventory]") {
     
     SECTION("Removing from middle preserves other stacks") {
         Inventory inv;
-        Card* card1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
-        Card* card2 = new Card(SUIT_HEARTS, RANK_KING, {0,0,0}, nullptr);
-        Card* card3 = new Card(SUIT_DIAMONDS, RANK_QUEEN, {0,0,0}, nullptr);
+        Card* card1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
+        Card* card2 = new Card(SUIT_HEARTS, RANK_KING, {0,0,0});
+        Card* card3 = new Card(SUIT_DIAMONDS, RANK_QUEEN, {0,0,0});
         
         inv.AddItem(card1);
         inv.AddItem(card2);
@@ -244,7 +244,7 @@ TEST_CASE("Inventory - RemoveItem", "[inventory]") {
 TEST_CASE("Inventory - GetStack", "[inventory]") {
     SECTION("GetStack returns valid pointer") {
         Inventory inv;
-        Card* card = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
+        Card* card = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
         
         inv.AddItem(card);
         
@@ -266,7 +266,7 @@ TEST_CASE("Inventory - GetStack", "[inventory]") {
     
     SECTION("GetStack returns correct typeString") {
         Inventory inv;
-        Card* card = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
+        Card* card = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
         
         inv.AddItem(card);
         
@@ -292,8 +292,8 @@ TEST_CASE("Inventory - Edge Cases", "[inventory]") {
     
     SECTION("Cleanup removes all stacks") {
         Inventory inv;
-        Card* card1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
-        Card* card2 = new Card(SUIT_HEARTS, RANK_KING, {0,0,0}, nullptr);
+        Card* card1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
+        Card* card2 = new Card(SUIT_HEARTS, RANK_KING, {0,0,0});
         
         inv.AddItem(card1);
         inv.AddItem(card2);
@@ -315,7 +315,7 @@ TEST_CASE("Inventory - Edge Cases", "[inventory]") {
         for (int i = 0; i < 100; i++) {
             Suit suit = static_cast<Suit>(i % 4);
             Rank rank = static_cast<Rank>((i % 13) + 1);
-            cards[i] = new Card(suit, rank, {(float)i, 0, 0}, nullptr);
+            cards[i] = new Card(suit, rank, {(float)i, 0, 0});
             inv.AddItem(cards[i]);
         }
         
@@ -332,8 +332,8 @@ TEST_CASE("Inventory - Bug Regression Tests", "[inventory][regression]") {
         Inventory inv;
         
         // Create 2 ace of spades (exactly like you experienced)
-        Card* ace1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0}, nullptr);
-        Card* ace2 = new Card(SUIT_SPADES, RANK_ACE, {5,5,5}, nullptr);
+        Card* ace1 = new Card(SUIT_SPADES, RANK_ACE, {0,0,0});
+        Card* ace2 = new Card(SUIT_SPADES, RANK_ACE, {5,5,5});
         
         inv.AddItem(ace1);
         inv.AddItem(ace2);

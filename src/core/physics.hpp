@@ -3,6 +3,9 @@
 
 #include <ode/ode.h>
 
+// Forward declaration to avoid circular dependency
+class Object;
+
 class PhysicsWorld {
 private:
     static PhysicsWorld* globalInstance;

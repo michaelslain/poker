@@ -21,7 +21,7 @@ TEST_CASE("HospitalScene - Construction", "[hospital_scene]") {
         
         // Should return center of room
         REQUIRE(spawn.x == 0.0f);
-        REQUIRE(spawn.y == 1.8f);
+        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
         REQUIRE(spawn.z == 0.0f);
     }
 }
@@ -171,7 +171,7 @@ TEST_CASE("HospitalScene - Spawn Position", "[hospital_scene]") {
         
         // Should be in center of room at player height
         REQUIRE(spawn.x == 0.0f);
-        REQUIRE(spawn.y == 1.8f);
+        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
         REQUIRE(spawn.z == 0.0f);
         
         // Cleanup
@@ -226,7 +226,7 @@ TEST_CASE("HospitalScene - Multiple Generations", "[hospital_scene][regression]"
         // Clear should not remove DOM objects (DOM handles cleanup)
         // But spawn position should still be valid
         Vector3 spawn = scene.GetPlayerSpawnPosition();
-        REQUIRE(spawn.y == 1.8f);
+        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
         
         // Cleanup
         for (int i = 0; i < dom.GetCount(); i++) {

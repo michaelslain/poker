@@ -13,7 +13,7 @@ private:
     Model model;
 
 public:
-    Floor(Vector3 position, Vector2 floorSize, Color floorColor, PhysicsWorld* physicsWorld);
+    Floor(Vector3 position, Vector2 floorSize, Color floorColor);
     virtual ~Floor();
     
     // Override virtual functions
