@@ -33,31 +33,35 @@ void HospitalScene::Generate() {
     Ceiling* ceiling = new Ceiling(ceilingPos, {ROOM_WIDTH, ROOM_DEPTH}, BLACK, physics);
     dom->AddObject(ceiling);
     
-    // Walls (Wall constructor doesn't take color - uses default)
+    // Walls - now 2D planes with no thickness
     float wallHeight = CEILING_HEIGHT - FLOOR_HEIGHT;
     
-    // North wall
+    // North wall (runs along X axis, faces +Z)
     Vector3 northPos = {0, FLOOR_HEIGHT + wallHeight / 2.0f, -ROOM_DEPTH / 2.0f};
-    Vector3 northSize = {ROOM_WIDTH + WALL_THICKNESS * 2, wallHeight, WALL_THICKNESS};
+    Vector3 northSize = {ROOM_WIDTH, wallHeight, 0.0f};  // 2D plane
     Wall* northWall = new Wall(northPos, northSize, physics);
     dom->AddObject(northWall);
     
-    // South wall
+    // South wall (runs along X axis, faces -Z)
     Vector3 southPos = {0, FLOOR_HEIGHT + wallHeight / 2.0f, ROOM_DEPTH / 2.0f};
-    Vector3 southSize = {ROOM_WIDTH + WALL_THICKNESS * 2, wallHeight, WALL_THICKNESS};
+    Vector3 southSize = {ROOM_WIDTH, wallHeight, 0.0f};  // 2D plane
     Wall* southWall = new Wall(southPos, southSize, physics);
     dom->AddObject(southWall);
     
-    // West wall
+    // West wall (runs along Z axis, faces +X) - rotated 90 degrees
     Vector3 westPos = {-ROOM_WIDTH / 2.0f, FLOOR_HEIGHT + wallHeight / 2.0f, 0};
-    Vector3 westSize = {WALL_THICKNESS, wallHeight, ROOM_DEPTH};
+    Vector3 westSize = {ROOM_DEPTH, wallHeight, 0.0f};  // 2D plane
     Wall* westWall = new Wall(westPos, westSize, physics);
+    westWall->rotation.y = 90.0f;  // Rotate to face along Z axis
+    westWall->needsColliderUpdate = true;  // Flag to update collider after rotation
     dom->AddObject(westWall);
     
-    // East wall
+    // East wall (runs along Z axis, faces -X) - rotated 90 degrees
     Vector3 eastPos = {ROOM_WIDTH / 2.0f, FLOOR_HEIGHT + wallHeight / 2.0f, 0};
-    Vector3 eastSize = {WALL_THICKNESS, wallHeight, ROOM_DEPTH};
+    Vector3 eastSize = {ROOM_DEPTH, wallHeight, 0.0f};  // 2D plane
     Wall* eastWall = new Wall(eastPos, eastSize, physics);
+    eastWall->rotation.y = 90.0f;  // Rotate to face along Z axis
+    eastWall->needsColliderUpdate = true;  // Flag to update collider after rotation
     dom->AddObject(eastWall);
     
     // Light (sterile white hospital light) - position so chain reaches ceiling

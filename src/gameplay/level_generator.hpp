@@ -43,7 +43,6 @@ private:
     static constexpr float HALLWAY_WIDTH = 3.0f;
     static constexpr float FLOOR_HEIGHT = 0.0f;
     static constexpr float CEILING_HEIGHT = 5.0f;
-    static constexpr float WALL_THICKNESS = 0.5f;
     
     // Private generation methods
     void GenerateRooms(int roomCount);

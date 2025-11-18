@@ -17,7 +17,6 @@ private:
     static constexpr float ROOM_DEPTH = 15.0f;
     static constexpr float FLOOR_HEIGHT = 0.0f;
     static constexpr float CEILING_HEIGHT = 5.0f;
-    static constexpr float WALL_THICKNESS = 0.5f;
 
 public:
     // Constructor

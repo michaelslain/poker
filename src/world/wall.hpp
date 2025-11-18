@@ -13,10 +13,13 @@ private:
     Model model;
 
 public:
+    bool needsColliderUpdate;  // Flag to update collider after rotation is set
+    
     Wall(Vector3 position, Vector3 wallSize, PhysicsWorld* physicsWorld);
     virtual ~Wall();
     
     // Override virtual functions
+    void Update(float deltaTime) override;
     void Draw(Camera3D camera) override;
     std::string GetType() const override;
     

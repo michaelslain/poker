@@ -106,11 +106,21 @@ void Collider::UpdateFromObject(Object* obj) {
     if (body) {
         // Dynamic - set body position
         dBodySetPosition(body, finalPos.x, finalPos.y, finalPos.z);
+        
+        // Set body rotation
+        dMatrix3 R;
+        dRFromEulerAngles(R, obj->rotation.x * DEG2RAD, obj->rotation.y * DEG2RAD, obj->rotation.z * DEG2RAD);
+        dBodySetRotation(body, R);
     } else if (shape != COLLISION_SHAPE_PLANE) {
-        // Static non-plane - set geom position directly
+        // Static non-plane - set geom position and rotation directly
         dGeomSetPosition(geom, finalPos.x, finalPos.y, finalPos.z);
+        
+        // Set geom rotation
+        dMatrix3 R;
+        dRFromEulerAngles(R, obj->rotation.x * DEG2RAD, obj->rotation.y * DEG2RAD, obj->rotation.z * DEG2RAD);
+        dGeomSetRotation(geom, R);
     }
-    // Planes don't need position updates
+    // Planes don't need position/rotation updates
 }
 
 void Collider::UpdateObjectFromPhysics(Object* obj) {

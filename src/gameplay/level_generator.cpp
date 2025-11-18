@@ -230,19 +230,19 @@ void LevelGenerator::SpawnResources(const Room& room, const ScalingConfig& scali
 void LevelGenerator::BuildWalls(const Room& room) {
     // Build walls around room, but leave openings for hallways
     // For now: only build North and South walls (leave East/West open for linear progression)
-    float halfWidth = room.size.x / 2.0f;
+    // Walls are now 2D planes with no thickness - only width (X) and height (Y)
     float halfDepth = room.size.y / 2.0f;
     float wallHeight = CEILING_HEIGHT - FLOOR_HEIGHT;
     
-    // North wall (Wall constructor doesn't take color - uses default)
+    // North wall - 2D plane (width x height, Z component ignored)
     Vector3 northPos = {room.position.x, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y - halfDepth};
-    Vector3 northSize = {room.size.x + WALL_THICKNESS * 2, wallHeight, WALL_THICKNESS};
+    Vector3 northSize = {room.size.x, wallHeight, 0.0f};  // Z=0 for 2D plane
     Wall* northWall = new Wall(northPos, northSize, physics);
     dom->AddObject(northWall);
     
-    // South wall
+    // South wall - 2D plane (width x height, Z component ignored)
     Vector3 southPos = {room.position.x, FLOOR_HEIGHT + wallHeight / 2.0f, room.position.y + halfDepth};
-    Vector3 southSize = {room.size.x + WALL_THICKNESS * 2, wallHeight, WALL_THICKNESS};
+    Vector3 southSize = {room.size.x, wallHeight, 0.0f};  // Z=0 for 2D plane
     Wall* southWall = new Wall(southPos, southSize, physics);
     dom->AddObject(southWall);
     
@@ -251,7 +251,7 @@ void LevelGenerator::BuildWalls(const Room& room) {
 }
 
 void LevelGenerator::BuildHallwayWalls(const Hallway& hallway) {
-    // Build walls along hallway
+    // Build walls along hallway - now 2D planes with no thickness
     Vector2 direction = {hallway.end.x - hallway.start.x, hallway.end.y - hallway.start.y};
     float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
     
@@ -270,13 +270,13 @@ void LevelGenerator::BuildHallwayWalls(const Hallway& hallway) {
     
     float wallHeight = CEILING_HEIGHT - FLOOR_HEIGHT;
     
-    // Left wall
+    // Left wall - 2D plane (length x height, Z=0)
     Vector3 leftPos = {
         center.x + perpendicular.x * hallway.width / 2.0f,
         FLOOR_HEIGHT + wallHeight / 2.0f,
         center.y + perpendicular.y * hallway.width / 2.0f
     };
-    Vector3 leftSize = {length, wallHeight, WALL_THICKNESS};
+    Vector3 leftSize = {length, wallHeight, 0.0f};  // Z=0 for 2D plane
     Wall* leftWall = new Wall(leftPos, leftSize, physics);
     
     // Rotate wall to align with hallway
@@ -285,13 +285,13 @@ void LevelGenerator::BuildHallwayWalls(const Hallway& hallway) {
     
     dom->AddObject(leftWall);
     
-    // Right wall
+    // Right wall - 2D plane (length x height, Z=0)
     Vector3 rightPos = {
         center.x - perpendicular.x * hallway.width / 2.0f,
         FLOOR_HEIGHT + wallHeight / 2.0f,
         center.y - perpendicular.y * hallway.width / 2.0f
     };
-    Vector3 rightSize = {length, wallHeight, WALL_THICKNESS};
+    Vector3 rightSize = {length, wallHeight, 0.0f};  // Z=0 for 2D plane
     Wall* rightWall = new Wall(rightPos, rightSize, physics);
     rightWall->rotation.y = angle;
     dom->AddObject(rightWall);
