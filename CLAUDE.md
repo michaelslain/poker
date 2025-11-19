@@ -142,41 +142,46 @@ poker/
 - **Physics**: All persons have ODE capsule physics
   - Capsule: radius=0.4m, `CAPSULE_HEIGHT = 3.4f` (scaled by height multiplier), mass=70kg (scaled by height)
   - **Rotated 90°** around X-axis (ODE capsules default to Z-axis, we need Y-axis for upright stance)
-  - **Coordinate system**: Drawing reference point where `position.y` represents `visualMeshBottom + 1.3*height`
-  - Physics body center: `visualMeshBottom + (CAPSULE_HEIGHT*height)/2`
-  - Visual mesh extends down to `position.y - 1.3*height`
+  - **Coordinate system**: `position.y` represents **feet position** (Y=0 at floor level)
+  - Physics body center: `feetPosition + (CAPSULE_HEIGHT*height)/2`
+  - Visual mesh extends upward from feet position, offset by `1.3*height` in rendering
 - **Inventory**: `Inventory inventory` member
-- **Seating**: `isSeated`, `seatPosition`, `SitDown()`, `StandUp()`, `SitDownFacingPoint()`
+- **Seating**: `isSeated`, `seatPosition`, `standingYLevel`, `SitDown()`, `StandUp()`, `SitDownFacingPoint()`
+  - `standingYLevel`: Saved Y position before sitting, restored when standing up
 - **Rendering**: `usesLighting = false` (renders pitch black)
-- Protected: `name`, `height`, `bodyYaw`, `body`, `geom`, `physics`
+- Protected: `name`, `height`, `bodyYaw`, `body`, `geom`, `physics`, `debugColor`
+- Public getters: `GetBody()`, `GetGeom()` for physics access
 - Virtual: `PromptBet()` (returns 0=fold, 1=call, 2=raise)
 
 ### Player
 - Inherits Person
 - **Movement**: WASD (5.0 speed), mouse look (0.001 sensitivity)
-- **Camera**: `GameCamera` instance at eye level (1.6m above position)
+- **Camera**: `GameCamera` instance at eye level (2.9*height above feet position)
 - **Physics**: Horizontal force (500.0), velocity damping (0.99)
-- **Spawn position**: Y=1.3 (drawing reference point for standard height person)
+- **Spawn position**: Y=0.01 (feet slightly above floor to prevent penetration)
 - **Inventory**: `selectedItemIndex`, `lastHeldItemIndex`
 - **Insanity**: `InsanityManager insanityManager` (public), affects FOV (60°-150°)
 - **Death**: `isDying`, `deathVignetteProgress`, `vignetteShader`, `TriggerDeath()`, `IsDead()`
 - **Betting UI**: `bettingUIActive`, `bettingChoice`, `raiseSliderValue`
 - **Card selection**: `cardSelectionUIActive`, `selectedCardIndices`
 - **Global instance**: `Player::SetGlobal()` / `GetGlobal()` for substance access
+- **Teleport**: `Teleport(newPos)` updates position, physics body, geometry, re-enables gravity
 - **Constructor**: `Player(Vector3 pos, const std::string& name = "Player")` (physics from global)
 
 ### Enemy
 - Inherits Person
 - AI-controlled poker player
 - Thinking timer: 2-4 seconds, then random fold/call/raise
-- Height: 1.5x normal (2.7 units)
+- Height: 1.5x normal (visual height 2.7 units from feet)
 - Members: `thinkingTimer`, `thinkingDuration`, `isThinking`, `pendingAction`
+- Renders pitch black (default Person rendering)
 
 ### Dealer
 - Inherits Person
 - NPC positioned at poker table
 - Visual presence only (no betting logic)
 - Normal height (1.0x)
+- Renders pitch black (default Person rendering)
 
 ---
 
@@ -259,10 +264,11 @@ dGeomSetOffsetRotation(geom, R);
 ```
 
 **Coordinate System**:
-- Drawing reference point: `position.y` = bottom of visual mesh + 1.3*height
-- Visual mesh bottom: `position.y - 1.3*height`
-- Physics body center: `visualMeshBottom + (CAPSULE_HEIGHT*height)/2`
-- Example: Player spawns at Y=1.3, visual mesh bottom at Y=0.0, body center at ~Y=1.7
+- **Feet position**: `position.y` represents where the person's feet are (Y=0 at floor level)
+- Visual mesh: Rendered with offset of `1.3*height` upward from feet position
+- Physics body center: `feetPosition + (CAPSULE_HEIGHT*height)/2`
+- Example: Player spawns at Y=0.01 (feet just above floor), body center at ~Y=1.71
+- **Safety net**: Person::Update() checks for floor clipping (Y < -0.01) and teleports back to Y=0
 
 **Capsule Parameters**:
 - Radius: 0.4m
@@ -403,7 +409,7 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 ### HospitalScene
 - Level 0 starting scene
 - 15x15 room with floor, ceiling, 4 walls, light, stairs
-- Spawn: (0, FLOOR_HEIGHT + 0.1, 0)
+- Spawn: (0, FLOOR_HEIGHT + 0.01, 0) - feet position just above floor
 
 ### Stairs
 - Trigger level transitions via collision
@@ -421,7 +427,11 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 - **X**: Select/deselect inventory item
 - **Left/Right Arrow**: Navigate inventory
 - **[ ]**: Adjust FOV
+- **C**: Toggle collision debug visualization
 - **ESC**: Close window
+
+### Debug Controls (ifdef DEBUG_HOTKEYS)
+- **Ctrl+1-9**: Jump directly to level 1-9
 
 ---
 
@@ -472,6 +482,11 @@ dom.RemoveObject(item);
 11. **ODE Plane Colliders**: ODE planes don't use position - they use distance from origin along normal. For Floor, pass `position.y` as `offset.x` parameter: `collider.InitStatic(physics, COLLISION_SHAPE_PLANE, {0, 1, 0}, {position.y, 0, 0})`
 12. **ODE Capsule Orientation**: ODE capsules default to Z-axis alignment (horizontal). For upright characters, rotate 90° around X-axis using `dGeomSetOffsetRotation()`. See Person constructor for implementation.
 13. **Physics from Global**: Objects no longer take `PhysicsWorld*` parameter - they use `PhysicsWorld::GetGlobal()` internally. Same for DOM. Set globals in main: `PhysicsWorld::SetGlobal(&physics)`, `DOM::SetGlobal(&dom)`.
+14. **Person Coordinate System**: `position.y` is **feet position** (Y=0 at floor). Spawn at Y=0.01, not Y=1.3. Visual mesh is offset upward during rendering.
+15. **Level Transitions**: Check stairs collision BEFORE `physics.Step()` and use `continue` to skip rest of frame during level transition to prevent player from falling.
+16. **Player Physics During Cleanup**: Disable gravity with `dBodySetGravityMode(body, 0)` when cleaning up levels. Re-enable in `Teleport()` with `dBodySetGravityMode(body, 1)`.
+17. **Teleport Geometry**: Always update both `dBodySetPosition()` AND `dGeomSetPosition()` when teleporting - geometry position is used for collision detection.
+18. **Seating Y Position**: When sitting/standing, Person now saves/restores `standingYLevel` to preserve vertical position across seating changes.
 
 ---
 
@@ -495,7 +510,8 @@ DOM dom;
 DOM::SetGlobal(&dom);
 PhysicsWorld::SetGlobal(&physics);
 
-Player* player = new Player({0, 1.8, 0});
+// NEW SYSTEM: Spawn at feet position (Y=0.01, just above floor)
+Player* player = new Player({0, 0.01, 0});
 Player::SetGlobal(player);
 dom.AddObject(player);
 
@@ -507,6 +523,23 @@ levelGen.GenerateLevel(1);
 while (!WindowShouldClose()) {
     float dt = GetFrameTime();
     if (dt > 0.1f) dt = 0.1f;
+
+    // Check stairs collision BEFORE physics - prevents falling during transition
+    bool stairsTriggered = false;
+    for (int i = 0; i < dom.GetCount(); i++) {
+        if (TypeContains(dom.GetObject(i)->GetType(), "stairs")) {
+            Stairs* stairs = static_cast<Stairs*>(dom.GetObject(i));
+            if (stairs->CheckPlayerCollision(player->GetGeom())) {
+                // Handle level transition, clean up, regenerate
+                stairsTriggered = true;
+                break;
+            }
+        }
+    }
+    if (stairsTriggered) {
+        // Clean up and regenerate level
+        continue;  // Skip rest of frame
+    }
 
     // Update
     physics.Step(dt);

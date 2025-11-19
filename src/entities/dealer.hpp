@@ -9,10 +9,10 @@ class Dealer : public Person {
 public:
     Dealer(Vector3 pos, const std::string& name = "Dealer");
     virtual ~Dealer();
-    
+
     // Override Update to add dealer-specific behavior if needed
     void Update(float deltaTime) override;
-    
+
     // Override GetType for identification
     std::string GetType() const override;
 };

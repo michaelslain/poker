@@ -30,6 +30,7 @@ protected:
     // Seating
     bool isSeated;          // Whether person is seated at a table
     Vector3 seatPosition;   // Position where person is seated
+    float standingYLevel;   // Y position to return to when standing up (saved before sitting)
 
 public:
     Person(Vector3 pos, const std::string& personName, float personHeight = 1.0f);
@@ -65,6 +66,8 @@ public:
     void SetName(const std::string& newName) { name = newName; }
     float GetHeight() const { return height; }
     void SetHeight(float newHeight) { height = newHeight; }
+    dBodyID GetBody() const { return body; }
+    dGeomID GetGeom() const { return geom; }
     
     std::string GetType() const override;
 };

@@ -21,10 +21,10 @@ TEST_CASE("LevelGenerator - Construction", "[level_generator]") {
         LevelGenerator generator(&physics, &dom);
         Vector3 spawn = generator.GetPlayerSpawnPosition();
         
-        // Default spawn position
-        REQUIRE(spawn.x == 0.0f);
-        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
-        REQUIRE(spawn.z == 0.0f);
+        // Default spawn position - NEW SYSTEM: feet at Y=0
+        REQUIRE(spawn.x == Catch::Approx(0.0f).margin(0.1f));
+        REQUIRE(spawn.y == Catch::Approx(0.0f).margin(0.1f));  // FLOOR_HEIGHT (feet at floor level)
+        REQUIRE(spawn.z == Catch::Approx(0.0f).margin(0.1f));
     }
 }
 
@@ -61,8 +61,8 @@ TEST_CASE("LevelGenerator - Level Generation", "[level_generator]") {
         
         Vector3 spawn = generator.GetPlayerSpawnPosition();
         
-        // Y should be drawing reference height
-        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
+        // NEW SYSTEM: Y should be at feet level (floor height)
+        REQUIRE(spawn.y == Catch::Approx(0.0f).margin(0.1f));  // FLOOR_HEIGHT (feet at floor level)
         
         // Cleanup
         for (int i = 0; i < dom.GetCount(); i++) {
@@ -108,9 +108,9 @@ TEST_CASE("LevelGenerator - Level Generation", "[level_generator]") {
         
         // After clear, spawn position should be default
         Vector3 spawn = generator.GetPlayerSpawnPosition();
-        REQUIRE(spawn.x == 0.0f);
-        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
-        REQUIRE(spawn.z == 0.0f);
+        REQUIRE(spawn.x == Catch::Approx(0.0f).margin(0.1f));
+        REQUIRE(spawn.y == Catch::Approx(0.0f).margin(0.1f));  // FLOOR_HEIGHT (feet at floor level) - NEW SYSTEM
+        REQUIRE(spawn.z == Catch::Approx(0.0f).margin(0.1f));
         
         // Cleanup DOM objects
         for (int i = 0; i < dom.GetCount(); i++) {

@@ -19,10 +19,10 @@ TEST_CASE("HospitalScene - Construction", "[hospital_scene]") {
         HospitalScene scene(&physics, &dom);
         Vector3 spawn = scene.GetPlayerSpawnPosition();
         
-        // Should return center of room
-        REQUIRE(spawn.x == 0.0f);
-        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
-        REQUIRE(spawn.z == 0.0f);
+        // Should return center of room - NEW SYSTEM: feet at Y=0
+        REQUIRE(spawn.x == Catch::Approx(0.0f).margin(0.1f));
+        REQUIRE(spawn.y == Catch::Approx(0.0f).margin(0.1f));  // FLOOR_HEIGHT (feet at floor level)
+        REQUIRE(spawn.z == Catch::Approx(0.0f).margin(0.1f));
     }
 }
 
@@ -169,10 +169,10 @@ TEST_CASE("HospitalScene - Spawn Position", "[hospital_scene]") {
         
         Vector3 spawn = scene.GetPlayerSpawnPosition();
         
-        // Should be in center of room at player height
-        REQUIRE(spawn.x == 0.0f);
-        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
-        REQUIRE(spawn.z == 0.0f);
+        // Should be in center of room - NEW SYSTEM: feet at Y=0
+        REQUIRE(spawn.x == Catch::Approx(0.0f).margin(0.1f));
+        REQUIRE(spawn.y == Catch::Approx(0.0f).margin(0.1f));  // FLOOR_HEIGHT (feet at floor level)
+        REQUIRE(spawn.z == Catch::Approx(0.0f).margin(0.1f));
         
         // Cleanup
         for (int i = 0; i < dom.GetCount(); i++) {
@@ -226,7 +226,7 @@ TEST_CASE("HospitalScene - Multiple Generations", "[hospital_scene][regression]"
         // Clear should not remove DOM objects (DOM handles cleanup)
         // But spawn position should still be valid
         Vector3 spawn = scene.GetPlayerSpawnPosition();
-        REQUIRE(spawn.y == 1.3f);  // FLOOR_HEIGHT + 1.3 (drawing reference height)
+        REQUIRE(spawn.y == Catch::Approx(0.0f).margin(0.1f));  // FLOOR_HEIGHT (feet at floor level) - NEW SYSTEM
         
         // Cleanup
         for (int i = 0; i < dom.GetCount(); i++) {

@@ -28,6 +28,23 @@ inline bool TypeContains(const std::string& type, const std::string& component) 
 
 // Helper function to clean up all DOM objects except player
 void CleanupLevel(DOM& dom, Player* player) {
+    // Unseat player if seated (tables will be deleted)
+    if (player && player->IsSeated()) {
+        player->StandUp();
+        TraceLog(LOG_INFO, "CLEANUP: Player was seated, standing up before level cleanup");
+    }
+    
+    // CRITICAL: Freeze player physics during cleanup to prevent falling
+    // When floors are deleted, player would fall before new level generates
+    dBodyID playerBody = player ? player->GetBody() : nullptr;
+    if (playerBody) {
+        // Disable gravity and zero out velocities
+        dBodySetGravityMode(playerBody, 0);
+        dBodySetLinearVel(playerBody, 0, 0, 0);
+        dBodySetAngularVel(playerBody, 0, 0, 0);
+        TraceLog(LOG_INFO, "CLEANUP: Froze player physics during level cleanup");
+    }
+    
     // Delete all objects except player
     for (int i = 0; i < dom.GetCount(); i++) {
         Object* obj = dom.GetObject(i);
@@ -44,6 +61,9 @@ void CleanupLevel(DOM& dom, Player* player) {
     
     // Reset lighting system for new level
     LightingManager::ResetLights();
+    
+    // NOTE: Gravity will be re-enabled automatically when GenerateLevel() calls player->Teleport()
+    // See Player::Teleport() which does: dBodySetGravityMode(body, 1)
 }
 
 // Helper function to generate a level
@@ -135,6 +155,77 @@ int main(void)
             TraceLog(LOG_INFO, "Collision debug: %s", g_showCollisionDebug ? "ON" : "OFF");
         }
         
+        #ifdef DEBUG_HOTKEYS
+        // DEBUG: Jump to level with number keys (Ctrl+1-9)
+        if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && player && !isInDeathScene) {
+            int targetLevel = -1;
+            if (IsKeyPressed(KEY_ONE)) targetLevel = 1;
+            else if (IsKeyPressed(KEY_TWO)) targetLevel = 2;
+            else if (IsKeyPressed(KEY_THREE)) targetLevel = 3;
+            else if (IsKeyPressed(KEY_FOUR)) targetLevel = 4;
+            else if (IsKeyPressed(KEY_FIVE)) targetLevel = 5;
+            else if (IsKeyPressed(KEY_SIX)) targetLevel = 6;
+            else if (IsKeyPressed(KEY_SEVEN)) targetLevel = 7;
+            else if (IsKeyPressed(KEY_EIGHT)) targetLevel = 8;
+            else if (IsKeyPressed(KEY_NINE)) targetLevel = 9;
+            
+            if (targetLevel != -1) {
+                TraceLog(LOG_INFO, "DEBUG: Jumping to level %d", targetLevel);
+                levelManager->JumpToLevel(targetLevel);
+                CleanupLevel(dom, player);
+                GenerateLevel(targetLevel, levelGenerator, hospitalScene, dom, player);
+            }
+        }
+        #endif
+        
+        // Check for stairs collision BEFORE physics/update - trigger level transition
+        // IMPORTANT: Must happen before physics.Step() to prevent player from falling between frames
+        bool stairsTransitionTriggered = false;
+        if (player && !isInDeathScene) {
+            for (int i = 0; i < dom.GetCount(); i++) {
+                Object* obj = dom.GetObject(i);
+                if (TypeContains(obj->GetType(), "stairs")) {
+                    Stairs* stairs = static_cast<Stairs*>(obj);
+                    
+                    // Check collision with player
+                    if (stairs->CheckPlayerCollision(player->GetGeom())) {
+                        TraceLog(LOG_INFO, "STAIRS: Player reached stairs, transitioning level");
+                        
+                        // If in alternate dimension, exit with random jump
+                        if (levelManager->IsInAlternateDimension()) {
+                            int levelJump = levelManager->GenerateRandomLevelJump();
+                            levelManager->ExitAlternateDimension(levelJump);
+                            previousDimension = 0;  // Back to normal dimension
+                            TraceLog(LOG_INFO, "STAIRS: Exited alternate dimension, jumped %d levels to level %d", 
+                                    levelJump, levelManager->GetCurrentLevel());
+                        } else {
+                            // Normal progression - go to next level
+                            levelManager->NextLevel();
+                            TraceLog(LOG_INFO, "STAIRS: Progressing to level %d", levelManager->GetCurrentLevel());
+                        }
+                        
+                        stairsTransitionTriggered = true;
+                        break;  // Stop iterating - we'll clean up and regenerate
+                    }
+                }
+            }
+            
+            // Handle transition immediately - skip rest of frame
+            if (stairsTransitionTriggered) {
+                // Clean up current level (except player)
+                CleanupLevel(dom, player);
+                
+                // Generate new level and teleport player
+                int newLevel = levelManager->GetCurrentLevel();
+                GenerateLevel(newLevel, levelGenerator, hospitalScene, dom, player);
+                
+                TraceLog(LOG_INFO, "STAIRS: New level %d loaded", newLevel);
+                
+                // Skip physics and updates for this frame - fresh start next frame
+                continue;
+            }
+        }
+        
         // Update physics
         physics.Step(deltaTime);
         
@@ -176,50 +267,6 @@ int main(void)
                 GenerateLevel(currentLevel, levelGenerator, hospitalScene, dom, player);
                 
                 TraceLog(LOG_INFO, "SALVIA: Level %d regenerated in dimension %d", currentLevel, currentDimension);
-            }
-        }
-        
-        // Check for stairs collision - trigger level transition
-        if (player && !isInDeathScene) {
-            bool transitionTriggered = false;
-            for (int i = 0; i < dom.GetCount(); i++) {
-                Object* obj = dom.GetObject(i);
-                if (TypeContains(obj->GetType(), "stairs")) {
-                    Stairs* stairs = static_cast<Stairs*>(obj);
-                    
-                    // Check collision with player
-                    if (stairs->CheckPlayerCollision(player->GetGeom())) {
-                        TraceLog(LOG_INFO, "STAIRS: Player reached stairs, transitioning level");
-                        
-                        // If in alternate dimension, exit with random jump
-                        if (levelManager->IsInAlternateDimension()) {
-                            int levelJump = levelManager->GenerateRandomLevelJump();
-                            levelManager->ExitAlternateDimension(levelJump);
-                            previousDimension = 0;  // Back to normal dimension
-                            TraceLog(LOG_INFO, "STAIRS: Exited alternate dimension, jumped %d levels to level %d", 
-                                    levelJump, levelManager->GetCurrentLevel());
-                        } else {
-                            // Normal progression - go to next level
-                            levelManager->NextLevel();
-                            TraceLog(LOG_INFO, "STAIRS: Progressing to level %d", levelManager->GetCurrentLevel());
-                        }
-                        
-                        transitionTriggered = true;
-                        break;  // Stop iterating - we'll clean up and regenerate after the loop
-                    }
-                }
-            }
-            
-            // Handle transition after finishing DOM iteration
-            if (transitionTriggered) {
-                // Clean up current level (except player)
-                CleanupLevel(dom, player);
-                
-                // Generate new level
-                int newLevel = levelManager->GetCurrentLevel();
-                GenerateLevel(newLevel, levelGenerator, hospitalScene, dom, player);
-                
-                TraceLog(LOG_INFO, "STAIRS: New level %d loaded", newLevel);
             }
         }
         
@@ -306,6 +353,11 @@ int main(void)
             
             // Draw death vignette on top of everything
             player->DrawDeathVignette();
+            
+            // Draw player coordinates (above FPS)
+            Vector3 playerPos = player->position;
+            DrawText(TextFormat("X: %.2f  Y: %.2f  Z: %.2f", playerPos.x, playerPos.y, playerPos.z),
+                     10, screenHeight - 60, 20, LIME);
             
             DrawFPS(10, screenHeight - 30);
             

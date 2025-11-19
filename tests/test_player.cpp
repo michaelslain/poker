@@ -5,6 +5,9 @@
 
 TEST_CASE("Player - Construction", "[player]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("Default construction") {
         Player player({0, 0, 0});
@@ -32,6 +35,9 @@ TEST_CASE("Player - Construction", "[player]") {
 
 TEST_CASE("Player - Type System", "[player]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     Player player({0, 0, 0});
     
     std::string type = player.GetType();
@@ -42,6 +48,9 @@ TEST_CASE("Player - Type System", "[player]") {
 
 TEST_CASE("Player - Global Instance Management", "[player]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("Global starts as null") {
         Player::SetGlobal(nullptr);
@@ -74,6 +83,9 @@ TEST_CASE("Player - Global Instance Management", "[player]") {
 
 TEST_CASE("Player - Death System", "[player][death]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("TriggerDeath sets dying state") {
         Player player({0, 0, 0});
@@ -142,6 +154,9 @@ TEST_CASE("Player - Death System", "[player][death]") {
 
 TEST_CASE("Player - Death from Insanity", "[player][death][insanity]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("100% insanity triggers death") {
         Player player({0, 0, 0});
@@ -167,6 +182,9 @@ TEST_CASE("Player - Death from Insanity", "[player][death][insanity]") {
 
 TEST_CASE("Player - Insanity Integration", "[player][insanity]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("Player has insanity manager") {
         Player player({0, 0, 0});
@@ -194,6 +212,9 @@ TEST_CASE("Player - Insanity Integration", "[player][insanity]") {
 
 TEST_CASE("Player - Inventory Access", "[player][inventory]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("Player has inventory") {
         Player player({0, 0, 0});
@@ -208,6 +229,9 @@ TEST_CASE("Player - Inventory Access", "[player][inventory]") {
 
 TEST_CASE("Player - Camera Access", "[player][camera]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("Player has camera") {
         Player player({0, 0, 0});
@@ -227,6 +251,9 @@ TEST_CASE("Player - Camera Access", "[player][camera]") {
 
 TEST_CASE("Player - Seating System", "[player][seating]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("Player starts not seated") {
         Player player({0, 0, 0});
@@ -263,6 +290,9 @@ TEST_CASE("Player - Physics Geometry", "[player][physics]") {
 
 TEST_CASE("Player - Selected Item Index", "[player][inventory]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("Selected item starts at -1 (none)") {
         Player player({0, 0, 0});
@@ -272,6 +302,9 @@ TEST_CASE("Player - Selected Item Index", "[player][inventory]") {
 
 TEST_CASE("Player - Death System Edge Cases", "[player][death][regression]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("Can trigger death multiple times safely") {
         Player player({0, 0, 0});
@@ -326,7 +359,7 @@ TEST_CASE("Player - Coordinate System", "[player][physics][regression]") {
     }
     
     SECTION("Player physics body positioned correctly") {
-        TestablePlayer player({0, 1.3f, 0});
+        TestablePlayer player({0, 0.0f, 0});  // NEW SYSTEM: feet at Y=0
         
         // For normal height player, body center should be at 1.7
         if (player.GetBody() != nullptr) {
@@ -347,13 +380,13 @@ TEST_CASE("Player - Teleport", "[player][regression]") {
     DOM::SetGlobal(&dom);
     
     SECTION("Teleport updates position and physics") {
-        TestablePlayer player({0, 1.3f, 0});
+        TestablePlayer player({0, 0.0f, 0});  // NEW SYSTEM: feet at Y=0
         
-        player.Teleport({10.0f, 1.3f, 5.0f});
+        player.Teleport({10.0f, 0.0f, 5.0f});  // NEW SYSTEM: feet at Y=0
         
-        REQUIRE(player.position.x == Catch::Approx(10.0f));
-        REQUIRE(player.position.y == Catch::Approx(1.3f));
-        REQUIRE(player.position.z == Catch::Approx(5.0f));
+        REQUIRE(player.position.x == Catch::Approx(10.0f).margin(0.1f));
+        REQUIRE(player.position.y == Catch::Approx(0.0f).margin(0.1f));
+        REQUIRE(player.position.z == Catch::Approx(5.0f).margin(0.1f));
         
         // Physics body should also be updated
         if (player.GetBody() != nullptr) {

@@ -2,9 +2,13 @@
 #include "substances/fent.hpp"
 #include "entities/player.hpp"
 #include "core/physics.hpp"
+#include "core/dom.hpp"
 #include "items/inventory.hpp"
 
 TEST_CASE("Fent - Construction", "[substance][fent]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics
+    
     SECTION("Create fent") {
         Fent fent({1, 2, 3});
         REQUIRE(fent.position.x == 1.0f);
@@ -19,6 +23,8 @@ TEST_CASE("Fent - Construction", "[substance][fent]") {
 }
 
 TEST_CASE("Fent - Type System", "[substance][fent]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics
     Fent fent({0, 0, 0});
     std::string type = fent.GetType();
     
@@ -30,6 +36,8 @@ TEST_CASE("Fent - Type System", "[substance][fent]") {
 }
 
 TEST_CASE("Fent - Clone", "[substance][fent]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics
     Fent original({1, 2, 3});
     Object* cloned = original.Clone({5, 6, 7});
     
@@ -44,6 +52,9 @@ TEST_CASE("Fent - Clone", "[substance][fent]") {
 
 TEST_CASE("Fent - Death Trigger", "[substance][fent][death]") {
     PhysicsWorld physics;
+    DOM dom;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Player constructor
+    DOM::SetGlobal(&dom);  // Set global DOM
     
     SECTION("Consume triggers death when player exists") {
         Player player({0, 0, 0});
@@ -76,6 +87,8 @@ TEST_CASE("Fent - Death Trigger", "[substance][fent][death]") {
 }
 
 TEST_CASE("Fent - Stacking in Inventory", "[substance][fent][inventory]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics for Fent constructor
     Inventory inventory;
     
     SECTION("Fent stacks correctly") {
@@ -100,6 +113,8 @@ TEST_CASE("Fent - Stacking in Inventory", "[substance][fent][inventory]") {
 }
 
 TEST_CASE("Fent - Usable Flag", "[substance][fent]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);  // Set global physics
     Fent fent({0, 0, 0});
     
     // Substances should be usable

@@ -196,11 +196,10 @@ void Player::Update(float deltaTime) {
             const int maxIterations = 3;  // Handle corners and complex geometry
 
             for (int iteration = 0; iteration < maxIterations; iteration++) {
-                // Test the position - convert from drawing reference to body center
-                // Drawing position is 1.3*height above mesh bottom, body center needs to be at mesh bottom + capsule half-height
+                // NEW SYSTEM: Test the position - finalPos.y is feet position
+                // Body center is at feet + capsuleHeight/2
                 float actualCapsuleOffset = (CAPSULE_HEIGHT * height) / 2.0f;
-                float visualMeshBottom = finalPos.y - 1.3f * height;
-                float bodyCenterHeight = visualMeshBottom + actualCapsuleOffset;
+                float bodyCenterHeight = finalPos.y + actualCapsuleOffset;
                 dGeomSetPosition(geom, finalPos.x, bodyCenterHeight, finalPos.z);
 
                 // Check for collisions
@@ -299,7 +298,7 @@ void Player::Update(float deltaTime) {
     };
 
     Vector3 eyePos = position;
-    eyePos.y += 1.6f * height;  // Eye level height at ~1.6m for person (scaled by height)
+    eyePos.y += 2.9f * height;  // NEW SYSTEM: Eye level at 2.9*height above feet (was 1.6*height above old drawing reference)
     eyePos.x += forwardDir.x * 0.3f;  // Offset forward slightly
     eyePos.z += forwardDir.z * 0.3f;
     
@@ -898,23 +897,42 @@ void Player::DrawDeathVignette() {
 }
 
 void Player::Teleport(Vector3 newPos) {
+    TraceLog(LOG_INFO, "PLAYER: Teleport called with newPos=(%.2f, %.2f, %.2f), height=%.2f",
+             newPos.x, newPos.y, newPos.z, height);
+    
     // Update render position
     position = newPos;
     
+    // Update saved standing Y level (important for sit/stand to work correctly after teleport)
+    standingYLevel = newPos.y;
+    
     // Update physics body position if physics is enabled
     if (body != nullptr) {
-        // Convert from drawing reference to body center position
+        // NEW SYSTEM: position.y is at feet, body center is at feet + capsuleHeight/2
         float actualCapsuleOffset = (CAPSULE_HEIGHT * height) / 2.0f;
-        float visualMeshBottom = newPos.y - 1.3f * height;
-        float bodyCenterHeight = visualMeshBottom + actualCapsuleOffset;
+        float bodyCenterHeight = newPos.y + actualCapsuleOffset;
+        
+        TraceLog(LOG_INFO, "PLAYER: Teleport calculation: actualCapsuleOffset=%.2f, bodyCenterHeight=%.2f",
+                 actualCapsuleOffset, bodyCenterHeight);
+        
         dBodySetPosition(body, newPos.x, bodyCenterHeight, newPos.z);
+        
+        // CRITICAL: Also update geometry position (used for collision detection)
+        if (geom != nullptr) {
+            dGeomSetPosition(geom, newPos.x, bodyCenterHeight, newPos.z);
+        }
         
         // Reset velocities to prevent momentum from previous level
         dBodySetLinearVel(body, 0, 0, 0);
         dBodySetAngularVel(body, 0, 0, 0);
         
-        TraceLog(LOG_INFO, "PLAYER: Teleported to (%.2f, %.2f, %.2f), body at (%.2f, %.2f, %.2f)",
-                 newPos.x, newPos.y, newPos.z, newPos.x, bodyCenterHeight, newPos.z);
+        // Re-enable gravity (it was disabled during CleanupLevel to prevent falling)
+        dBodySetGravityMode(body, 1);
+        
+        // Verify position was set correctly
+        const dReal* verifyPos = dBodyGetPosition(body);
+        TraceLog(LOG_INFO, "PLAYER: Teleport complete - position=(%.2f, %.2f, %.2f), physics body at (%.2f, %.2f, %.2f), gravity re-enabled",
+                 position.x, position.y, position.z, verifyPos[0], verifyPos[1], verifyPos[2]);
     }
 }
 

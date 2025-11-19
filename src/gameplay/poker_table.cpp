@@ -21,9 +21,9 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor)
     float hw = size.x / 2.0f;
     float hd = size.z / 2.0f;
     float dist = 1.2f;
-    // Seat Y position must be the drawing reference point (1.3 units above mesh bottom for height=1.0)
-    // This is because Person::position.y is now a drawing reference, not ground level
-    float seatY = 1.3f;  // Drawing reference height for normal person sitting on floor
+    // NEW SYSTEM: Seat Y is not used - persons preserve their current Y level when seated
+    // This allows seating to work regardless of floor height or elevation
+    float seatY = 0.0f;
 
     // 7 seats around table (dealer stands at bottom-center, no seat there)
     seats[0].position = {pos.x - hw/2, seatY, pos.z + hd + dist};   // Top-left
@@ -44,8 +44,8 @@ PokerTable::PokerTable(Vector3 pos, Vector3 tableSize, Color tableColor)
     }
 
     // Create dealer and add to DOM (stands at bottom-center where seat 7 used to be)
-    // Spawn slightly above floor to avoid initial penetration
-    float dealerY = 0.1f;  // FLOOR_HEIGHT + 0.1f (floor is at y=0)
+    // NEW SYSTEM: Spawn at feet level, slightly above floor to avoid penetration
+    float dealerY = 0.01f;  // FLOOR_HEIGHT + 0.01f (floor is at y=0)
     dealer = new Dealer({pos.x - hw/2, dealerY, pos.z - hd - dist}, "Dealer");
     DOM::GetGlobal()->AddObject(dealer);
 
@@ -212,9 +212,8 @@ bool PokerTable::SeatPerson(Person* p, int seatIndex) {
         return false;
     }
 
-    // Seat the person - preserve their Y position (don't change up/down level)
+    // Seat the person - they will preserve their current Y level
     Vector3 seatPos = seats[seatIndex].position;
-    seatPos.y = p->position.y;  // Keep person's current Y position
     p->SitDownFacingPoint(seatPos, position);
     seats[seatIndex].occupant = p;
     seats[seatIndex].isOccupied = true;

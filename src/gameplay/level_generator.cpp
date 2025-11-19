@@ -188,6 +188,8 @@ void LevelGenerator::CalculateRoomPositions() {
     // First room at origin
     rooms[0].position.x = 0.0f;
     rooms[0].position.y = 0.0f;
+    TraceLog(LOG_INFO, "LEVEL_GEN: Start room (grid %d, %d) positioned at world (%.2f, %.2f)",
+             rooms[0].gridX, rooms[0].gridZ, rooms[0].position.x, rooms[0].position.y);
     
     // Process rooms using breadth-first search from origin
     // This ensures we place rooms based on their neighbors
@@ -298,9 +300,8 @@ void LevelGenerator::SpawnPokerTable(Vector3 position, const ScalingConfig& scal
     int enemyCount = GetRandomValue(scaling.minEnemiesPerTable, scaling.maxEnemiesPerTable);
     
     for (int i = 0; i < enemyCount; i++) {
-        // Spawn enemies at proper drawing reference height (1.3 units above mesh bottom for normal height)
-        // Mesh bottom should be at floor level (FLOOR_HEIGHT), so drawing reference = FLOOR_HEIGHT + 1.3
-        Vector3 enemySpawnPos = {position.x + i * 0.5f, FLOOR_HEIGHT + 1.3f, position.z};
+        // NEW SYSTEM: Spawn at feet level, slightly above floor to avoid penetration
+        Vector3 enemySpawnPos = {position.x + i * 0.5f, FLOOR_HEIGHT + 0.01f, position.z};
         Enemy* enemy = new Enemy(enemySpawnPos, "Enemy " + std::to_string(i + 1));
         
         // Find and seat enemy at table
@@ -440,14 +441,24 @@ int LevelGenerator::FindRoomAtGrid(int gridX, int gridZ) const {
 
 Vector3 LevelGenerator::GetPlayerSpawnPosition() const {
     if (rooms.empty()) {
-        // Player spawn uses drawing reference height (1.3 units above mesh bottom)
-        return {0, FLOOR_HEIGHT + 1.3f, 0};
+        // NEW SYSTEM: Player spawn at feet level, slightly above floor to avoid penetration
+        return {0, FLOOR_HEIGHT + 0.01f, 0};
     }
     
-    // Spawn in first room at proper drawing reference height
-    // Mesh bottom should be at floor level, so drawing reference = FLOOR_HEIGHT + 1.3
+    // Find the start room (should be rooms[0], but let's be explicit)
+    // NEW SYSTEM: Spawn at feet level, slightly above floor to avoid penetration
+    for (const Room& room : rooms) {
+        if (room.isStartRoom) {
+            TraceLog(LOG_INFO, "LEVEL_GEN: Player spawn at (%.2f, %.2f, %.2f) in start room at grid (%d, %d)",
+                     room.position.x, FLOOR_HEIGHT + 0.01f, room.position.y, room.gridX, room.gridZ);
+            return {room.position.x, FLOOR_HEIGHT + 0.01f, room.position.y};
+        }
+    }
+    
+    // Fallback to first room if no start room marked (shouldn't happen)
+    TraceLog(LOG_WARNING, "LEVEL_GEN: No start room found, using first room");
     const Room& startRoom = rooms[0];
-    return {startRoom.position.x, FLOOR_HEIGHT + 1.3f, startRoom.position.y};
+    return {startRoom.position.x, FLOOR_HEIGHT + 0.01f, startRoom.position.y};
 }
 
 void LevelGenerator::Clear() {

@@ -49,12 +49,14 @@ make clean        # Clean build artifacts
 ### Controls
 
 - **WASD** - Move around
-- **Mouse** - Look around (reduced sensitivity)
+- **Mouse** - Look around (0.001 sensitivity)
 - **U** - Toggle cursor lock/unlock
 - **E** - Interact with objects / Pick up items
 - **X** - Toggle item selection in inventory
 - **Left/Right Arrow** - Navigate inventory selection
-- **Left Mouse** - Shoot (when holding pistol)
+- **Left Mouse** - Use held item (shoot pistol, consume substance)
+- **C** - Toggle collision debug visualization
+- **[ ]** - Adjust FOV manually
 
 ## Architecture
 

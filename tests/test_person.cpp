@@ -20,6 +20,9 @@ public:
 };
 
 TEST_CASE("Person - Construction", "[person]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);
+    
     SECTION("Create with default height") {
         TestPerson person({0, 0, 0}, "TestPerson");
         REQUIRE(person.GetName() == "TestPerson");
@@ -33,6 +36,8 @@ TEST_CASE("Person - Construction", "[person]") {
 }
 
 TEST_CASE("Person - Name", "[person]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);
     TestPerson person({0, 0, 0}, "Alice");
     
     SECTION("Get name") {
@@ -46,6 +51,8 @@ TEST_CASE("Person - Name", "[person]") {
 }
 
 TEST_CASE("Person - Height", "[person]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);
     TestPerson person({0, 0, 0}, "Test", 1.5f);
     
     SECTION("Get height") {
@@ -59,6 +66,8 @@ TEST_CASE("Person - Height", "[person]") {
 }
 
 TEST_CASE("Person - Seating", "[person]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);
     TestPerson person;
     
     SECTION("Not seated by default") {
@@ -78,6 +87,8 @@ TEST_CASE("Person - Seating", "[person]") {
 }
 
 TEST_CASE("Person - Body Yaw", "[person]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);
     TestPerson person;
     
     SECTION("Set and get body yaw") {
@@ -87,6 +98,8 @@ TEST_CASE("Person - Body Yaw", "[person]") {
 }
 
 TEST_CASE("Person - Inventory", "[person]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);
     TestPerson person;
     
     SECTION("Has inventory") {
@@ -97,6 +110,8 @@ TEST_CASE("Person - Inventory", "[person]") {
 }
 
 TEST_CASE("Person - PromptBet", "[person]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);
     TestPerson person;
     int raiseAmount = 0;
     
@@ -113,18 +128,18 @@ TEST_CASE("Person - Physics Integration", "[person][physics][regression]") {
     DOM::SetGlobal(&dom);
     
     SECTION("Person spawns with correct drawing reference height") {
-        // Spawn at drawing reference y=1.3 (normal height)
-        TestPerson person({0, 1.3f, 0}, "PhysicsTest");
+        // NEW SYSTEM: Spawn at feet level Y=0
+        TestPerson person({0, 0.0f, 0}, "PhysicsTest");
         
         // Position should match spawn position
-        REQUIRE(person.position.y == Catch::Approx(1.3f));
+        REQUIRE(person.position.y == Catch::Approx(0.0f).margin(0.1f));
     }
     
     SECTION("Person with physics body has correct capsule height") {
-        TestPerson person({0, 1.3f, 0}, "Test", 1.0f);
+        TestPerson person({0, 0.0f, 0}, "Test", 1.0f);  // NEW SYSTEM: feet at Y=0
         
         // For normal height (1.0), capsule height should be 3.4
-        // Visual mesh bottom should be at 1.3 - 1.3 = 0.0 (floor level)
+        // Feet at Y=0.0 (floor level)
         // Body center should be at 0.0 + (3.4/2) = 1.7
         
         if (person.GetBody() != nullptr) {
@@ -134,10 +149,10 @@ TEST_CASE("Person - Physics Integration", "[person][physics][regression]") {
     }
     
     SECTION("Tall person scales capsule correctly") {
-        TestPerson tallPerson({0, 2.6f, 0}, "Tall", 2.0f);
+        TestPerson tallPerson({0, 0.0f, 0}, "Tall", 2.0f);  // NEW SYSTEM: feet at Y=0
         
         // For height=2.0, capsule height should be 3.4 * 2.0 = 6.8
-        // Visual mesh bottom at 2.6 - (1.3*2.0) = 0.0 (floor)
+        // Feet at Y=0.0 (floor)
         // Body center at 0.0 + (6.8/2) = 3.4
         
         if (tallPerson.GetBody() != nullptr) {
@@ -160,7 +175,7 @@ TEST_CASE("Person - Physics Integration", "[person][physics][regression]") {
     }
     
     SECTION("Person doesn't bounce on ground") {
-        TestPerson person({0, 1.3f, 0}, "NoBounce");
+        TestPerson person({0, 5.0f, 0}, "NoBounce");  // Spawn higher to test landing
         
         // Create floor
         dGeomID floor = dCreatePlane(physics.space, 0, 1, 0, 0);
@@ -170,8 +185,8 @@ TEST_CASE("Person - Physics Integration", "[person][physics][regression]") {
             dBodySetLinearVel(person.GetBody(), 0, -10, 0);
         }
         
-        // Step physics
-        for (int i = 0; i < 60; i++) {
+        // Step physics - let it fall and settle
+        for (int i = 0; i < 120; i++) {  // More steps to let it fully settle
             physics.Step(1.0f / 60.0f);
             person.Update(1.0f / 60.0f);
         }

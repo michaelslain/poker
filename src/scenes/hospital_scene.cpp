@@ -78,9 +78,8 @@ void HospitalScene::Generate() {
 }
 
 Vector3 HospitalScene::GetPlayerSpawnPosition() const {
-    // Player spawn position uses drawing reference height (1.3 units above mesh bottom)
-    // Mesh bottom should be at floor level (FLOOR_HEIGHT), so drawing reference = FLOOR_HEIGHT + 1.3
-    return {0, FLOOR_HEIGHT + 1.3f, 0};
+    // NEW SYSTEM: Player spawn at feet level, slightly above floor to avoid penetration
+    return {0, FLOOR_HEIGHT + 0.01f, 0};
 }
 
 void HospitalScene::Clear() {

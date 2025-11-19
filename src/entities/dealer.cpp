@@ -2,7 +2,7 @@
 
 Dealer::Dealer(Vector3 pos, const std::string& name)
     : Person(pos, name) {
-    debugColor = RED;  // Debug: Dealers render as red
+    // Dealers use default Person rendering (pitch black, usesLighting = false)
 }
 
 Dealer::~Dealer() {

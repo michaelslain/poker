@@ -9,7 +9,7 @@ Person::Person(Vector3 pos, const std::string& personName, float personHeight)
     : Object(pos), inventory(), name(personName), height(personHeight), bodyYaw(0.0f),
       debugColor(BLACK),  // Default to black
       body(nullptr), geom(nullptr), physics(nullptr),
-      isSeated(false), seatPosition({0, 0, 0}) {
+      isSeated(false), seatPosition({0, 0, 0}), standingYLevel(pos.y) {
     usesLighting = false;  // Persons render without lighting (pitch black)
     
     // Get physics from global instance
@@ -25,14 +25,12 @@ Person::Person(Vector3 pos, const std::string& personName, float personHeight)
         // Create dynamic body with mass for gravity
         body = dBodyCreate(physics->world);
         
-        // Visual mesh is drawn with legs extending down to (position.y - 1.3*height)
-        // We want capsule bottom to align with visual mesh bottom
-        // Body center should be at: visualMeshBottom + actualCapsuleOffset
-        float visualMeshBottom = pos.y - 1.3f * height;
-        float bodyCenterHeight = visualMeshBottom + actualCapsuleOffset;
+        // NEW SYSTEM: position.y represents feet position (Y=0 at floor)
+        // Body center should be at: feet + capsuleHeight/2
+        float bodyCenterHeight = pos.y + actualCapsuleOffset;
         dBodySetPosition(body, pos.x, bodyCenterHeight, pos.z);
         
-        TraceLog(LOG_INFO, "PERSON: Created '%s' (height=%.2fx) at spawn pos (%.2f, %.2f, %.2f), body center at (%.2f, %.2f, %.2f), capsuleHeight=%.2f",
+        TraceLog(LOG_INFO, "PERSON: Created '%s' (height=%.2fx) at feet pos (%.2f, %.2f, %.2f), body center at (%.2f, %.2f, %.2f), capsuleHeight=%.2f",
                  name.c_str(), height, pos.x, pos.y, pos.z, pos.x, bodyCenterHeight, pos.z, actualCapsuleHeight);
 
         // Set mass for the person (needed for gravity)
@@ -188,12 +186,10 @@ void Person::Update(float deltaTime) {
     (void)deltaTime;
     
     if (isSeated) {
-        // When seated, lock to seat position
-        // seatPosition.y is the drawing reference (1.3*height above mesh bottom)
-        // Convert to body center position
+        // NEW SYSTEM: When seated, seatPosition.y is the person's feet level
+        // Body center is at feet + capsuleHeight/2
         float actualCapsuleOffset = (CAPSULE_HEIGHT * height) / 2.0f;
-        float visualMeshBottom = seatPosition.y - 1.3f * height;
-        float bodyCenterHeight = visualMeshBottom + actualCapsuleOffset;
+        float bodyCenterHeight = seatPosition.y + actualCapsuleOffset;
         
         if (body != nullptr) {
             dBodySetPosition(body, seatPosition.x, bodyCenterHeight, seatPosition.z);
@@ -211,32 +207,49 @@ void Person::Update(float deltaTime) {
         // Not seated - read position from physics
         if (body != nullptr) {
             const dReal* physicsPos = dBodyGetPosition(body);
-            const dReal* linVel = dBodyGetLinearVel(body);
             
-            // Body is at center of capsule
-            // Visual mesh is drawn with bottom at (position.y - 1.3*height)
-            // So: visualMeshBottom = bodyCenterHeight - actualCapsuleOffset
-            //     position.y = visualMeshBottom + 1.3*height
+            // NEW SYSTEM: position.y represents feet position (Y=0 at floor)
+            // Body center is at: feet + capsuleHeight/2
+            // So: feet = bodyCenterHeight - capsuleHeight/2
             position.x = (float)physicsPos[0];
-            float actualCapsuleOffset = (CAPSULE_HEIGHT * height) / 2.0f;
-            float visualMeshBottom = (float)physicsPos[1] - actualCapsuleOffset;
-            position.y = visualMeshBottom + 1.3f * height;  // Convert to drawing reference point
             position.z = (float)physicsPos[2];
+            float actualCapsuleOffset = (CAPSULE_HEIGHT * height) / 2.0f;
+            position.y = (float)physicsPos[1] - actualCapsuleOffset;  // Feet position
             
-            // Debug: Log position and velocity for each person type
+            // SAFETY NET: Prevent clipping through floor if physics fails
+            // This should rarely/never trigger if collision is working correctly
+            // Tolerance of -0.01 allows for minor floating point errors
+            if (position.y < -0.01f) {
+                TraceLog(LOG_ERROR, "PERSON '%s': PHYSICS FAILURE! Feet clipped through floor at Y=%.3f (body center=%.3f)",
+                         name.c_str(), position.y, physicsPos[1]);
+                
+                // Emergency correction: teleport back to floor surface
+                position.y = 0.0f;
+                float correctedBodyY = 0.0f + actualCapsuleOffset;
+                dBodySetPosition(body, position.x, correctedBodyY, position.z);
+                dBodySetLinearVel(body, 0, 0, 0);  // Stop falling
+                
+                TraceLog(LOG_WARNING, "PERSON '%s': Emergency correction applied - teleported to floor", name.c_str());
+            }
+
+            #ifdef DEBUG_PERSON_PHYSICS
+            // Debug: Check if position.y is clipping through floor (feet below ground)
+            if (position.y < -0.1f) {
+                TraceLog(LOG_WARNING, "PERSON '%s' (%s): CLIPPING! Feet at Y=%.2f (below floor at Y=0), physicsCenter=%.2f",
+                         name.c_str(), GetType().c_str(), position.y, physicsPos[1]);
+            }
+
+            // Debug: Log position and velocity periodically
             static int frameCount = 0;
             frameCount++;
-            if (frameCount % 60 == 0) {  // Every second at 60fps
-                TraceLog(LOG_INFO, "PERSON '%s' (%s): PhysCenter=(%.2f, %.2f, %.2f), Ground Y=%.2f, Vel=(%.2f, %.2f, %.2f)",
+            if (frameCount % 300 == 0) {  // Every 5 seconds at 60fps
+                TraceLog(LOG_DEBUG, "PERSON '%s' (%s): PhysCenter=(%.2f, %.2f, %.2f), Feet Y=%.2f, Vel=(%.2f, %.2f, %.2f)",
                          name.c_str(), GetType().c_str(),
                          physicsPos[0], physicsPos[1], physicsPos[2],
                          position.y,
                          linVel[0], linVel[1], linVel[2]);
-                if (position.y < -0.1f) {
-                    TraceLog(LOG_WARNING, "PERSON '%s' (%s): CLIPPING! Ground Y=%.2f, falling through floor!",
-                             name.c_str(), GetType().c_str(), position.y);
-                }
             }
+            #endif
         }
     }
 }
@@ -253,62 +266,65 @@ void Person::Draw(Camera3D camera) {
     rlRotatef(rotation.z, 0, 0, 1);
     rlScalef(scale.x, scale.y, scale.z);
 
+    // NEW SYSTEM: position.y is at feet, so offset mesh upward by 1.3*height
+    float meshOffset = 1.3f * height;
+
     // Draw BODY (tall torso)
     rlPushMatrix();
-    rlTranslatef(0.0f, 1.0f * height, 0.0f);
+    rlTranslatef(0.0f, meshOffset + 1.0f * height, 0.0f);
     DrawCubePitchBlack(0.55f, 1.4f * height, 0.35f, debugColor);
     rlPopMatrix();
 
     // Draw NECK (connects head to body, overlapping top of torso)
     rlPushMatrix();
-    rlTranslatef(0.0f, 1.75f * height, 0.0f);
+    rlTranslatef(0.0f, meshOffset + 1.75f * height, 0.0f);
     DrawCubePitchBlack(0.15f, 0.25f * height, 0.15f, debugColor);
     rlPopMatrix();
 
     // Draw HEAD (sphere at top, overlapping neck)
     rlPushMatrix();
-    rlTranslatef(0.0f, 2.1f * height, 0.0f);
+    rlTranslatef(0.0f, meshOffset + 2.1f * height, 0.0f);
     DrawSpherePitchBlack(0.3f, 10, 10, debugColor);
     rlPopMatrix();
 
     // Draw SHOULDER connectors (make arms feel attached)
     rlPushMatrix();
-    rlTranslatef(-0.35f, 1.55f * height, 0.0f);
+    rlTranslatef(-0.35f, meshOffset + 1.55f * height, 0.0f);
     DrawCubePitchBlack(0.22f, 0.22f, 0.22f, debugColor);
     rlPopMatrix();
 
     rlPushMatrix();
-    rlTranslatef(0.35f, 1.55f * height, 0.0f);
+    rlTranslatef(0.35f, meshOffset + 1.55f * height, 0.0f);
     DrawCubePitchBlack(0.22f, 0.22f, 0.22f, debugColor);
     rlPopMatrix();
 
     // Draw LEFT ARM (longer, overlapping shoulder)
     rlPushMatrix();
-    rlTranslatef(-0.35f, 1.05f * height, 0.0f);
+    rlTranslatef(-0.35f, meshOffset + 1.05f * height, 0.0f);
     DrawCubePitchBlack(0.17f, 1.1f * height, 0.17f, debugColor);
     rlPopMatrix();
 
     // Draw RIGHT ARM (longer, overlapping shoulder)
     rlPushMatrix();
-    rlTranslatef(0.35f, 1.05f * height, 0.0f);
+    rlTranslatef(0.35f, meshOffset + 1.05f * height, 0.0f);
     DrawCubePitchBlack(0.17f, 1.1f * height, 0.17f, debugColor);
     rlPopMatrix();
 
     // Draw HIP/PELVIS connector (connects body to legs, overlapping bottom of torso)
     rlPushMatrix();
-    rlTranslatef(0.0f, 0.25f * height, 0.0f);
+    rlTranslatef(0.0f, meshOffset + 0.25f * height, 0.0f);
     DrawCubePitchBlack(0.5f, 0.2f * height, 0.32f, debugColor);
     rlPopMatrix();
 
     // Draw LEFT LEG (much taller, overlapping pelvis)
     rlPushMatrix();
-    rlTranslatef(-0.15f, -0.5f * height, 0.0f);
+    rlTranslatef(-0.15f, meshOffset - 0.5f * height, 0.0f);
     DrawCubePitchBlack(0.21f, 1.6f * height, 0.21f, debugColor);
     rlPopMatrix();
 
     // Draw RIGHT LEG (much taller, overlapping pelvis)
     rlPushMatrix();
-    rlTranslatef(0.15f, -0.5f * height, 0.0f);
+    rlTranslatef(0.15f, meshOffset - 0.5f * height, 0.0f);
     DrawCubePitchBlack(0.21f, 1.6f * height, 0.21f, debugColor);
     rlPopMatrix();
 
@@ -321,7 +337,6 @@ void Person::Draw(Camera3D camera) {
     if (g_showCollisionDebug && body != nullptr) {
         const dReal* physicsPos = dBodyGetPosition(body);
         float actualCapsuleHeight = CAPSULE_HEIGHT * height;
-        float actualCapsuleOffset = actualCapsuleHeight / 2.0f;
         float radius = 0.4f;
         float cylinderLength = actualCapsuleHeight - (2.0f * radius);
         
@@ -351,6 +366,9 @@ std::string Person::GetType() const {
 }
 
 void Person::SitDown(Vector3 seatPos) {
+    // Save current standing Y level before sitting
+    standingYLevel = position.y;
+    
     isSeated = true;
     seatPosition = seatPos;
     // Only change X and Z position, keep Y (height) the same
@@ -359,6 +377,9 @@ void Person::SitDown(Vector3 seatPos) {
 }
 
 void Person::SitDownFacingPoint(Vector3 seatPos, Vector3 faceTowards) {
+    // Save current standing Y level before sitting
+    standingYLevel = position.y;
+    
     isSeated = true;
     seatPosition = seatPos;
     // Only change X and Z position, keep Y (height) the same
@@ -378,6 +399,24 @@ void Person::SitDownFacingPoint(Vector3 seatPos, Vector3 faceTowards) {
 
 void Person::StandUp() {
     isSeated = false;
-    // Position already has correct Y from when we sat down (it was preserved)
-    // Just need to stop locking position to seatPosition
+    
+    // Restore the saved standing Y level
+    position.y = standingYLevel;
+    
+    // CRITICAL: Must update physics body to match restored position
+    // Otherwise Update() will read wrong position from stale physics body
+    if (body != nullptr) {
+        // NEW SYSTEM: position.y is feet position, body center is at feet + capsuleHeight/2
+        float actualCapsuleOffset = (CAPSULE_HEIGHT * height) / 2.0f;
+        float bodyCenterHeight = position.y + actualCapsuleOffset;
+        
+        dBodySetPosition(body, position.x, bodyCenterHeight, position.z);
+        
+        if (geom != nullptr) {
+            dGeomSetPosition(geom, position.x, bodyCenterHeight, position.z);
+        }
+        
+        TraceLog(LOG_INFO, "PERSON '%s': Standing up, restored feet Y=%.2f, physics body at Y=%.2f",
+                 name.c_str(), position.y, bodyCenterHeight);
+    }
 }
