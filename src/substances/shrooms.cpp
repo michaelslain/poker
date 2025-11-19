@@ -11,8 +11,8 @@ Shrooms::~Shrooms() {
 }
 
 void Shrooms::Consume() {
-    // Start psychedelic trip with full intensity
-    PsychedelicManager::StartTrip(1.0f);
+    // Start psychedelic trip with full intensity (defaults to SHROOMS type)
+    PsychedelicManager::StartTrip(1.0f, TripType::SHROOMS);
 }
 
 std::string Shrooms::GetType() const {

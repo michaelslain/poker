@@ -10,8 +10,10 @@ int PsychedelicManager::intensityLoc = -1;
 float PsychedelicManager::tripStartTime = 0.0f;
 float PsychedelicManager::baseIntensity = 1.0f;
 bool PsychedelicManager::isTripping = false;
+TripType PsychedelicManager::currentTripType = TripType::SHROOMS;
+bool PsychedelicManager::inComeDown = false;
 
-const float PsychedelicManager::TRIP_DURATION = 300.0f; // 5 minutes
+const float PsychedelicManager::SHROOMS_DURATION = 300.0f; // 5 minutes
 
 void PsychedelicManager::InitPsychedelicSystem() {
     if (shaderInitialized) return;
@@ -33,17 +35,28 @@ void PsychedelicManager::CleanupPsychedelicSystem() {
     shaderInitialized = false;
 }
 
-void PsychedelicManager::StartTrip(float intensity) {
+void PsychedelicManager::StartTrip(float intensity, TripType type) {
     if (!shaderInitialized) return;
     
     isTripping = true;
     tripStartTime = 0.0f;
     baseIntensity = Clamp(intensity, 0.0f, 1.0f);
+    currentTripType = type;
+    inComeDown = false;
+}
+
+void PsychedelicManager::TriggerComeDown() {
+    if (!isTripping || currentTripType != TripType::SALVIA) return;
+    
+    // Reset trip time to start come-down phase
+    inComeDown = true;
+    tripStartTime = 0.0f;
 }
 
 void PsychedelicManager::StopTrip() {
     isTripping = false;
     tripStartTime = 0.0f;
+    inComeDown = false;
 }
 
 void PsychedelicManager::Update(float deltaTime) {
@@ -51,8 +64,13 @@ void PsychedelicManager::Update(float deltaTime) {
     
     tripStartTime += deltaTime;
     
-    // Auto-stop trip after duration
-    if (tripStartTime >= TRIP_DURATION) {
+    // Auto-stop shrooms trip after duration
+    if (currentTripType == TripType::SHROOMS && tripStartTime >= SHROOMS_DURATION) {
+        StopTrip();
+    }
+    
+    // Auto-stop Salvia come-down after fast transition
+    if (currentTripType == TripType::SALVIA && inComeDown && tripStartTime >= 5.0f) {
         StopTrip();
     }
 }
@@ -61,30 +79,61 @@ bool PsychedelicManager::IsTripping() {
     return isTripping;
 }
 
+TripType PsychedelicManager::GetTripType() {
+    return currentTripType;
+}
+
+bool PsychedelicManager::IsInComeDown() {
+    return inComeDown;
+}
+
 float PsychedelicManager::GetCurrentIntensity() {
     if (!isTripping) return 0.0f;
     
-    // Calculate intensity based on trip stage
-    float comeUpEnd = 60.0f;
-    float peakEnd = 180.0f;
-    
-    float intensity = baseIntensity;
-    
-    if (tripStartTime < comeUpEnd) {
-        // Come up: ramp 0 -> 1
-        float stage = tripStartTime / comeUpEnd;
-        intensity *= stage * stage; // Smooth ramp
-    } else if (tripStartTime < peakEnd) {
-        // Peak: full intensity with waves
-        float wave = sinf(tripStartTime * 0.5f) * 0.15f + 0.85f;
-        intensity *= wave;
-    } else {
-        // Come down: ramp 1 -> 0
-        float comeDownProgress = (tripStartTime - peakEnd) / (TRIP_DURATION - peakEnd);
-        intensity *= (1.0f - comeDownProgress);
+    if (currentTripType == TripType::SHROOMS) {
+        // Shrooms: 5 minute trip with standard timing
+        float comeUpEnd = 60.0f;
+        float peakEnd = 180.0f;
+        
+        float intensity = baseIntensity;
+        
+        if (tripStartTime < comeUpEnd) {
+            // Come up: ramp 0 -> 1
+            float stage = tripStartTime / comeUpEnd;
+            intensity *= stage * stage; // Smooth ramp
+        } else if (tripStartTime < peakEnd) {
+            // Peak: full intensity with waves
+            float wave = sinf(tripStartTime * 0.5f) * 0.15f + 0.85f;
+            intensity *= wave;
+        } else {
+            // Come down: ramp 1 -> 0
+            float comeDownProgress = (tripStartTime - peakEnd) / (SHROOMS_DURATION - peakEnd);
+            intensity *= (1.0f - comeDownProgress);
+        }
+        
+        return intensity;
+    } 
+    else if (currentTripType == TripType::SALVIA) {
+        // Salvia: Fast come-up, level-long peak, fast come-down
+        float intensity = baseIntensity;
+        
+        if (inComeDown) {
+            // Fast come-down: 5 seconds
+            float comeDownProgress = tripStartTime / 5.0f;
+            intensity *= (1.0f - comeDownProgress);
+        } else if (tripStartTime < 5.0f) {
+            // Fast come-up: 5 seconds
+            float stage = tripStartTime / 5.0f;
+            intensity *= stage * stage; // Smooth ramp
+        } else {
+            // Peak: full intensity until level transition
+            intensity *= 1.0f;
+        }
+        
+        return intensity;
     }
     
-    return intensity;
+    return 0.0f;
 }
 
 float PsychedelicManager::GetTripTime() {

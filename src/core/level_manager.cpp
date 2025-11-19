@@ -76,42 +76,27 @@ void LevelManager::ExitAlternateDimension(int levelJump) {
 }
 
 int LevelManager::GenerateRandomLevelJump() const {
-    // Weighted random jump for salvia (option C)
-    // 70% chance to go up, 20% chance to stay, 10% chance to go down
-    // Jump magnitude: weighted toward small jumps
-    
-    float directionRoll = GetRandomValue(0, 100) / 100.0f;
-    int direction;
-    
-    if (directionRoll < 0.7f) {
-        direction = 1;  // Go up
-    } else if (directionRoll < 0.9f) {
-        direction = 0;  // Stay same level
-    } else {
-        direction = -1;  // Go down
-    }
-    
-    if (direction == 0) {
-        return 0;
-    }
+    // Random jump for salvia alternate dimension exit
+    // Always goes forward: minimum +1, maximum +10
+    // Weighted toward smaller jumps
     
     // Magnitude: weighted toward small jumps
-    // 50% chance: 1 level
+    // 40% chance: 1 level
     // 30% chance: 2-3 levels
-    // 15% chance: 4-6 levels
-    // 5% chance: 7-10 levels
+    // 20% chance: 4-6 levels
+    // 10% chance: 7-10 levels
     float magnitudeRoll = GetRandomValue(0, 100) / 100.0f;
     int magnitude;
     
-    if (magnitudeRoll < 0.5f) {
+    if (magnitudeRoll < 0.4f) {
         magnitude = 1;
-    } else if (magnitudeRoll < 0.8f) {
+    } else if (magnitudeRoll < 0.7f) {
         magnitude = GetRandomValue(2, 3);
-    } else if (magnitudeRoll < 0.95f) {
+    } else if (magnitudeRoll < 0.9f) {
         magnitude = GetRandomValue(4, 6);
     } else {
         magnitude = GetRandomValue(7, 10);
     }
     
-    return direction * magnitude;
+    return magnitude;  // Always positive (forward jump)
 }

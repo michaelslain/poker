@@ -273,7 +273,11 @@ void Player::Update(float deltaTime) {
     insanityManager.Update(deltaTime, position, isSeated, isTripping, tripIntensity);
 
     // Check if insanity reached maximum - trigger death
-    if (insanityManager.GetInsanity() >= 1.0f && !isDying) {
+    // Exception: Salvia allows 100% insanity without death
+    bool onSalvia = PsychedelicManager::IsTripping() && 
+                    PsychedelicManager::GetTripType() == TripType::SALVIA;
+    
+    if (insanityManager.GetInsanity() >= 1.0f && !isDying && !onSalvia) {
         TriggerDeath();
     }
 
@@ -281,9 +285,20 @@ void Player::Update(float deltaTime) {
     // camera.AdjustFOV();  // Commented out - FOV controlled by insanity
 
     // Apply insanity effect to FOV (lerp between min and max based on insanity)
-    float minFOV = 60.0f;   // Normal FOV at 0 insanity
-    float maxFOV = 150.0f;  // Max FOV at 100% insanity
-    camera.camera.fovy = minFOV + (insanityManager.GetInsanity() * (maxFOV - minFOV));
+    // Special case: Salvia at peak inverts the view with negative FOV
+    bool onSalviaPeak = PsychedelicManager::IsTripping() && 
+                        PsychedelicManager::GetTripType() == TripType::SALVIA &&
+                        PsychedelicManager::GetTripTime() >= 5.0f &&
+                        !PsychedelicManager::IsInComeDown();
+    
+    if (onSalviaPeak) {
+        // Negative FOV for inverted/upside-down view during entire Salvia peak
+        camera.camera.fovy = -90.0f;
+    } else {
+        float minFOV = 60.0f;   // Normal FOV at 0 insanity
+        float maxFOV = 150.0f;  // Max FOV at 100% insanity
+        camera.camera.fovy = minFOV + (insanityManager.GetInsanity() * (maxFOV - minFOV));
+    }
 
     // Update camera to follow player
     camera.angle.x = lookPitch;

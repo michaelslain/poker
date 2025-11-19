@@ -33,8 +33,8 @@ make clean     # Remove build artifacts
 ## Testing (Catch2 v3.5.0)
 
 **Run**: `make test`
-- **36 test files** covering all game systems
-- **202 test cases**, **1367 assertions**, **100% pass rate**
+- **38 test files** covering all game systems
+- **224 test cases**, **1449 assertions**, **100% pass rate**
 - Location: `tests/` directory
 - Framework: Catch2 v3.5.0 (header-only)
 
@@ -56,10 +56,10 @@ TEST_CASE("ClassName - Feature", "[tag]") {
 - Entities: `test_player`, `test_enemy`, `test_dealer`, `test_person`
 - Items: `test_card`, `test_chip`, `test_inventory`, `test_deck`
 - Weapons: `test_pistol`, `test_weapon`
-- Substances: `test_fent`, `test_substance`, `test_shrooms`
+- Substances: `test_fent`, `test_substance`, `test_shrooms`, `test_salvia`
 - World: `test_floor`, `test_wall`, `test_ceiling`, `test_stairs`
 - Gameplay: `test_poker_table`, `test_level_generator`, `test_insanity_manager`
-- Rendering: `test_light`, `test_lighting_manager`, `test_light_bulb`
+- Rendering: `test_light`, `test_lighting_manager`, `test_light_bulb`, `test_psychedelic_manager`
 - Scenes: `test_death_scene`, `test_hospital_scene`
 
 ---
@@ -249,6 +249,11 @@ poker/
 - Dark gray {50, 50, 50, 255}
 - `Consume()`: Triggers instant death via `Player::GetGlobal()->TriggerDeath()`
 
+### Salvia
+- Inherits Substance
+- Purple {128, 0, 128, 255}
+- `Consume()`: Starts level-long Salvia trip with inverted FOV and 100% insanity (without death)
+
 ---
 
 ## Physics Details
@@ -356,10 +361,16 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 ### PsychedelicManager (Static)
 - `InitPsychedelicSystem()`: Load shaders/psychedelic.vs/fs
 - `CleanupPsychedelicSystem()`: Unload shader
-- `StartTrip(intensity)`: Begin 5-minute trip (0.0-1.0)
+- `StartTrip(intensity, type)`: Begin trip with intensity (0.0-1.0) and type (SHROOMS or SALVIA)
+- `TriggerComeDown()`: Manually trigger Salvia come-down (called on level transition)
 - `Update(dt)`: Auto-progresses through stages
-- **Stages**: Come-up (0-60s) → Peak (60-180s) → Come-down (180-300s)
-- Shrooms call `StartTrip(1.0f)` on consume
+- `GetTripType()`: Returns current TripType enum (SHROOMS or SALVIA)
+- `IsInComeDown()`: Check if Salvia is in come-down phase
+- **Trip Types**:
+  - **SHROOMS**: 5-minute trip - Come-up (0-60s) → Peak (60-180s) → Come-down (180-300s)
+  - **SALVIA**: Level-long trip - Fast come-up (0-5s) → Peak (indefinite) → Fast come-down (5s)
+- Shrooms call `StartTrip(1.0f, TripType::SHROOMS)` on consume
+- Salvia calls `StartTrip(0.5f, TripType::SALVIA)` on consume
 
 ### Shader Effects
 - Breathing/morphing, drifting/warping, geometric patterns
@@ -376,12 +387,14 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 - **Movement**: Decrease 0.3/s when moving, increase 0.01-0.02/s when still
 - **Kills**: +0.2 `minInsanity` per kill, decays after 30s
 - **Trips**: `insanity = tripIntensity + minInsanity`
-- **FOV**: Interpolates 60° → 150° as insanity increases
+- **Salvia Peak Exception**: During Salvia peak (after 5s come-up, before come-down), forces insanity to 100% without triggering death
+- **FOV**: Interpolates 60° → 150° as insanity increases, OR -90° (inverted view) during Salvia peak
 - `DrawMeter()`: N64-style circular meter (yellow → red)
 
 ### Player Death
 - `TriggerDeath()`: Starts 3-second vignette animation
 - Triggered by: Insanity ≥ 100% or Fent overdose
+- **Exception**: Salvia peak allows 100% insanity without death
 - `Update()` returns early when `isDying = true`
 - `IsDead()`: Returns true when `deathVignetteProgress ≥ 1.0`
 - Main loop switches to death scene when `player->IsDead()`
@@ -395,6 +408,7 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 - `NextLevel()`, `SetLevel(int)`, `JumpToLevel(int)`
 - **Scaling**: `insanityMultiplier`, `minEnemiesPerTable`, `resourceSpawnRate`, `enemyAIQuality`
 - **Dimensions**: `EnterAlternateDimension()`, `ExitAlternateDimension(jump)`, `IsInAlternateDimension()`
+- **GenerateRandomLevelJump()**: Always returns +1 to +10 (weighted: 40% chance +1, 30% chance +2-3, 20% chance +4-6, 10% chance +7-10)
 - Level 0 = Hospital, Level 1+ = Casino
 
 ### LevelGenerator
@@ -402,19 +416,20 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 - **Constraints**: Connecting rooms share dimension on connection axis
 - **Rooms**: MIN_ROOMS=3, MAX_ROOMS=8, size=8-15 units
 - **Contents**: First=empty, middle=60% poker table, last=stairs
-- **Resources**: Chips, pistols, substances (scaled by difficulty)
+- **Resources**: Chips, pistols, substances at 80% spawn rate (scaled by difficulty)
 - **Lighting**: 1 light bulb per room (max 32 lights)
 - **Floor color**: Dark maroon RGB(20, 2, 2)
 
 ### HospitalScene
 - Level 0 starting scene
 - 15x15 room with floor, ceiling, 4 walls, light, stairs
+- **Debug substances**: One of each substance type spawned in a line for testing
 - Spawn: (0, FLOOR_HEIGHT + 0.01, 0) - feet position just above floor
 
 ### Stairs
 - Trigger level transitions via collision
 - `CheckPlayerCollision(playerGeom)`: Returns true on first hit
-- If in alt dimension: Exit with random jump (70% up, 20% same, 10% down)
+- If in alt dimension: Exit with random jump (+1 to +10), triggers Salvia come-down if tripping
 - Otherwise: Progress to next level
 
 ---
@@ -487,6 +502,7 @@ dom.RemoveObject(item);
 16. **Player Physics During Cleanup**: Disable gravity with `dBodySetGravityMode(body, 0)` when cleaning up levels. Re-enable in `Teleport()` with `dBodySetGravityMode(body, 1)`.
 17. **Teleport Geometry**: Always update both `dBodySetPosition()` AND `dGeomSetPosition()` when teleporting - geometry position is used for collision detection.
 18. **Seating Y Position**: When sitting/standing, Person now saves/restores `standingYLevel` to preserve vertical position across seating changes.
+19. **Test Initialization**: Unit tests MUST initialize `PhysicsWorld` and set global before creating objects with physics: `PhysicsWorld physics; PhysicsWorld::SetGlobal(&physics);`. Same for DOM if needed. Many classes (Substance, RigidBody, etc.) require physics to be initialized.
 
 ---
 

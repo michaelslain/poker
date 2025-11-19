@@ -344,8 +344,8 @@ void LevelGenerator::SpawnResources(const Room& room, const ScalingConfig& scali
         dom->AddObject(pistol);
     }
     
-    // Substances - random selection
-    if (GetRandomValue(0, 100) < static_cast<int>(40 * scaling.resourceSpawnRate)) {
+    // Substances - more common spawn rate (increased from 40% to 80%)
+    if (GetRandomValue(0, 100) < static_cast<int>(80 * scaling.resourceSpawnRate)) {
         Vector3 substancePos = {
             room.position.x + GetRandomValue(-100, 100) / 50.0f,
             2.0f,

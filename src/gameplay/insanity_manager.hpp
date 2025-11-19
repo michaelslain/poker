@@ -2,6 +2,7 @@
 #define INSANITY_MANAGER_HPP
 
 #include "raylib.h"
+#include "rendering/psychedelic_manager.hpp"
 
 class InsanityManager {
 private:

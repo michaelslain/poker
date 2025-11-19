@@ -4,6 +4,13 @@
 #include "world/wall.hpp"
 #include "world/stairs.hpp"
 #include "rendering/light_bulb.hpp"
+#include "substances/weed.hpp"
+#include "substances/cocaine.hpp"
+#include "substances/molly.hpp"
+#include "substances/shrooms.hpp"
+#include "substances/vodka.hpp"
+#include "substances/salvia.hpp"
+#include "substances/fent.hpp"
 
 HospitalScene::HospitalScene(PhysicsWorld* physicsWorld, DOM* domInstance)
     : physics(physicsWorld), dom(domInstance)
@@ -75,6 +82,32 @@ void HospitalScene::Generate() {
     Vector3 stairsSize = {3.0f, 2.0f, 3.0f};
     Stairs* stairs = new Stairs(stairsPos, stairsSize, GRAY);
     dom->AddObject(stairs);
+    
+    // DEBUG: Spawn one of each substance in a line for testing
+    float substanceY = 2.0f;
+    float spacing = 1.0f;
+    float startX = -3.0f;
+    
+    Weed* weed = new Weed({startX + 0 * spacing, substanceY, 0});
+    dom->AddObject(weed);
+    
+    Cocaine* cocaine = new Cocaine({startX + 1 * spacing, substanceY, 0});
+    dom->AddObject(cocaine);
+    
+    Molly* molly = new Molly({startX + 2 * spacing, substanceY, 0});
+    dom->AddObject(molly);
+    
+    Shrooms* shrooms = new Shrooms({startX + 3 * spacing, substanceY, 0});
+    dom->AddObject(shrooms);
+    
+    Vodka* vodka = new Vodka({startX + 4 * spacing, substanceY, 0});
+    dom->AddObject(vodka);
+    
+    Salvia* salvia = new Salvia({startX + 5 * spacing, substanceY, 0});
+    dom->AddObject(salvia);
+    
+    Fent* fent = new Fent({startX + 6 * spacing, substanceY, 0});
+    dom->AddObject(fent);
 }
 
 Vector3 HospitalScene::GetPlayerSpawnPosition() const {

@@ -68,6 +68,9 @@ void CleanupLevel(DOM& dom, Player* player) {
 
 // Helper function to generate a level
 void GenerateLevel(int levelNum, LevelGenerator& levelGen, HospitalScene& hospital, DOM& dom, Player* player) {
+    // NOTE: Do NOT trigger come-down here - that happens when exiting alternate dimension
+    // Salvia trip should persist for entire alternate dimension level
+    
     if (levelNum == 0) {
         // Hospital scene
         hospital.Generate();
@@ -196,6 +199,13 @@ int main(void)
                             int levelJump = levelManager->GenerateRandomLevelJump();
                             levelManager->ExitAlternateDimension(levelJump);
                             previousDimension = 0;  // Back to normal dimension
+                            
+                            // Trigger Salvia come-down when exiting alternate dimension
+                            if (PsychedelicManager::IsTripping() && PsychedelicManager::GetTripType() == TripType::SALVIA) {
+                                PsychedelicManager::TriggerComeDown();
+                                TraceLog(LOG_INFO, "SALVIA: Triggering come-down (exiting alternate dimension)");
+                            }
+                            
                             TraceLog(LOG_INFO, "STAIRS: Exited alternate dimension, jumped %d levels to level %d", 
                                     levelJump, levelManager->GetCurrentLevel());
                         } else {

@@ -252,9 +252,10 @@ TEST_CASE("HospitalScene - Object Count", "[hospital_scene]") {
         // 4 walls (North, South, East, West)
         // 1 light
         // 1 stairs
-        // Total: 8 objects
+        // 7 debug substances (Weed, Cocaine, Molly, Shrooms, Vodka, Salvia, Fent)
+        // Total: 15 objects
         
-        REQUIRE(dom.GetCount() == 8);
+        REQUIRE(dom.GetCount() == 15);
         
         // Cleanup
         for (int i = 0; i < dom.GetCount(); i++) {

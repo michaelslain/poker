@@ -7,10 +7,10 @@
 - **Procedural Level Generation** - Infinite non-linear casino levels with organic room layouts and increasing difficulty
 - **Roguelike Progression** - Start in a hospital (level 0), progress through procedurally generated casino levels
 - **Difficulty Scaling** - Exponential difficulty curve affecting enemy count, AI quality, resources, and insanity
-- **Alternate Dimensions** - Consume Salvia to enter parallel dimensions with different layouts and random level jumps
+- **Alternate Dimensions** - Consume Salvia to enter parallel dimensions with different layouts; exit via stairs to jump forward 1-10 levels
 - **Texas Hold'em Poker** - Complete poker implementation with AI opponents, betting, and hand evaluation
 - **Insanity System** - Mental state affected by movement, seating, kills, and psychedelic trips; warps FOV from 60° to 150°
-- **Psychedelic Trips** - 5-minute shrooms trips with visual shader effects (breathing, warping, color shifting, geometric patterns)
+- **Psychedelic Trips** - Shrooms: 5-minute trips with visual shader effects (breathing, warping, color shifting); Salvia: Level-long alternate dimension trips with fast come-up/down, inverted FOV, and 100% insanity immunity
 - **Physics-Based Gameplay** - ODE physics engine for realistic item interactions and collisions
 - **Inventory System** - Dynamic item stacking with automatic sorting by category
 - **Weapon Combat** - 6-round revolver with raycast hit detection
@@ -116,9 +116,9 @@ Standalone Classes:
 - **Inventory** - Dynamic item stacking with automatic sorting
 - **Poker game logic** - Complete Texas Hold'em implementation with betting, hand evaluation, and showdown
 - **Lighting** - `LightingManager` static class managing shader-based lighting with up to 4 dynamic lights
-- **Psychedelic system** - `PsychedelicManager` with post-processing shaders for shrooms trips (5-minute duration with come-up, peak, and come-down stages)
+- **Psychedelic system** - `PsychedelicManager` with post-processing shaders supporting multiple trip types: Shrooms (5-minute duration with 60s come-up, 120s peak, 120s come-down) and Salvia (5s come-up, level-long peak, 5s come-down)
 - **Insanity system** - `InsanityManager` tracking player mental state based on movement, seating, kills, and psychedelic trips; affects FOV (60°-150°) and compounds with trip intensity
 - **Death system** - Player-managed death state triggered by 100% insanity or fentanyl overdose; 3-second vignette animation with shader effects
 - **Scene management** - Scene system for different game states
 - **Level system** - Procedural level generation with difficulty scaling and alternate dimensions (Salvia mechanic)
-- **Testing** - Catch2 v3.5.0 framework with 202 test cases (1367 assertions) covering all classes
+- **Testing** - Catch2 v3.5.0 framework with 224 test cases (1449 assertions) covering all classes including PsychedelicManager and Salvia

@@ -242,24 +242,32 @@ TEST_CASE("LevelManager - Random Level Jump", "[level_manager]") {
     LevelManager::Destroy();
     LevelManager* manager = LevelManager::GetInstance();
     
-    SECTION("GenerateRandomLevelJump returns value in expected range") {
-        // Generate many jumps to test distribution
-        bool foundPositive = false;
-        
+    SECTION("GenerateRandomLevelJump always returns positive values") {
+        // NEW: Salvia level jump is always forward (+1 to +10)
         for (int i = 0; i < 100; i++) {
             int jump = manager->GenerateRandomLevelJump();
             
-            // Jump should be in reasonable range (-10 to +10)
-            REQUIRE(jump >= -10);
+            // Jump must be positive (minimum +1, maximum +10)
+            REQUIRE(jump >= 1);
             REQUIRE(jump <= 10);
+        }
+    }
+    
+    SECTION("GenerateRandomLevelJump covers expected range") {
+        // Collect samples to verify we get variety in the 1-10 range
+        bool found1 = false;
+        bool foundHigh = false;  // >= 7
+        
+        for (int i = 0; i < 200; i++) {
+            int jump = manager->GenerateRandomLevelJump();
             
-            if (jump > 0) foundPositive = true;
+            if (jump == 1) found1 = true;
+            if (jump >= 7) foundHigh = true;
         }
         
-        // Over 100 iterations, we should see at least some positive jumps
-        // (This is probabilistic with 70% up, so very likely)
-        REQUIRE(foundPositive);
-        // Note: Zero and negative might not always appear in 100 samples due to randomness
+        // With 40% chance for +1 and 10% for 7-10, we should see both over 200 samples
+        REQUIRE(found1);
+        REQUIRE(foundHigh);
     }
     
     SECTION("GenerateRandomLevelJump is non-deterministic") {
@@ -270,6 +278,26 @@ TEST_CASE("LevelManager - Random Level Jump", "[level_manager]") {
         // At least one should be different (very high probability)
         bool hasVariety = (jump1 != jump2) || (jump2 != jump3) || (jump1 != jump3);
         REQUIRE(hasVariety);
+    }
+    
+    SECTION("GenerateRandomLevelJump distribution approximation") {
+        // Verify rough distribution over many samples
+        int countLow = 0;   // 1-3
+        int countMid = 0;   // 4-6
+        int countHigh = 0;  // 7-10
+        
+        for (int i = 0; i < 1000; i++) {
+            int jump = manager->GenerateRandomLevelJump();
+            if (jump <= 3) countLow++;
+            else if (jump <= 6) countMid++;
+            else countHigh++;
+        }
+        
+        // Expected: ~70% low (1-3), ~20% mid (4-6), ~10% high (7-10)
+        // Allow wide margins due to randomness
+        REQUIRE(countLow > 500);   // Should be around 700, accept > 500
+        REQUIRE(countMid > 100);   // Should be around 200, accept > 100
+        REQUIRE(countHigh > 50);   // Should be around 100, accept > 50
     }
     
     LevelManager::Destroy();
