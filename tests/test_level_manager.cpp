@@ -345,3 +345,72 @@ TEST_CASE("LevelManager - Edge Cases", "[level_manager][regression]") {
     
     LevelManager::Destroy();
 }
+
+TEST_CASE("LevelManager - Salvia Level Memory", "[level_manager][salvia][regression]") {
+    LevelManager::Destroy();
+    LevelManager* manager = LevelManager::GetInstance();
+    
+    SECTION("Remembers level before entering alternate dimension") {
+        manager->SetLevel(10);
+        manager->EnterAlternateDimension();
+        
+        // Exit with +5 jump should go to 10 + 5 = 15 (not current level + 5)
+        manager->ExitAlternateDimension(5);
+        REQUIRE(manager->GetCurrentLevel() == 15);
+    }
+    
+    SECTION("Level memory preserved even if level changes in alternate dimension") {
+        manager->SetLevel(7);
+        manager->EnterAlternateDimension();
+        
+        // Simulate level change in alternate dimension (shouldn't happen, but test it)
+        manager->SetLevel(20);
+        
+        // Exit should still go to original level (7) + jump (3) = 10
+        manager->ExitAlternateDimension(3);
+        REQUIRE(manager->GetCurrentLevel() == 10);
+    }
+    
+    SECTION("Multiple dimension entries update saved level") {
+        // First trip from level 5
+        manager->SetLevel(5);
+        manager->EnterAlternateDimension();
+        manager->ExitAlternateDimension(2);  // Should be at 7 now
+        REQUIRE(manager->GetCurrentLevel() == 7);
+        
+        // Second trip from level 7
+        manager->EnterAlternateDimension();
+        manager->ExitAlternateDimension(3);  // Should be at 7 + 3 = 10
+        REQUIRE(manager->GetCurrentLevel() == 10);
+    }
+    
+    SECTION("Zero jump returns to exact pre-trip level") {
+        manager->SetLevel(8);
+        manager->EnterAlternateDimension();
+        manager->ExitAlternateDimension(0);
+        REQUIRE(manager->GetCurrentLevel() == 8);
+    }
+    
+    SECTION("Large jump from low level works correctly") {
+        manager->SetLevel(0);  // Hospital
+        manager->EnterAlternateDimension();
+        manager->ExitAlternateDimension(10);  // Maximum Salvia jump
+        REQUIRE(manager->GetCurrentLevel() == 10);
+    }
+    
+    SECTION("Negative jump is relative to pre-trip level") {
+        manager->SetLevel(15);
+        manager->EnterAlternateDimension();
+        manager->ExitAlternateDimension(-5);  // Should go to 15 - 5 = 10
+        REQUIRE(manager->GetCurrentLevel() == 10);
+    }
+    
+    SECTION("Negative jump with clamping") {
+        manager->SetLevel(3);
+        manager->EnterAlternateDimension();
+        manager->ExitAlternateDimension(-10);  // Should clamp to 0
+        REQUIRE(manager->GetCurrentLevel() == 0);
+    }
+    
+    LevelManager::Destroy();
+}

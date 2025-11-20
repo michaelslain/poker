@@ -241,3 +241,135 @@ TEST_CASE("InsanityManager - Regression: trip intensity edge cases", "[insanity_
         REQUIRE(manager.GetInsanity() == Catch::Approx(0.5f));
     }
 }
+
+TEST_CASE("InsanityManager - Salvia Gradual Increase", "[insanity_manager][salvia][regression]") {
+    // Setup
+    PsychedelicManager::CleanupPsychedelicSystem();
+    PsychedelicManager::InitPsychedelicSystem();
+    
+    SECTION("Salvia peak gradually increases insanity to 100%") {
+        PsychedelicManager::StopTrip();  // Ensure clean state
+        InsanityManager manager({0, 0, 0});
+        
+        // Start Salvia trip
+        PsychedelicManager::StartTrip(0.5f, TripType::SALVIA);
+        
+        // During come-up (first 5 seconds), insanity should follow trip intensity
+        for (int i = 0; i < 5; i++) {
+            PsychedelicManager::Update(1.0f);
+            float tripIntensity = PsychedelicManager::GetCurrentIntensity();
+            manager.Update(1.0f, {0, 0, 0}, false, true, tripIntensity);
+        }
+        
+        float insanityAfterComeUp = manager.GetInsanity();
+        REQUIRE(insanityAfterComeUp < 1.0f);  // Should not be at 100% yet
+        
+        // After peak starts, insanity should gradually increase
+        PsychedelicManager::Update(1.0f);  // 6 seconds total
+        manager.Update(1.0f, {0, 0, 0}, false, true, 0.5f);
+        float insanityAt6s = manager.GetInsanity();
+        
+        // Should increase by 0.15 per second during peak
+        REQUIRE(insanityAt6s > insanityAfterComeUp);
+        REQUIRE(insanityAt6s == Catch::Approx(insanityAfterComeUp + 0.15f).margin(0.01f));
+        
+        // Advance several more seconds
+        for (int i = 0; i < 10; i++) {
+            PsychedelicManager::Update(1.0f);
+            manager.Update(1.0f, {0, 0, 0}, false, true, 0.5f);
+        }
+        
+        // Should reach 100% (clamped)
+        REQUIRE(manager.GetInsanity() == Catch::Approx(1.0f));
+        
+        PsychedelicManager::StopTrip();  // Clean up
+    }
+    
+    SECTION("Insanity increase rate is 0.15 per second") {
+        PsychedelicManager::StopTrip();  // Ensure clean state
+        InsanityManager manager({0, 0, 0});
+        
+        // Start Salvia trip and advance to peak
+        PsychedelicManager::StartTrip(0.5f, TripType::SALVIA);
+        for (int i = 0; i < 6; i++) {
+            PsychedelicManager::Update(1.0f);
+            manager.Update(1.0f, {0, 0, 0}, false, true, 0.5f);
+        }
+        
+        // At this point, insanity has been increasing during peak
+        float startInsanity = manager.GetInsanity();
+        
+        // Update for 1 second during peak
+        PsychedelicManager::Update(1.0f);
+        manager.Update(1.0f, {0, 0, 0}, false, true, 0.5f);
+        
+        // Should increase by approximately 0.15 (or reach 1.0 if already high)
+        float endInsanity = manager.GetInsanity();
+        float actualIncrease = endInsanity - startInsanity;
+        
+        // Either increased by ~0.15, or was clamped at 1.0
+        if (endInsanity < 1.0f) {
+            REQUIRE(actualIncrease >= 0.14f);
+            REQUIRE(actualIncrease <= 0.16f);
+        } else {
+            REQUIRE(endInsanity == Catch::Approx(1.0f));
+        }
+        
+        PsychedelicManager::StopTrip();  // Clean up
+    }
+    
+    SECTION("Insanity clamped at 100% during Salvia peak") {
+        PsychedelicManager::StopTrip();  // Ensure clean state
+        InsanityManager manager({0, 0, 0});
+        
+        // Start with high insanity
+        manager.Update(0.0f, {0, 0, 0}, false, true, 0.95f);
+        
+        // Start Salvia and advance to peak
+        PsychedelicManager::StartTrip(0.5f, TripType::SALVIA);
+        for (int i = 0; i < 6; i++) {
+            PsychedelicManager::Update(1.0f);
+        }
+        
+        // Update during peak - should clamp at 1.0
+        for (int i = 0; i < 5; i++) {
+            manager.Update(1.0f, {0, 0, 0}, false, true, 0.5f);
+            REQUIRE(manager.GetInsanity() <= 1.0f);  // Never exceeds 100%
+        }
+        
+        REQUIRE(manager.GetInsanity() == Catch::Approx(1.0f));
+        
+        PsychedelicManager::StopTrip();  // Clean up
+    }
+    
+    SECTION("Salvia come-down stops gradual increase") {
+        PsychedelicManager::StopTrip();  // Ensure clean state
+        InsanityManager manager({0, 0, 0});
+        
+        // Start Salvia and advance to peak
+        PsychedelicManager::StartTrip(0.5f, TripType::SALVIA);
+        for (int i = 0; i < 8; i++) {
+            PsychedelicManager::Update(1.0f);
+            manager.Update(1.0f, {0, 0, 0}, false, true, 0.5f);
+        }
+        
+        float insanityDuringPeak = manager.GetInsanity();
+        
+        // Trigger come-down
+        PsychedelicManager::TriggerComeDown();
+        PsychedelicManager::Update(1.0f);
+        
+        // During come-down, should follow trip intensity (decreasing)
+        float comeDownIntensity = PsychedelicManager::GetCurrentIntensity();
+        manager.Update(1.0f, {0, 0, 0}, false, true, comeDownIntensity);
+        
+        // Should be following intensity, not continuing to increase
+        REQUIRE(manager.GetInsanity() < insanityDuringPeak);
+        
+        PsychedelicManager::StopTrip();  // Clean up
+    }
+    
+    // Final cleanup
+    PsychedelicManager::StopTrip();
+    PsychedelicManager::CleanupPsychedelicSystem();
+}

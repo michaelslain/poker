@@ -373,6 +373,157 @@ TEST_CASE("Player - Coordinate System", "[player][physics][regression]") {
     DOM::SetGlobal(nullptr);
 }
 
+TEST_CASE("Player - FOV Salvia Extended Range", "[player][salvia][fov][regression]") {
+    PhysicsWorld physics;
+    PhysicsWorld::SetGlobal(&physics);
+    DOM dom;
+    DOM::SetGlobal(&dom);
+    
+    PsychedelicManager::CleanupPsychedelicSystem();
+    PsychedelicManager::InitPsychedelicSystem();
+    PsychedelicManager::StopTrip();  // Ensure clean state
+    
+    Player player({0, 0.01f, 0});
+    Player::SetGlobal(&player);
+    
+    SECTION("Normal FOV range without Salvia") {
+        PsychedelicManager::StopTrip();  // Ensure clean state
+        // Without Salvia, max FOV is 150°
+        player.insanityManager.Update(0.0f, player.position, false, true, 1.0f);  // 100% insanity
+        player.Update(0.016f);  // One frame
+        
+        float fov = player.GetCamera()->fovy;
+        REQUIRE(fov == Catch::Approx(150.0f).margin(1.0f));
+        
+        PsychedelicManager::StopTrip();  // Clean up
+    }
+    
+    SECTION("Extended FOV range during Salvia peak") {
+        PsychedelicManager::StopTrip();  // Ensure clean state
+        // Start Salvia trip and advance to peak
+        PsychedelicManager::StartTrip(0.5f, TripType::SALVIA);
+        for (int i = 0; i < 6; i++) {
+            PsychedelicManager::Update(1.0f);
+        }
+        
+        // Set insanity to 100%
+        for (int i = 0; i < 10; i++) {
+            player.insanityManager.Update(1.0f, player.position, false, true, 0.5f);
+        }
+        
+        player.Update(0.016f);
+        
+        float fov = player.GetCamera()->fovy;
+        // During Salvia peak at 100% insanity, FOV should be 240°
+        REQUIRE(fov == Catch::Approx(240.0f).margin(1.0f));
+        
+        PsychedelicManager::StopTrip();  // Clean up
+    }
+    
+    SECTION("FOV interpolates smoothly during Salvia") {
+        PsychedelicManager::StopTrip();  // Ensure clean state
+        // Start Salvia trip and advance to peak
+        PsychedelicManager::StartTrip(0.5f, TripType::SALVIA);
+        for (int i = 0; i < 6; i++) {
+            PsychedelicManager::Update(1.0f);
+        }
+        
+        // Test FOV at different insanity levels
+        // 0% insanity = 60° FOV
+        player.insanityManager.Update(0.0f, player.position, false, false, 0.0f);
+        player.Update(0.016f);
+        REQUIRE(player.GetCamera()->fovy == Catch::Approx(60.0f).margin(1.0f));
+        
+        // 50% insanity during Salvia = 150° FOV (60 + 0.5 * 180)
+        player.insanityManager.Update(0.0f, player.position, false, true, 0.5f);
+        for (int i = 0; i < 3; i++) {
+            player.insanityManager.Update(1.0f, player.position, false, true, 0.5f);
+        }
+        player.Update(0.016f);
+        float fovAt50 = player.GetCamera()->fovy;
+        REQUIRE(fovAt50 > 100.0f);
+        REQUIRE(fovAt50 < 200.0f);
+        
+        // 100% insanity during Salvia = 240° FOV
+        for (int i = 0; i < 10; i++) {
+            player.insanityManager.Update(1.0f, player.position, false, true, 0.5f);
+        }
+        player.Update(0.016f);
+        REQUIRE(player.GetCamera()->fovy == Catch::Approx(240.0f).margin(1.0f));
+        
+        PsychedelicManager::StopTrip();  // Clean up
+    }
+    
+    SECTION("FOV returns to normal range after Salvia ends") {
+        PsychedelicManager::StopTrip();  // Ensure clean state
+        // Start and complete Salvia trip
+        PsychedelicManager::StartTrip(0.5f, TripType::SALVIA);
+        for (int i = 0; i < 6; i++) {
+            PsychedelicManager::Update(1.0f);
+        }
+        
+        // Reach 100% insanity
+        for (int i = 0; i < 10; i++) {
+            player.insanityManager.Update(1.0f, player.position, false, true, 0.5f);
+        }
+        player.Update(0.016f);
+        REQUIRE(player.GetCamera()->fovy == Catch::Approx(240.0f).margin(1.0f));
+        
+        // End trip
+        PsychedelicManager::TriggerComeDown();
+        for (int i = 0; i < 6; i++) {
+            PsychedelicManager::Update(1.0f);
+        }
+        
+        // Insanity still high, but max FOV should be back to 150°
+        player.Update(0.016f);
+        float fovAfterTrip = player.GetCamera()->fovy;
+        REQUIRE(fovAfterTrip <= 150.0f);
+        
+        PsychedelicManager::StopTrip();  // Clean up
+    }
+    
+    SECTION("FOV calculation at boundary insanity levels during Salvia") {
+        PsychedelicManager::StopTrip();  // Ensure clean state
+        PsychedelicManager::StartTrip(0.5f, TripType::SALVIA);
+        for (int i = 0; i < 6; i++) {
+            PsychedelicManager::Update(1.0f);
+        }
+        
+        // 0% insanity
+        player.insanityManager.Update(0.0f, player.position, false, false, 0.0f);
+        player.Update(0.016f);
+        REQUIRE(player.GetCamera()->fovy == Catch::Approx(60.0f).margin(1.0f));
+        
+        // 25% insanity = 60 + 0.25 * 180 = 105°
+        for (int i = 0; i < 2; i++) {
+            player.insanityManager.Update(1.0f, player.position, false, true, 0.5f);
+        }
+        player.Update(0.016f);
+        float fovAt25 = player.GetCamera()->fovy;
+        REQUIRE(fovAt25 > 90.0f);
+        REQUIRE(fovAt25 < 120.0f);
+        
+        // 75%+ insanity (after several seconds of gradual increase)
+        for (int i = 0; i < 4; i++) {
+            player.insanityManager.Update(1.0f, player.position, false, true, 0.5f);
+        }
+        player.Update(0.016f);
+        float fovAt75 = player.GetCamera()->fovy;
+        // Should be well above normal max (150°) but not quite at 240° yet
+        REQUIRE(fovAt75 > 180.0f);
+        REQUIRE(fovAt75 < 240.0f);
+        
+        PsychedelicManager::StopTrip();  // Clean up
+    }
+    
+    // Final cleanup
+    PsychedelicManager::StopTrip();
+    PsychedelicManager::CleanupPsychedelicSystem();
+    PhysicsWorld::SetGlobal(nullptr);
+    DOM::SetGlobal(nullptr);
+}
+
 TEST_CASE("Player - Teleport", "[player][regression]") {
     PhysicsWorld physics;
     DOM dom;

@@ -34,7 +34,7 @@ make clean     # Remove build artifacts
 
 **Run**: `make test`
 - **38 test files** covering all game systems
-- **224 test cases**, **1449 assertions**, **100% pass rate**
+- **228 test cases**, **1486 assertions**, **100% pass rate**
 - Location: `tests/` directory
 - Framework: Catch2 v3.5.0 (header-only)
 
@@ -252,7 +252,11 @@ poker/
 ### Salvia
 - Inherits Substance
 - Purple {128, 0, 128, 255}
-- `Consume()`: Starts level-long Salvia trip with inverted FOV and 100% insanity (without death)
+- `Consume()`: Enters alternate dimension with new randomly generated level, starts Salvia trip
+- **Effects**: Extended FOV range (60° → 240°), insanity gradually increases to 100% (0.15/s, ~6.7s)
+- **Upside-down view**: Achieved purely through FOV at 100% insanity (240° FOV = inverted view)
+- **Level system**: Player remembers pre-trip level, exits 1-10 levels above it (not current level)
+- **No death**: 100% insanity during Salvia doesn't trigger death
 
 ---
 
@@ -387,8 +391,9 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 - **Movement**: Decrease 0.3/s when moving, increase 0.01-0.02/s when still
 - **Kills**: +0.2 `minInsanity` per kill, decays after 30s
 - **Trips**: `insanity = tripIntensity + minInsanity`
-- **Salvia Peak Exception**: During Salvia peak (after 5s come-up, before come-down), forces insanity to 100% without triggering death
-- **FOV**: Interpolates 60° → 150° as insanity increases, OR -90° (inverted view) during Salvia peak
+- **Salvia Peak**: During Salvia peak (after 5s come-up, before come-down), gradually increases to 100% at 0.15/s (~6.7s)
+- **FOV**: Interpolates 60° → 150° as insanity increases (normal), OR 60° → 240° during Salvia (upside-down at 100%)
+- **Death prevention**: Salvia peak prevents death from 100% insanity
 - `DrawMeter()`: N64-style circular meter (yellow → red)
 
 ### Player Death
@@ -408,7 +413,11 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 - `NextLevel()`, `SetLevel(int)`, `JumpToLevel(int)`
 - **Scaling**: `insanityMultiplier`, `minEnemiesPerTable`, `resourceSpawnRate`, `enemyAIQuality`
 - **Dimensions**: `EnterAlternateDimension()`, `ExitAlternateDimension(jump)`, `IsInAlternateDimension()`
+- **Salvia Flow**: Enter alternate dim → NEW level generated → reach stairs → exit to pre-trip level +1 to +10
+- **Level Generation**: Alternate dimension gets freshly generated random level (not reused)
+- **Salvia Level Memory**: Saves `levelBeforeAlternateDim` when entering, exits to that level +1 to +10
 - **GenerateRandomLevelJump()**: Always returns +1 to +10 (weighted: 40% chance +1, 30% chance +2-3, 20% chance +4-6, 10% chance +7-10)
+- **UI**: Shows "SALVIA DIMENSION" (purple) when in alternate dimension, "LEVEL X" otherwise
 - Level 0 = Hospital, Level 1+ = Casino
 
 ### LevelGenerator
@@ -429,7 +438,7 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 ### Stairs
 - Trigger level transitions via collision
 - `CheckPlayerCollision(playerGeom)`: Returns true on first hit
-- If in alt dimension: Exit with random jump (+1 to +10), triggers Salvia come-down if tripping
+- If in alt dimension: Exit to pre-Salvia level +1 to +10, triggers Salvia come-down if tripping
 - Otherwise: Progress to next level
 
 ---

@@ -31,11 +31,13 @@ void DrawTextBillboard(Camera3D camera, const char* text, Vector3 position, floa
 
 void DrawLevelUI(int level, int dimension) {
     // Draw level counter in bottom-right corner
-    std::string levelText = "LEVEL " + std::to_string(level);
+    std::string levelText;
     
-    // If in alternate dimension, show that
+    // If in alternate dimension (Salvia), show special text instead of level
     if (dimension > 0) {
-        levelText += " (ALT DIM " + std::to_string(dimension) + ")";
+        levelText = "SALVIA DIMENSION";
+    } else {
+        levelText = "LEVEL " + std::to_string(level);
     }
     
     // Get screen dimensions

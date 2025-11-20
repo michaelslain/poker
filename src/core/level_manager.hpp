@@ -28,6 +28,7 @@ private:
     
     int currentLevel;              // Current level number (0 = hospital, 1+ = casino levels)
     int currentDimension;          // 0 = normal, 1+ = alternate dimensions (salvia)
+    int levelBeforeAlternateDim;   // Saved level from before entering alternate dimension
     ScalingConfig scaling;         // Current difficulty scaling
     
     // Private constructor for singleton

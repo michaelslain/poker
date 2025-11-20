@@ -13,7 +13,7 @@ InsanityManager::~InsanityManager() {
 
 void InsanityManager::Update(float deltaTime, Vector3 currentPosition, bool isSeated, bool isTripping, float tripIntensity) {
     // If tripping, insanity is trip intensity + minimum floor
-    // Special case: Salvia forces 100% insanity during entire peak (whole alternate dimension level)
+    // Special case: Salvia gradually increases to 100% during peak (smooth FOV transition)
     if (isTripping) {
         bool onSalviaPeak = PsychedelicManager::GetTripType() == TripType::SALVIA &&
                             PsychedelicManager::GetTripTime() >= 5.0f &&  // After 5s come-up
@@ -31,7 +31,13 @@ void InsanityManager::Update(float deltaTime, Vector3 currentPosition, bool isSe
         }
         
         if (onSalviaPeak) {
-            insanity = 1.0f;  // Force 100% insanity during entire Salvia peak
+            // Gradually increase insanity to 100% over time on Salvia
+            // Rate: 0.15/s = reaches 100% in ~6.7 seconds after peak starts
+            float targetInsanity = 1.0f;
+            if (insanity < targetInsanity) {
+                insanity += deltaTime * 0.15f;
+                if (insanity > targetInsanity) insanity = targetInsanity;
+            }
         } else {
             insanity = tripIntensity + minInsanity;
             if (insanity > 1.0f) insanity = 1.0f;

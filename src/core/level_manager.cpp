@@ -8,6 +8,8 @@ LevelManager* LevelManager::instance = nullptr;
 LevelManager::LevelManager()
     : currentLevel(0)
     , currentDimension(0)
+    , levelBeforeAlternateDim(0)
+    , scaling()  // Initialize scaling struct with default constructor
 {
     CalculateScaling();
 }
@@ -61,6 +63,8 @@ void LevelManager::JumpToLevel(int level) {
 }
 
 void LevelManager::EnterAlternateDimension() {
+    // Save the current level before entering alternate dimension
+    levelBeforeAlternateDim = currentLevel;
     currentDimension++;
     // Keep same level number, but in alternate dimension
     // Difficulty could be modified here if alternate dimensions are harder
@@ -68,7 +72,8 @@ void LevelManager::EnterAlternateDimension() {
 
 void LevelManager::ExitAlternateDimension(int levelJump) {
     currentDimension = 0;  // Return to normal dimension
-    currentLevel += levelJump;  // Apply random jump
+    // Jump 1-10 levels ABOVE the level we were at before entering alternate dimension
+    currentLevel = levelBeforeAlternateDim + levelJump;
     if (currentLevel < 0) {
         currentLevel = 0;  // Can't go below level 0
     }
