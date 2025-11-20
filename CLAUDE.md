@@ -244,6 +244,13 @@ poker/
 - Pure virtual: `Consume()`, `GetName()`, `Clone()`
 - Constructor: `Substance(Vector3 pos, Color color, PhysicsWorld* physics = nullptr)`
 
+### Weed
+- Inherits Substance
+- Dark green {50, 150, 50, 255}
+- `Consume()`: Reduces insanity by 50% and resets min insanity to 0
+- **Effects**: Calming/relaxation - removes kill-based insanity floor and provides immediate relief
+- **Use case**: Counter high insanity or remove permanent stress from combat
+
 ### Fent
 - Inherits Substance
 - Dark gray {50, 50, 50, 255}
@@ -394,6 +401,7 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 - **Salvia Peak**: During Salvia peak (after 5s come-up, before come-down), gradually increases to 100% at 0.15/s (~6.7s)
 - **FOV**: Interpolates 60° → 150° as insanity increases (normal), OR 60° → 240° during Salvia (upside-down at 100%)
 - **Death prevention**: Salvia peak prevents death from 100% insanity
+- **Substance control**: `ReduceInsanity(amount)` and `ResetMinInsanity()` for substance effects (e.g., weed)
 - `DrawMeter()`: N64-style circular meter (yellow → red)
 
 ### Player Death
