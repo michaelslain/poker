@@ -37,7 +37,7 @@ private:
     
     // Generation parameters
     static constexpr int MIN_ROOMS = 3;
-    static constexpr int MAX_ROOMS = 8;
+    static constexpr int MAX_ROOMS = 32;  // Matches MAX_LIGHTS for one light per room
     static constexpr float ROOM_MIN_SIZE = 8.0f;
     static constexpr float ROOM_MAX_SIZE = 15.0f;
     static constexpr float HALLWAY_WIDTH = 3.0f;

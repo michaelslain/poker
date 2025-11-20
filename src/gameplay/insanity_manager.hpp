@@ -34,6 +34,10 @@ public:
     float GetInsanity() const { return insanity; }
     float GetMinInsanity() const { return minInsanity; }
 
+    // Setters for substance effects
+    void ReduceInsanity(float amount) { insanity -= amount; if (insanity < 0.0f) insanity = 0.0f; }
+    void ResetMinInsanity() { minInsanity = 0.0f; minInsanityDecayTimer = 0.0f; }
+
     // Draw the insanity meter UI
     void DrawMeter();
 };

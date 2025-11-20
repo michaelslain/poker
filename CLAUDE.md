@@ -423,10 +423,11 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 ### LevelGenerator
 - **Algorithm**: Random walk on grid, rooms branch in 4 directions
 - **Constraints**: Connecting rooms share dimension on connection axis
-- **Rooms**: MIN_ROOMS=3, MAX_ROOMS=8, size=8-15 units
+- **Rooms**: MIN_ROOMS=3, MAX_ROOMS=32, size=8-15 units
+- **Room count scaling**: 3 + (level / 2), capped at 32 (level 58+)
 - **Contents**: First=empty, middle=60% poker table, last=stairs
 - **Resources**: Chips, pistols, substances at 80% spawn rate (scaled by difficulty)
-- **Lighting**: 1 light bulb per room (max 32 lights)
+- **Lighting**: 1 light bulb per room (max 32 lights matches max rooms)
 - **Floor color**: Dark maroon RGB(20, 2, 2)
 
 ### HospitalScene
