@@ -5,7 +5,8 @@
 
 enum class TripType {
     SHROOMS,  // 5 minute trip with standard timing
-    SALVIA    // Level-long trip with fast come-up/down, full peak
+    SALVIA,   // Level-long trip with fast come-up/down, full peak
+    MOLLY     // 10 minute trip with pink hue and low intensity
 };
 
 class PsychedelicManager {
@@ -14,6 +15,8 @@ private:
     static bool shaderInitialized;
     static int timeLoc;
     static int intensityLoc;
+    static int pinkHueLoc;
+    static int tripTypeLoc;
     
     static float tripStartTime;
     static float baseIntensity;
@@ -22,6 +25,7 @@ private:
     static bool inComeDown;  // For Salvia: tracks if come-down has been triggered
     
     static const float SHROOMS_DURATION; // 5 minutes
+    static const float MOLLY_DURATION;   // 10 minutes
 
 public:
     // Initialize the psychedelic shader system

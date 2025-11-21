@@ -10,7 +10,8 @@ LightBulb::LightBulb(Vector3 position, Color lightColor)
     
     // Create point light with warm tint (ignores lightColor parameter)
     // Visual glow remains yellow, lighting is extremely bright warm light with minimal range
-    Color warmLight = {255, 240, 200, 255};  // Extremely bright warm orange/yellow light
+    // Use maximum brightness values - shader will make these very bright
+    Color warmLight = {255, 255, 255, 255};  // Maximum brightness white light (very bright)
     *light = LightingManager::CreateLight(LIGHT_POINT, position, Vector3Zero(), warmLight);
     
     // Store as opaque pointer

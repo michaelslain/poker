@@ -21,6 +21,7 @@ Player* Player::globalInstance = nullptr;
 
 Player::Player(Vector3 pos, const std::string& playerName)
     : Person(pos, playerName, 1.0f), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
+      speedBoostTimer(0.0f), baseSpeed(5.0f),
       lookYaw(0.0f), lookPitch(0.0f),
       isDying(false), deathVignetteProgress(0.0f), vignetteShaderLoaded(false),
       selectedItemIndex(-1), lastHeldItemIndex(-1),
@@ -168,6 +169,15 @@ void Player::Update(float deltaTime) {
         }
     }
 
+    // Update speed boost timer
+    if (speedBoostTimer > 0.0f) {
+        speedBoostTimer -= deltaTime;
+        if (speedBoostTimer <= 0.0f) {
+            speedBoostTimer = 0.0f;
+            speed = baseSpeed;  // Reset to normal speed
+        }
+    }
+    
     // Normalize and apply speed (only when not seated)
     if (!isSeated && Vector3Length(moveDir) > 0) {
         moveDir = Vector3Normalize(moveDir);
@@ -887,6 +897,12 @@ void Player::OnKillPerson() {
 
 float Player::GetInsanity() const {
     return insanityManager.GetInsanity();
+}
+
+void Player::ApplySpeedBoost(float newSpeed, float duration) {
+    speed = newSpeed;
+    speedBoostTimer = duration;
+    TraceLog(LOG_INFO, "PLAYER: Speed boost applied (%.1f for %.1fs)", newSpeed, duration);
 }
 
 void Player::TriggerDeath() {

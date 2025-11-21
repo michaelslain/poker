@@ -59,10 +59,10 @@ void main()
                 float distance = length(lightDir);
                 light = normalize(lightDir);
 
-                // Extremely strong falloff for very bright but minimal range lights
+                // Spotlight: bright center, tight focused beam
                 float constant = 1.0;
-                float linear = 1.0;       // Very fast falloff
-                float quadratic = 0.9;    // Extremely steep falloff
+                float linear = 0.7;
+                float quadratic = 1.8;    // High quadratic for spotlight effect
                 attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
             }
 

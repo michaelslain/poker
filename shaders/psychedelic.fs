@@ -13,6 +13,8 @@ uniform vec4 colDiffuse;
 // Psychedelic effect uniforms
 uniform float time;
 uniform float intensity;  // 0.0 to 1.0
+uniform float pinkHue;    // 0.0 = no pink, 1.0 = full pink tint (for molly)
+uniform int tripType;     // 0=SHROOMS, 1=SALVIA, 2=MOLLY
 
 // Output fragment color
 out vec4 finalColor;
@@ -168,9 +170,10 @@ void main()
 
     // ===== EFFECT 4: Color Shifting =====
     // Only apply color shifting during peak and come down (stage >= 1.0)
+    // Skip color shifting for MOLLY (tripType == 2)
     vec3 shiftedColor = texelColor.rgb;
 
-    if (stage >= 1.0) {
+    if (stage >= 1.0 && tripType != 2) {
         vec3 hsv = rgb2hsv(texelColor.rgb);
 
         // Calculate color shift intensity (ramps up during peak)
@@ -212,6 +215,19 @@ void main()
         float edgeGlow = 1.0 - smoothstep(0.0, 0.5, length(uv - center));
         vec3 glowColor = hsv2rgb(vec3(fract(time * 0.3), 1.0, 1.0));
         shiftedColor += glowColor * edgeGlow * localIntensity * 0.2;
+    }
+
+    // ===== EFFECT 7: Pink Hue Shift (for Molly) =====
+    if (pinkHue > 0.01) {
+        vec3 hsv = rgb2hsv(shiftedColor);
+        // Pink hue is around 0.88 (316 degrees) - true pink
+        // Directly set hue to pink (don't mix, hue is circular)
+        hsv.x = 0.88;
+        // Boost saturation for vibrant pink effect
+        hsv.y = clamp(hsv.y + pinkHue * 0.4, 0.0, 1.0);
+        // Brighten for pink glow
+        hsv.z *= 1.0 + pinkHue * 0.2;
+        shiftedColor = hsv2rgb(hsv);
     }
 
     // Final color assembly

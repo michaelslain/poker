@@ -21,6 +21,8 @@ private:
     
     GameCamera camera;
     float speed;
+    float speedBoostTimer;      // Time remaining for speed boost
+    float baseSpeed;            // Normal speed (5.0)
     float lookYaw;
     float lookPitch;
 
@@ -86,6 +88,9 @@ public:
     // Insanity management
     void OnKillPerson();  // Called when player kills someone
     float GetInsanity() const;  // Get current insanity level
+    
+    // Speed boost management
+    void ApplySpeedBoost(float multiplier, float duration);  // Apply temporary speed boost
     
     // Death management
     void TriggerDeath();  // Trigger death sequence (from insanity, fent, etc.)

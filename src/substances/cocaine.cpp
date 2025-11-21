@@ -1,4 +1,5 @@
 #include "substances/cocaine.hpp"
+#include "entities/player.hpp"
 
 Cocaine::Cocaine(Vector3 pos)
     : Substance(pos, WHITE)  // White color for cocaine
@@ -10,8 +11,12 @@ Cocaine::~Cocaine() {
 }
 
 void Cocaine::Consume() {
-    // TODO: Implement cocaine effects (energy boost, etc.)
-    // For now, just placeholder
+    Player* player = Player::GetGlobal();
+    if (player) {
+        // Double speed for 30 seconds
+        player->ApplySpeedBoost(10.0f, 30.0f);
+        TraceLog(LOG_INFO, "COCAINE: Consumed - speed boost activated");
+    }
 }
 
 std::string Cocaine::GetType() const {

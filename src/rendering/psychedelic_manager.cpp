@@ -6,6 +6,8 @@ Shader PsychedelicManager::psychedelicShader = {0, nullptr};
 bool PsychedelicManager::shaderInitialized = false;
 int PsychedelicManager::timeLoc = -1;
 int PsychedelicManager::intensityLoc = -1;
+int PsychedelicManager::pinkHueLoc = -1;
+int PsychedelicManager::tripTypeLoc = -1;
 
 float PsychedelicManager::tripStartTime = 0.0f;
 float PsychedelicManager::baseIntensity = 1.0f;
@@ -14,6 +16,7 @@ TripType PsychedelicManager::currentTripType = TripType::SHROOMS;
 bool PsychedelicManager::inComeDown = false;
 
 const float PsychedelicManager::SHROOMS_DURATION = 300.0f; // 5 minutes
+const float PsychedelicManager::MOLLY_DURATION = 600.0f;   // 10 minutes
 
 void PsychedelicManager::InitPsychedelicSystem() {
     if (shaderInitialized) return;
@@ -24,6 +27,8 @@ void PsychedelicManager::InitPsychedelicSystem() {
     // Get shader uniform locations
     timeLoc = GetShaderLocation(psychedelicShader, "time");
     intensityLoc = GetShaderLocation(psychedelicShader, "intensity");
+    pinkHueLoc = GetShaderLocation(psychedelicShader, "pinkHue");
+    tripTypeLoc = GetShaderLocation(psychedelicShader, "tripType");
     
     shaderInitialized = true;
 }
@@ -66,6 +71,11 @@ void PsychedelicManager::Update(float deltaTime) {
     
     // Auto-stop shrooms trip after duration
     if (currentTripType == TripType::SHROOMS && tripStartTime >= SHROOMS_DURATION) {
+        StopTrip();
+    }
+    
+    // Auto-stop molly trip after duration
+    if (currentTripType == TripType::MOLLY && tripStartTime >= MOLLY_DURATION) {
         StopTrip();
     }
     
@@ -128,6 +138,29 @@ float PsychedelicManager::GetCurrentIntensity() {
         } else {
             // Peak: full intensity until level transition
             intensity *= 1.0f;
+        }
+        
+        return intensity;
+    }
+    else if (currentTripType == TripType::MOLLY) {
+        // Molly: 10 minute trip with gradual come-up/down, lower intensity
+        float comeUpEnd = 90.0f;   // 1.5 minute come-up
+        float peakEnd = 480.0f;     // 8 minute peak (1.5 + 6.5 + 2)
+        
+        float intensity = baseIntensity;
+        
+        if (tripStartTime < comeUpEnd) {
+            // Come up: ramp 0 -> 1
+            float stage = tripStartTime / comeUpEnd;
+            intensity *= stage * stage; // Smooth ramp
+        } else if (tripStartTime < peakEnd) {
+            // Peak: full intensity with gentle waves
+            float wave = sinf(tripStartTime * 0.3f) * 0.1f + 0.9f;
+            intensity *= wave;
+        } else {
+            // Come down: ramp 1 -> 0
+            float comeDownProgress = (tripStartTime - peakEnd) / (MOLLY_DURATION - peakEnd);
+            intensity *= (1.0f - comeDownProgress);
         }
         
         return intensity;

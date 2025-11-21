@@ -13,8 +13,11 @@ InsanityManager::~InsanityManager() {
 
 void InsanityManager::Update(float deltaTime, Vector3 currentPosition, bool isSeated, bool isTripping, float tripIntensity) {
     // If tripping, insanity is trip intensity + minimum floor
+    // Exception: MOLLY doesn't affect insanity, only visuals
     // Special case: Salvia gradually increases to 100% during peak (smooth FOV transition)
-    if (isTripping) {
+    bool trippingAffectsInsanity = isTripping && PsychedelicManager::GetTripType() != TripType::MOLLY;
+    
+    if (trippingAffectsInsanity) {
         bool onSalviaPeak = PsychedelicManager::GetTripType() == TripType::SALVIA &&
                             PsychedelicManager::GetTripTime() >= 5.0f &&  // After 5s come-up
                             !PsychedelicManager::IsInComeDown();          // Not in come-down yet
