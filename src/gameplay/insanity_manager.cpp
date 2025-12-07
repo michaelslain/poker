@@ -22,17 +22,6 @@ void InsanityManager::Update(float deltaTime, Vector3 currentPosition, bool isSe
                             PsychedelicManager::GetTripTime() >= 5.0f &&  // After 5s come-up
                             !PsychedelicManager::IsInComeDown();          // Not in come-down yet
         
-        // Debug logging
-        static float lastLogTime = 0.0f;
-        lastLogTime += deltaTime;
-        if (lastLogTime > 2.0f) {  // Log every 2 seconds
-            TraceLog(LOG_INFO, "INSANITY: isTripping=%d, tripType=%d, tripTime=%.1f, inComeDown=%d, onSalviaPeak=%d, insanity=%.2f",
-                     isTripping, (int)PsychedelicManager::GetTripType(), 
-                     PsychedelicManager::GetTripTime(), PsychedelicManager::IsInComeDown(),
-                     onSalviaPeak, insanity);
-            lastLogTime = 0.0f;
-        }
-        
         if (onSalviaPeak) {
             // Gradually increase insanity to 100% over time on Salvia
             // Rate: 0.15/s = reaches 100% in ~6.7 seconds after peak starts
@@ -45,6 +34,10 @@ void InsanityManager::Update(float deltaTime, Vector3 currentPosition, bool isSe
             insanity = tripIntensity + minInsanity;
             if (insanity > 1.0f) insanity = 1.0f;
         }
+        
+        // Reset movement tracking during trips to prevent stale lastPosition
+        // from affecting insanity when the trip ends
+        timeSinceLastMove = 0.0f;
     } else {
         // Normal insanity system - detect if player is moving
         float distanceMoved = Vector3Distance(currentPosition, lastPosition);
