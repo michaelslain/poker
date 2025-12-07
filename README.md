@@ -14,7 +14,7 @@
 - **Physics-Based Gameplay** - ODE physics engine for realistic item interactions and collisions
 - **Inventory System** - Dynamic item stacking with automatic sorting by category
 - **Weapon Combat** - 6-round revolver with raycast hit detection
-- **Consumable Substances** - Weed, Cocaine, Molly, Adrenaline, Salvia, Shrooms, Vodka, Fent (instant death) with unique effects
+- **Consumable Substances** - Weed, Cocaine, Molly (reveals enemy cards), Adrenaline, Salvia, Shrooms, Vodka, Fent (instant death) with unique effects
 - **Dynamic Lighting** - Shader-based lighting system supporting up to 32 lights with decorative light bulbs emitting atmospheric blue light
 - **Death System** - Die from insanity reaching 100% or fentanyl overdose with 3-second death vignette effect
 
@@ -39,6 +39,7 @@ brew install ccache  # For faster compilation
 
 ```bash
 make run-debug    # Build in debug mode and run
+make dev          # Alias for run-debug
 make debug        # Just build debug mode
 make run          # Build in release mode and run
 make release      # Just build release mode
@@ -121,4 +122,4 @@ Standalone Classes:
 - **Death system** - Player-managed death state triggered by 100% insanity or fentanyl overdose; 3-second vignette animation with shader effects
 - **Scene management** - Scene system for different game states
 - **Level system** - Procedural level generation with difficulty scaling and alternate dimensions (Salvia mechanic)
-- **Testing** - Catch2 v3.5.0 framework with 228 test cases (1486 assertions) covering all classes including PsychedelicManager and Salvia
+- **Testing** - Catch2 v3.5.0 framework with 231 test cases (1500 assertions) covering all classes including PsychedelicManager, Salvia, and Molly effects

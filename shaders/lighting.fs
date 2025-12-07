@@ -76,7 +76,7 @@ void main()
     }
 
     finalColor = (texelColor*((tint + vec4(specular, 1.0))*vec4(lightDot, 1.0)));
-    finalColor += texelColor*(ambient/10.0)*tint;
+    finalColor += texelColor*(ambient/2.0)*tint;  // Increased from /10.0 to /2.0 for brighter ambient
 
     // Gamma correction
     finalColor = pow(finalColor, vec4(1.0/2.2));

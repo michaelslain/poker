@@ -20,9 +20,9 @@ void LightingManager::InitLightingSystem() {
     // Get shader locations
     lightingShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(lightingShader, "viewPos");
     
-    // Set ambient light level (zero for pitch black except where lights reach)
+    // Set ambient light level (increased for overall brightness)
     int ambientLoc = GetShaderLocation(lightingShader, "ambient");
-    SetShaderValue(lightingShader, ambientLoc, (float[4]){0.0f, 0.0f, 0.0f, 1.0f}, SHADER_UNIFORM_VEC4);
+    SetShaderValue(lightingShader, ambientLoc, (float[4]){0.3f, 0.3f, 0.3f, 1.0f}, SHADER_UNIFORM_VEC4);
     
     shaderInitialized = true;
 }

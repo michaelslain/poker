@@ -90,9 +90,11 @@ clean:
 run: release
 	./$(TARGET)
 
-# Run in debug mode (faster compilation)
+# Run in debug mode (faster compilation) - shorthand alias 'dev'
 run-debug: debug
 	./$(TARGET)
+
+dev: run-debug
 
 # Show ccache statistics
 ccache-stats:
@@ -103,4 +105,4 @@ ccache-clear:
 	@ccache -C
 	@echo "✓ ccache cleared"
 
-.PHONY: all debug release clean run run-debug test ccache-stats ccache-clear
+.PHONY: all debug release clean run run-debug dev test ccache-stats ccache-clear

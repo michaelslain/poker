@@ -24,6 +24,7 @@ make           # Release build (default, optimized)
 make debug     # Debug build (fast compile, debug symbols)
 make run       # Build and run (release)
 make run-debug # Build and run (debug, recommended for dev)
+make dev       # Alias for run-debug
 make test      # Build and run all unit tests
 make clean     # Remove build artifacts
 ```
@@ -34,7 +35,7 @@ make clean     # Remove build artifacts
 
 **Run**: `make test`
 - **38 test files** covering all game systems
-- **228 test cases**, **1486 assertions**, **100% pass rate**
+- **231 test cases**, **1500 assertions**, **100% pass rate**
 - Location: `tests/` directory
 - Framework: Catch2 v3.5.0 (header-only)
 
@@ -175,6 +176,10 @@ poker/
 - Height: 1.5x normal (visual height 2.7 units from feet)
 - Members: `thinkingTimer`, `thinkingDuration`, `isThinking`, `pendingAction`
 - Renders pitch black (default Person rendering)
+- **Molly Effect**: Overrides `Draw()` to render holographic cards above head when player is on Molly
+  - `DrawHolographicCards(camera)`: Private helper that renders pink-tinted card textures floating above enemy
+  - Cards billboard toward camera, have gentle floating animation
+  - Head position calculated as: `position.y + (3.7f * height) + 0.3f`
 
 ### Dealer
 - Inherits Person
@@ -250,6 +255,14 @@ poker/
 - `Consume()`: Reduces insanity by 50% and resets min insanity to 0
 - **Effects**: Calming/relaxation - removes kill-based insanity floor and provides immediate relief
 - **Use case**: Counter high insanity or remove permanent stress from combat
+
+### Molly
+- Inherits Substance
+- Pink {255, 150, 200, 255}
+- `Consume()`: Starts 10-minute Molly trip via `PsychedelicManager::StartTrip(0.2f, TripType::MOLLY)`
+- **Effects**: Very low intensity psychedelic effect with pink hue
+- **Card Reveal**: While tripping on Molly, enemy hole cards are revealed as holographic pink cards floating above their heads
+- **Strategic Use**: Allows player to see opponent hands during poker
 
 ### Fent
 - Inherits Substance
@@ -375,13 +388,15 @@ for (Object* obj : unlitObjects) obj->Draw(camera);
 - `StartTrip(intensity, type)`: Begin trip with intensity (0.0-1.0) and type (SHROOMS or SALVIA)
 - `TriggerComeDown()`: Manually trigger Salvia come-down (called on level transition)
 - `Update(dt)`: Auto-progresses through stages
-- `GetTripType()`: Returns current TripType enum (SHROOMS or SALVIA)
+- `GetTripType()`: Returns current TripType enum (SHROOMS, SALVIA, or MOLLY)
 - `IsInComeDown()`: Check if Salvia is in come-down phase
 - **Trip Types**:
   - **SHROOMS**: 5-minute trip - Come-up (0-60s) → Peak (60-180s) → Come-down (180-300s)
   - **SALVIA**: Level-long trip - Fast come-up (0-5s) → Peak (indefinite) → Fast come-down (5s)
+  - **MOLLY**: 10-minute trip - Very low intensity (0.2) with pink hue, reveals enemy cards
 - Shrooms call `StartTrip(1.0f, TripType::SHROOMS)` on consume
 - Salvia calls `StartTrip(0.5f, TripType::SALVIA)` on consume
+- Molly calls `StartTrip(0.2f, TripType::MOLLY)` on consume
 
 ### Shader Effects
 - Breathing/morphing, drifting/warping, geometric patterns
@@ -521,6 +536,7 @@ dom.RemoveObject(item);
 17. **Teleport Geometry**: Always update both `dBodySetPosition()` AND `dGeomSetPosition()` when teleporting - geometry position is used for collision detection.
 18. **Seating Y Position**: When sitting/standing, Person now saves/restores `standingYLevel` to preserve vertical position across seating changes.
 19. **Test Initialization**: Unit tests MUST initialize `PhysicsWorld` and set global before creating objects with physics: `PhysicsWorld physics; PhysicsWorld::SetGlobal(&physics);`. Same for DOM if needed. Many classes (Substance, RigidBody, etc.) require physics to be initialized.
+20. **Shader Member Initialization**: Always zero-initialize Shader structs in member initializer lists before calling `LoadShader()` in constructor body. Example: `vignetteShader{0}` in Player constructor. Uninitialized Shader structs can cause memory corruption.
 
 ---
 

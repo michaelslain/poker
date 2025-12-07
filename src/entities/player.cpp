@@ -23,7 +23,7 @@ Player::Player(Vector3 pos, const std::string& playerName)
     : Person(pos, playerName, 1.0f), camera({pos.x, pos.y + 1.7f, pos.z}), speed(5.0f),
       speedBoostTimer(0.0f), baseSpeed(5.0f),
       lookYaw(0.0f), lookPitch(0.0f),
-      isDying(false), deathVignetteProgress(0.0f), vignetteShaderLoaded(false),
+      isDying(false), deathVignetteProgress(0.0f), vignetteShader{0}, vignetteShaderLoaded(false),
       selectedItemIndex(-1), lastHeldItemIndex(-1),
       bettingUIActive(false), bettingChoice(-1), raiseSliderValue(0), raiseMin(0), raiseMax(0),
       storedCurrentBet(0), storedCallAmount(0),

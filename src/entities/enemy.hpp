@@ -24,6 +24,13 @@ public:
     
     // Override Update to handle thinking timer
     void Update(float deltaTime) override;
+    
+    // Override Draw to render holographic cards when on molly
+    void Draw(Camera3D camera) override;
+
+private:
+    // Helper method to render holographic cards above head
+    void DrawHolographicCards(Camera3D camera);
 };
 
 #endif
