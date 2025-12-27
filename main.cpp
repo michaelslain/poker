@@ -1,5 +1,8 @@
 #include "raylib.h"
+#include "raymath.h"
 #include <string>
+#include <vector>
+#include <algorithm>
 #include "entities/player.hpp"
 #include "rendering/light.hpp"
 #include "rendering/lighting_manager.hpp"
@@ -10,6 +13,7 @@
 #include "core/scene_manager.hpp"
 #include "core/level_manager.hpp"
 #include "gameplay/level_generator.hpp"
+#include "gameplay/room_visibility_manager.hpp"
 #include "scenes/hospital_scene.hpp"
 #include "world/stairs.hpp"
 
@@ -24,6 +28,44 @@ inline bool TypeContains(const std::string& type, const std::string& component) 
     return type.find("_" + component) != std::string::npos ||
            type.find(component + "_") != std::string::npos ||
            type == component;
+}
+
+// Light distance struct for sorting lights by distance from camera
+struct LightDistance {
+    int lightIndex;      // Index in lights array
+    float distance;      // Distance from camera
+    Light* lightPtr;     // Pointer to light object
+};
+
+// Select the N nearest lights based on camera position for rendering
+// This reduces shader cost by only computing nearby lights
+std::vector<int> SelectNearestLights(const DOM& dom, const Camera3D& camera, int maxLights) {
+    std::vector<LightDistance> lightDistances;
+
+    // Collect all lights with their distances from camera
+    for (int i = 0; i < dom.GetCount(); i++) {
+        Object* obj = dom.GetObject(i);
+        if (TypeContains(obj->GetType(), "light")) {
+            Light* light = static_cast<Light*>(obj);
+            float dist = Vector3Distance(camera.position, light->position);
+            lightDistances.push_back({i, dist, light});
+        }
+    }
+
+    // Sort lights by distance (nearest first)
+    std::sort(lightDistances.begin(), lightDistances.end(),
+              [](const LightDistance& a, const LightDistance& b) {
+                  return a.distance < b.distance;
+              });
+
+    // Take only the nearest N lights
+    std::vector<int> result;
+    int count = std::min((int)lightDistances.size(), maxLights);
+    for (int i = 0; i < count; i++) {
+        result.push_back(i);  // Store index in lights array (0, 1, 2, ...)
+    }
+
+    return result;
 }
 
 // Helper function to clean up all DOM objects except player
@@ -71,14 +113,21 @@ void GenerateLevel(int levelNum, LevelGenerator& levelGen, HospitalScene& hospit
     // NOTE: Do NOT trigger come-down here - that happens when exiting alternate dimension
     // Salvia trip should persist for entire alternate dimension level
 
-    if (levelNum == 0) {
-        // Hospital scene
+    // If in alternate dimension, ALWAYS use procedural generation (even for level 0)
+    // This ensures Salvia dimensions have MAX_ROOMS (32) regardless of base level
+    if (LevelManager::GetInstance()->IsInAlternateDimension()) {
+        levelGen.GenerateLevel(levelNum);
+        if (player) {
+            player->Teleport(levelGen.GetPlayerSpawnPosition());
+        }
+    } else if (levelNum == 0) {
+        // Normal level 0: Hospital scene
         hospital.Generate();
         if (player) {
             player->Teleport(hospital.GetPlayerSpawnPosition());
         }
     } else {
-        // Procedurally generated casino level
+        // Normal procedurally generated casino level
         levelGen.GenerateLevel(levelNum);
         if (player) {
             player->Teleport(levelGen.GetPlayerSpawnPosition());
@@ -112,8 +161,10 @@ int main(void)
     LevelManager* levelManager = LevelManager::GetInstance();
     levelManager->SetLevel(0);  // Start at hospital (level 0)
 
-    // Create level generators
+    // Create level generators and visibility manager
+    RoomVisibilityManager roomVisibility;
     LevelGenerator levelGenerator(&physics, &dom);
+    levelGenerator.SetVisibilityManager(&roomVisibility);
     HospitalScene hospitalScene(&physics, &dom);
 
     // Initialize scene manager for death scene
@@ -123,6 +174,7 @@ int main(void)
     // Track state
     bool isInDeathScene = false;
     int previousDimension = 0;  // Track dimension changes for regeneration
+    bool isGeneratingLevel = false;  // Track async level generation
 
     // Generate initial level (hospital)
     hospitalScene.Generate();
@@ -176,7 +228,15 @@ int main(void)
                 TraceLog(LOG_INFO, "DEBUG: Jumping to level %d", targetLevel);
                 levelManager->JumpToLevel(targetLevel);
                 CleanupLevel(dom, player);
-                GenerateLevel(targetLevel, levelGenerator, hospitalScene, dom, player);
+
+                // Debug uses synchronous generation for instant results
+                if (targetLevel == 0) {
+                    hospitalScene.Generate();
+                    if (player) player->Teleport(hospitalScene.GetPlayerSpawnPosition());
+                } else {
+                    levelGenerator.GenerateLevel(targetLevel);  // Old synchronous method
+                    if (player) player->Teleport(levelGenerator.GetPlayerSpawnPosition());
+                }
             }
         }
         #endif
@@ -225,15 +285,44 @@ int main(void)
                 // Clean up current level (except player)
                 CleanupLevel(dom, player);
 
-                // Generate new level and teleport player
+                // Start async level generation
                 int newLevel = levelManager->GetCurrentLevel();
-                GenerateLevel(newLevel, levelGenerator, hospitalScene, dom, player);
-
-                TraceLog(LOG_INFO, "STAIRS: New level %d loaded", newLevel);
+                if (newLevel == 0) {
+                    // Hospital uses synchronous generation (simple scene)
+                    hospitalScene.Generate();
+                    if (player) {
+                        player->Teleport(hospitalScene.GetPlayerSpawnPosition());
+                    }
+                } else {
+                    // Casino uses async generation
+                    levelGenerator.StartGeneration(newLevel);
+                    isGeneratingLevel = true;
+                    TraceLog(LOG_INFO, "STAIRS: Started async generation for level %d", newLevel);
+                }
 
                 // Skip physics and updates for this frame - fresh start next frame
                 continue;
             }
+        }
+
+        // Light culling: Select 8 nearest lights for shader (reduces rendering cost)
+        if (player && !isInDeathScene) {
+            Camera3D* cam = player->GetCamera();
+            std::vector<int> activeLights = SelectNearestLights(dom, *cam, 8);
+            LightingManager::SetActiveLights(activeLights);
+        }
+
+        // Continue async level generation if active
+        if (isGeneratingLevel && player && !isInDeathScene) {
+            bool complete = levelGenerator.ContinueGeneration(2);  // 2 rooms per frame
+
+            if (complete) {
+                // Generation finished - teleport player to spawn
+                player->Teleport(levelGenerator.GetPlayerSpawnPosition());
+                isGeneratingLevel = false;
+                TraceLog(LOG_INFO, "ASYNC_GEN: Level generation complete, player teleported");
+            }
+            // If not complete, continue next frame
         }
 
         // Update physics
@@ -272,11 +361,24 @@ int main(void)
                 // Clean up current level (except player)
                 CleanupLevel(dom, player);
 
-                // Regenerate current level in new dimension
+                // Start async regeneration
                 int currentLevel = levelManager->GetCurrentLevel();
-                GenerateLevel(currentLevel, levelGenerator, hospitalScene, dom, player);
+                if (LevelManager::GetInstance()->IsInAlternateDimension()) {
+                    // Salvia dimension - async generation
+                    levelGenerator.StartGeneration(currentLevel);
+                    isGeneratingLevel = true;
+                } else {
+                    // Shouldn't happen, but handle it
+                    if (currentLevel == 0) {
+                        hospitalScene.Generate();
+                        if (player) player->Teleport(hospitalScene.GetPlayerSpawnPosition());
+                    } else {
+                        levelGenerator.StartGeneration(currentLevel);
+                        isGeneratingLevel = true;
+                    }
+                }
 
-                TraceLog(LOG_INFO, "SALVIA: Level %d regenerated in dimension %d", currentLevel, currentDimension);
+                TraceLog(LOG_INFO, "SALVIA: Started async generation for dimension %d", currentDimension);
             }
         }
 
@@ -296,24 +398,30 @@ int main(void)
             // Get lighting shader
             Shader& lightingShader = LightingManager::GetLightingShader();
 
-            // Draw objects with lighting
+            // Draw objects with lighting (frustum culling only for now)
             if (lightingShader.id != 0) {
                 BeginShaderMode(lightingShader);
                 for (int i = 0; i < dom.GetCount(); i++) {
                     Object* obj = dom.GetObject(i);
-                    // Skip unlit objects
                     if (!obj->usesLighting) continue;
+
+                    // Frustum culling: skip objects outside camera view
+                    if (!IsInFrustum(*camera, obj->position, 10.0f)) continue;
+
                     obj->Draw(*camera);
                 }
                 EndShaderMode();
             }
 
-            // Draw unlit objects
+            // Draw unlit objects (frustum culling only for now)
             for (int i = 0; i < dom.GetCount(); i++) {
                 Object* obj = dom.GetObject(i);
-                if (!obj->usesLighting) {
-                    obj->Draw(*camera);
-                }
+                if (obj->usesLighting) continue;
+
+                // Frustum culling: skip objects outside camera view
+                if (!IsInFrustum(*camera, obj->position, 10.0f)) continue;
+
+                obj->Draw(*camera);
             }
 
             // Draw held item (needs to be in 3D mode)

@@ -10,10 +10,10 @@ class Light : public Object {
 public:
     Light(Vector3 position);
     virtual ~Light();
-    
+
     // Virtual method for updating light in shader (can be overridden by derived classes)
     virtual void UpdateLight() {}
-    
+
     // Override GetType to return hierarchical type
     std::string GetType() const override;
 };

@@ -3,11 +3,13 @@
 
 #include "core/object.hpp"
 #include <vector>
+#include <unordered_map>
 
 // DOM - Document Object Model (manages all objects in the scene)
 class DOM {
 private:
     std::vector<Object*> objects;
+    std::unordered_map<int, int> idToIndex;  // Object ID -> array index (for O(1) lookup)
     static DOM* globalInstance;
 
 public:
@@ -21,8 +23,9 @@ public:
     
     // Accessors
     int GetCount() const { return objects.size(); }
-    Object* GetObject(int index) { return objects[index]; }
-    Object* FindObjectByID(int id);
+    Object* GetObject(int index) const { return objects[index]; }
+    Object* FindObjectByID(int id);  // O(n) linear search (legacy)
+    Object* GetObjectByID(int id);   // O(1) hash lookup (optimized for room culling)
     const std::vector<Object*>& GetObjects() const { return objects; }
     
     // Global instance management

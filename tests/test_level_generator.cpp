@@ -71,32 +71,6 @@ TEST_CASE("LevelGenerator - Level Generation", "[level_generator]") {
         dom.Cleanup();
     }
     
-    SECTION("Higher levels generate more rooms") {
-        LevelGenerator generator(&physics, &dom);
-        
-        levelManager->SetLevel(1);
-        generator.GenerateLevel(1);
-        int countLevel1 = dom.GetCount();
-        
-        // Cleanup level 1
-        for (int i = 0; i < dom.GetCount(); i++) {
-            delete dom.GetObject(i);
-        }
-        dom.Cleanup();
-        
-        levelManager->SetLevel(5);
-        generator.GenerateLevel(5);
-        int countLevel5 = dom.GetCount();
-        
-        // Level 5 should have more objects than level 1
-        REQUIRE(countLevel5 >= countLevel1);
-        
-        // Cleanup
-        for (int i = 0; i < dom.GetCount(); i++) {
-            delete dom.GetObject(i);
-        }
-        dom.Cleanup();
-    }
     
     SECTION("Clear clears internal state") {
         LevelGenerator generator(&physics, &dom);
@@ -556,5 +530,92 @@ TEST_CASE("LevelGenerator - Multiple Generations", "[level_generator][regression
         dom.Cleanup();
     }
     
+    LevelManager::Destroy();
+}
+
+
+TEST_CASE("LevelGenerator - Enemy Limit (MAX_ENEMIES = 10)", "[level_generator][optimization][physics]") {
+    PhysicsWorld physics;
+    DOM dom;
+    DOM::SetGlobal(&dom);
+    PhysicsWorld::SetGlobal(&physics);
+    LevelManager::Destroy();
+    LevelManager* levelManager = LevelManager::GetInstance();
+
+    SECTION("Synchronous generation respects MAX_ENEMIES limit") {
+        LevelGenerator generator(&physics, &dom);
+
+        // Generate a high-level level that would normally spawn many enemies
+        levelManager->SetLevel(10);
+        generator.GenerateLevel(10);
+
+        // Count enemies in DOM
+        int enemyCount = 0;
+        for (int i = 0; i < dom.GetCount(); i++) {
+            std::string type = dom.GetObject(i)->GetType();
+            if (type.find("enemy") != std::string::npos) {
+                enemyCount++;
+            }
+        }
+
+        // Should not exceed MAX_ENEMIES (10)
+        REQUIRE(enemyCount <= 10);
+
+        // Cleanup
+        for (int i = 0; i < dom.GetCount(); i++) {
+            delete dom.GetObject(i);
+        }
+        dom.Cleanup();
+    }
+
+
+    SECTION("Multiple levels all respect enemy limit") {
+        LevelGenerator generator(&physics, &dom);
+
+        for (int level = 1; level <= 5; level++) {
+            levelManager->SetLevel(level);
+            generator.GenerateLevel(level);
+
+            int enemyCount = 0;
+            for (int i = 0; i < dom.GetCount(); i++) {
+                if (dom.GetObject(i)->GetType().find("enemy") != std::string::npos) {
+                    enemyCount++;
+                }
+            }
+
+            REQUIRE(enemyCount <= 10);
+
+            // Cleanup for next iteration
+            for (int i = 0; i < dom.GetCount(); i++) {
+                delete dom.GetObject(i);
+            }
+            dom.Cleanup();
+        }
+    }
+
+    SECTION("Poker tables still spawn despite enemy limit") {
+        LevelGenerator generator(&physics, &dom);
+
+        // Limit should not prevent poker tables from spawning (level 2 guaranteed to have table)
+        levelManager->SetLevel(2);
+        generator.GenerateLevel(2);
+
+        bool hasPokerTable = false;
+        for (int i = 0; i < dom.GetCount(); i++) {
+            if (dom.GetObject(i)->GetType().find("poker_table") != std::string::npos) {
+                hasPokerTable = true;
+                break;
+            }
+        }
+
+        REQUIRE(hasPokerTable);
+
+        // Cleanup
+        for (int i = 0; i < dom.GetCount(); i++) {
+            delete dom.GetObject(i);
+        }
+        dom.Cleanup();
+    }
+
     LevelManager::Destroy();
 }

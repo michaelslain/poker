@@ -91,33 +91,60 @@ TEST_CASE("PhysicsWorld - Contact Properties", "[physics][regression]") {
     }
 }
 
-TEST_CASE("PhysicsWorld - Substepping", "[physics][regression]") {
+TEST_CASE("PhysicsWorld - Substepping (60Hz)", "[physics][optimization]") {
     PhysicsWorld physics;
-    
-    SECTION("Fixed timestep prevents tunneling") {
-        // Create a fast-moving object
+
+    SECTION("Uses 60Hz fixed timestep (1/60 = 0.01667s per substep)") {
+        // Verify that with 1 frame at 60 FPS (0.01667s), simulation updates properly
         dBodyID body = dBodyCreate(physics.world);
         dBodySetPosition(body, 0, 5, 0);
-        
+
         dMass mass;
         dMassSetSphereTotal(&mass, 1.0f, 0.5f);
         dBodySetMass(body, &mass);
-        
+
+        // Set downward velocity
+        dBodySetLinearVel(body, 0, -9.81, 0);
+
+        const dReal* posBefore = dBodyGetPosition(body);
+        float yBefore = posBefore[1];
+
+        // Step one frame at 60 FPS
+        physics.Step(1.0f / 60.0f);  // 0.01667 seconds
+
+        const dReal* posAfter = dBodyGetPosition(body);
+        float yAfter = posAfter[1];
+
+        // Body should have moved downward (fallen due to gravity)
+        REQUIRE(yAfter < yBefore);
+
+        dBodyDestroy(body);
+    }
+
+    SECTION("Fixed timestep prevents tunneling with 60Hz substeps") {
+        // Create a fast-moving object
+        dBodyID body = dBodyCreate(physics.world);
+        dBodySetPosition(body, 0, 5, 0);
+
+        dMass mass;
+        dMassSetSphereTotal(&mass, 1.0f, 0.5f);
+        dBodySetMass(body, &mass);
+
         // Give it high velocity
         dBodySetLinearVel(body, 0, -50, 0);
-        
+
         // Create floor
         dGeomID floor = dCreatePlane(physics.space, 0, 1, 0, 0);
         dGeomID sphere = dCreateSphere(physics.space, 0.5f);
         dGeomSetBody(sphere, body);
-        
-        // Step with large deltaTime (should be subdivided)
+
+        // Step with large deltaTime (should be subdivided into 60Hz substeps)
         physics.Step(0.1f);
-        
+
         const dReal* pos = dBodyGetPosition(body);
         // Should not have tunneled through floor at y=0
         REQUIRE(pos[1] >= -1.0); // Allow some penetration but not full tunnel
-        
+
         dGeomDestroy(sphere);
         dGeomDestroy(floor);
         dBodyDestroy(body);

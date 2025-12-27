@@ -122,4 +122,4 @@ Standalone Classes:
 - **Death system** - Player-managed death state triggered by 100% insanity or fentanyl overdose; 3-second vignette animation with shader effects
 - **Scene management** - Scene system for different game states
 - **Level system** - Procedural level generation with difficulty scaling and alternate dimensions (Salvia mechanic)
-- **Testing** - Catch2 v3.5.0 framework with 231 test cases (1500 assertions) covering all classes including PsychedelicManager, Salvia, and Molly effects
+- **Testing** - Catch2 v3.5.0 framework with 233 test cases (1718 assertions) covering all systems including performance optimizations (DOM hash map O(1) lookup, 60Hz physics, async level generation, enemy limiting)

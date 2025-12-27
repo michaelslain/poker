@@ -69,8 +69,9 @@ void PhysicsWorld::Step(float deltaTime) {
     if (deltaTime > 0.1f) deltaTime = 0.1f;
     
     // Use fixed timestep substepping to prevent tunneling
-    // Physics runs at 120 Hz (substep = 1/120 = 0.00833 seconds)
-    const float fixedTimestep = 1.0f / 120.0f;
+    // Physics runs at 60 Hz (substep = 1/60 = 0.01667 seconds)
+    // Reduced from 120 Hz for performance optimization (50% physics cost reduction)
+    const float fixedTimestep = 1.0f / 60.0f;
     int substeps = (int)(deltaTime / fixedTimestep) + 1;
     float actualSubstep = deltaTime / substeps;
     

@@ -12,4 +12,7 @@ void DrawText3D(const char* text, Vector3 position, float fontSize, Color color)
 // Draw level counter UI in top-left corner
 void DrawLevelUI(int level, int dimension);
 
+// Frustum culling: Check if a sphere is within camera view
+bool IsInFrustum(const Camera3D& camera, Vector3 position, float radius);
+
 #endif

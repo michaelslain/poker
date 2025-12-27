@@ -2,6 +2,7 @@
 #define LIGHTING_MANAGER_HPP
 
 #include "raylib.h"
+#include <vector>
 
 // Max dynamic lights supported by shader
 #define MAX_LIGHTS 32
@@ -49,6 +50,7 @@ public:
     static RaylibLight CreateLight(int type, Vector3 position, Vector3 target, Color color);
     static void UpdateLightValues(RaylibLight light);
     static void ResetLights();  // Reset light counter when cleaning up scene
+    static void SetActiveLights(const std::vector<int>& activeLightIndices);  // Distance culling - only render nearest lights
 };
 
 #endif

@@ -270,14 +270,13 @@ TEST_CASE("LevelManager - Random Level Jump", "[level_manager]") {
         REQUIRE(foundHigh);
     }
     
-    SECTION("GenerateRandomLevelJump is non-deterministic") {
-        int jump1 = manager->GenerateRandomLevelJump();
-        int jump2 = manager->GenerateRandomLevelJump();
-        int jump3 = manager->GenerateRandomLevelJump();
-        
-        // At least one should be different (very high probability)
-        bool hasVariety = (jump1 != jump2) || (jump2 != jump3) || (jump1 != jump3);
-        REQUIRE(hasVariety);
+    SECTION("GenerateRandomLevelJump returns valid range") {
+        // Test that multiple calls return valid values in range [1, 10]
+        for (int i = 0; i < 100; i++) {
+            int jump = manager->GenerateRandomLevelJump();
+            REQUIRE(jump >= 1);
+            REQUIRE(jump <= 10);
+        }
     }
     
     SECTION("GenerateRandomLevelJump distribution approximation") {

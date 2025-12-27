@@ -94,12 +94,34 @@ void LightingManager::UpdateLightValues(RaylibLight light) {
 // Reset light counter when cleaning up scene
 void LightingManager::ResetLights() {
     lightsCount = 0;
-    
+
     // Disable all lights in shader
     if (shaderInitialized) {
         for (int i = 0; i < MAX_LIGHTS; i++) {
             int enabledLoc = GetShaderLocation(lightingShader, TextFormat("lights[%i].enabled", i));
             int enabled = 0;
+            SetShaderValue(lightingShader, enabledLoc, &enabled, SHADER_UNIFORM_INT);
+        }
+    }
+}
+
+// Set which lights are active in the shader (distance culling)
+// Only the lights in activeLightIndices will be rendered
+void LightingManager::SetActiveLights(const std::vector<int>& activeLightIndices) {
+    if (!shaderInitialized) return;
+
+    // First, disable all lights
+    for (int i = 0; i < MAX_LIGHTS; i++) {
+        int enabledLoc = GetShaderLocation(lightingShader, TextFormat("lights[%i].enabled", i));
+        int enabled = 0;
+        SetShaderValue(lightingShader, enabledLoc, &enabled, SHADER_UNIFORM_INT);
+    }
+
+    // Then enable only the nearest lights
+    for (int idx : activeLightIndices) {
+        if (idx >= 0 && idx < lightsCount && idx < MAX_LIGHTS) {
+            int enabledLoc = GetShaderLocation(lightingShader, TextFormat("lights[%i].enabled", idx));
+            int enabled = 1;
             SetShaderValue(lightingShader, enabledLoc, &enabled, SHADER_UNIFORM_INT);
         }
     }

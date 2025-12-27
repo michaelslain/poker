@@ -62,18 +62,43 @@ void DrawLevelUI(int level, int dimension) {
 
 void DrawText3D(const char* text, Vector3 position, float fontSize, Color color) {
     int textWidth = MeasureText(text, (int)fontSize);
-    
+
     rlPushMatrix();
         rlTranslatef(position.x, position.y, position.z);
-        
+
         // Rotate to face forward (away from Z axis)
         rlRotatef(180, 0, 1, 0);  // Face forward
-        
+
         // Much smaller scale for proper size
         float scale = fontSize * 0.0001f;
         rlScalef(scale, -scale, scale);
-        
+
         // Draw the text centered
         DrawText(text, -textWidth/2, 0, (int)fontSize, color);
     rlPopMatrix();
+}
+
+// Frustum culling: Check if a sphere is within camera view
+bool IsInFrustum(const Camera3D& camera, Vector3 position, float radius) {
+    // Simple frustum culling using view direction and FOV
+    Vector3 toObject = Vector3Subtract(position, camera.position);
+    float distance = Vector3Length(toObject);
+
+    // Early out: object behind camera
+    Vector3 forward = Vector3Subtract(camera.target, camera.position);
+    forward = Vector3Normalize(forward);
+    float dot = Vector3DotProduct(toObject, forward);
+
+    if (dot < -radius) return false;  // Behind camera
+
+    // Check angle from view direction (simple cone test)
+    if (distance > 0.001f) {  // Avoid division by zero
+        float angle = acosf(dot / distance);
+        float fovRadians = camera.fovy * DEG2RAD;
+        float maxAngle = fovRadians * 0.7f;  // Account for aspect ratio + margin
+
+        return angle < maxAngle + (radius / distance);
+    }
+
+    return true;  // Very close to camera, include it
 }
